@@ -25,6 +25,7 @@ use base qw(Bugzilla::Extension);
 
 # This code for this is in ./extensions/AgileTools/lib/Util.pm
 use Bugzilla::Extension::AgileTools::Util;
+use Bugzilla::Extension::AgileTools::Team;
 
 our $VERSION = '0.01';
 

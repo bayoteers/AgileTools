@@ -19,17 +19,17 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
-package Bugzilla::Extension::AgileTools::Team;
 use strict;
+package Bugzilla::Extension::AgileTools::Team;
+
+use base qw(Bugzilla::Object);
 
 use Bugzilla::Group;
 use Bugzilla::User;
 
-use base qw(Bugzilla::Object);
-
 use constant DB_TABLE => 'agile_teams';
 
-use constant DB_COLUMS => qw(
+use constant DB_COLUMNS => qw(
     id
     name
     group_id

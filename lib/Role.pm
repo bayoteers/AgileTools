@@ -19,14 +19,14 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
-package Bugzilla::Extension::AgileTools::Role;
 use strict;
+package Bugzilla::Extension::AgileTools::Role;
 
 use base qw(Bugzilla::Object);
 
 use constant DB_TABLE => 'agile_roles';
 
-use constant DB_COLUMS => qw(
+use constant DB_COLUMNS => qw(
     id
     name
     custom
