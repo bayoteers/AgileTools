@@ -26,6 +26,8 @@ use base qw(Bugzilla::Object);
 
 use Bugzilla::Group;
 use Bugzilla::User;
+use Bugzilla::Error;
+use Bugzilla::Util qw(trim);
 
 use constant DB_TABLE => 'agile_teams';
 
@@ -47,6 +49,9 @@ use constant UPDATE_COLUMNS => qw(
     process_id
 );
 
+use constant VALIDATORS => {
+    name => \&_check_name,
+};
 
 # Accessors
 ###########
@@ -80,6 +85,26 @@ sub set_group {
     $self->set('group_id', $group_id);
 }
 
+# Validators
+############
+
+sub _check_name {
+    my ($invocant, $name) = @_;
+    $name = trim($name);
+    $name || ThrowUserError("empty_team_name");
+
+    # If we're creating a Team or changing the name...
+    if (!ref($invocant) || lc($invocant->name) ne lc($name)) {
+        my $exists = new Bugzilla::Extension::AgileTools::Team({name => $name});
+        ThrowUserError("team_exists", { name => $name }) if $exists;
+
+        # Check that there is no group with that name...
+        $exists = new Bugzilla::Group({name => $name});
+        ThrowUserError("group_exists", { name => $name }) if $exists;
+    }
+    return $name;
+}
+
 # Methods
 #########
 
@@ -88,6 +113,22 @@ sub members {
     return $self->group->members_non_inherited();
 }
 
+sub update {
+    my $self = shift;
+
+    my($changes, $old) = $self->SUPER::update(@_);
+
+    if ($changes->{name}) {
+        # Reflect the name change on the group
+        $self->group->set_all({name => $changes->{name}->[1]});
+        $self->group->update();
+    }
+
+    if (wantarray) {
+        return ($changes, $old);
+    }
+    return $changes;
+}
 
 # Add team methods in Bugzilla::User class
 ##########################################
