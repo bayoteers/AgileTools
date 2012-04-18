@@ -120,7 +120,12 @@ sub update {
 
     if ($changes->{name}) {
         # Reflect the name change on the group
-        $self->group->set_all({name => $changes->{name}->[1]});
+        my $new_name = $changes->{name}->[1];
+        $self->group->set_all({
+                name => $new_name,
+                description => "'" . $new_name . "' team member group",
+            }
+        );
         $self->group->update();
     }
 
@@ -128,6 +133,35 @@ sub update {
         return ($changes, $old);
     }
     return $changes;
+}
+
+sub create {
+    my ($class, $params) = @_;
+
+    $class->check_required_create_fields($params);
+    my $clean_params = $class->run_create_validators($params);
+
+    # Greate the group and put ID in params
+    my $group = Bugzilla::Group->create({
+            name => $params->{name},
+            description => "'" . $params->{name} . "' team member group",
+            # isbuggroup = 0 means system group
+            isbuggroup => 0,
+        }
+    );
+    $clean_params->{group_id} = $group->id;
+
+    return $class->insert_create_data($clean_params);
+}
+
+sub remove_from_db {
+    my $self = shift;
+    my $group = $self->group;
+    $self->SUPER::remove_from_db(@_);
+
+    # We need to trick group to think that its not a system group
+    $group->{isbuggroup} = 1;
+    $group->remove_from_db();
 }
 
 # Add team methods in Bugzilla::User class
