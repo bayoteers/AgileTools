@@ -57,3 +57,25 @@ sub set_custom        { $_[0]->set('custom', $_[1]); }
 sub set_can_edit_team { $_[0]->set('can_edit_team', $_[1]); }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Role
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Role;
+
+    my $role = new Bugzilla::Extension::AgileTools::Role(1);
+
+    my $role_id = $role->id;
+    my $name = $role->name;
+    my $is_custom = $role->custom;
+    my $can_edit_team = $role->can_edit_team;
+
+=head1 DESCRIPTION
+
+Role object represents a user role in a team and defines some permissions that
+the user has regarding the team. Role is inherited from L<Bugzilla::Object>.
