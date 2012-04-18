@@ -73,6 +73,36 @@ sub db_schema_abstract_schema {
         ],
     };
 
+    # Team component responsibilities
+    $schema->{agile_team_component_map} = {
+        FIELDS => [
+            team_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_teams',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            component_id => {
+                TYPE => 'INT2',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'components',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+        ],
+        INDEXES => [
+            agile_team_component_unique_idx => {
+                FIELDS => ['team_id', 'component_id'],
+                TYPE => 'UNIQUE',
+            },
+        ],
+    };
+
     # User role definitions
     $schema->{agile_roles} = {
         FIELDS => [
