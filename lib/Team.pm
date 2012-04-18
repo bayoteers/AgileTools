@@ -96,7 +96,7 @@ sub _check_name {
     # If we're creating a Team or changing the name...
     if (!ref($invocant) || lc($invocant->name) ne lc($name)) {
         my $exists = new Bugzilla::Extension::AgileTools::Team({name => $name});
-        ThrowUserError("team_exists", { name => $name }) if $exists;
+        ThrowUserError("agile_team_exists", { name => $name }) if $exists;
 
         # Check that there is no group with that name...
         $exists = new Bugzilla::Group({name => $name});
