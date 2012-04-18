@@ -23,6 +23,7 @@ package Bugzilla::Extension::AgileTools::Team;
 use strict;
 
 use Bugzilla::Group;
+use Bugzilla::User;
 
 use base qw(Bugzilla::Object);
 
@@ -79,4 +80,79 @@ sub set_group {
     $self->set('group_id', $group_id);
 }
 
+# Methods
+#########
+
+sub members {
+    my $self = shift;
+    return $self->group->members_non_inherited();
+}
+
+
+# Add team methods in Bugzilla::User class
+##########################################
+
+BEGIN {
+    *Bugzilla::User::agile_teams = sub {
+        my $self = shift;
+        return Bugzilla::Extension::AgileTools::Team->match(
+            {WHERE => $self->groups_in_sql});
+    };
+}
+
+
+
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Team
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Team
+
+    my $team = new Bugzilla::Extension::AgileTools::Team(1);
+
+    my $team_id = $team->id;
+    my $name = $team->name;
+    my $group = $team->group;
+    my $group_id = $team->group_id;
+    my $process_id = $team->process_id;
+
+    my @members = @{$team->memebers};
+
+    my @teams = Bugzilla::Extension::AgileTools::Team->get_all;
+
+    my $user = new Bugzilla::User(1);
+    my @teams = @{$user->agile_teams};
+
+=head1 DESCRIPTION
+
+Team.pm presents a AgileTools Team object inherited from L<Bugzilla::Object>
+
+=head1 METHODS
+
+=over
+
+=item C<members>
+
+Description: Gets the list of team members.
+
+Returns:     Array ref of L<Bugzilla::User> objects.
+
+=back
+
+=head1 RELATED METHODS
+
+=over
+
+=item C<Bugzilla::User::agile_teams>
+
+Description: Returns the list of teams the user is member in.
+
+Returns:     Array ref of C<Team> objects.
+
+=back
