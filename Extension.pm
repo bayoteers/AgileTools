@@ -48,7 +48,7 @@ sub db_schema_abstract_schema {
                 PRIMARYKEY => 1,
             },
             name => {
-                TYPE => 'TINYTEXT',
+                TYPE => 'varchar(64)',
                 NOTNULL => 1,
             },
             group_id => {
@@ -56,7 +56,6 @@ sub db_schema_abstract_schema {
                 REFERENCES => {
                     TABLE => 'groups',
                     COLUMN => 'id',
-                    DELETE => 'SET_NULL',
                 },
             },
             process_id => {
@@ -64,6 +63,13 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 DEFAULT => 0,
             },
+        ],
+        INDEXES => [
+            agile_teams_name_idx => {
+                FIELDS => ['name'],
+                TYPE => 'UNIQUE',
+            },
+            agile_teams_group_id_idx => ['group_id'],
         ],
     };
 
@@ -76,7 +82,7 @@ sub db_schema_abstract_schema {
                 PRIMARYKEY => 1,
             },
             name => {
-                TYPE => 'TINYTEXT',
+                TYPE => 'varchar(64)',
                 NOTNULL => 1,
             },
             custom => {
@@ -91,7 +97,10 @@ sub db_schema_abstract_schema {
             }
         ],
         INDEXES => [
-            'agile_roles_name_idx' => ['name'],
+            'agile_roles_name_idx' => {
+                FIELDS => ['name'],
+                TYPE => 'UNIQUE',
+            }
         ],
     };
 
@@ -109,6 +118,7 @@ sub db_schema_abstract_schema {
             },
             user_id => {
                 TYPE => 'INT3',
+                NOTNULL => 1,
                 REFERENCES => {
                     TABLE => 'profiles',
                     COLUMN => 'userid',
@@ -116,7 +126,8 @@ sub db_schema_abstract_schema {
                 },
             },
             role_id => {
-                TYPE => 'INT3',
+                TYPE => 'INT2',
+                NOTNULL => 1,
                 REFERENCES => {
                     TABLE => 'agile_roles',
                     COLUMN => 'id',
