@@ -96,7 +96,7 @@ BEGIN {
     *Bugzilla::User::agile_teams = sub {
         my $self = shift;
         return Bugzilla::Extension::AgileTools::Team->match(
-            {WHERE => $self->groups_in_sql});
+            { WHERE => {'group_id IN (?)' => $self->groups_as_string} });
     };
 }
 
