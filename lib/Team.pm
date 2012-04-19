@@ -20,16 +20,19 @@
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
 use strict;
+use warnings;
 package Bugzilla::Extension::AgileTools::Team;
 
 use base qw(Bugzilla::Object);
 
+use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
 
 use Scalar::Util qw(blessed);
+use List::Util qw(first);
 
 use constant DB_TABLE => 'agile_teams';
 
@@ -114,6 +117,42 @@ sub members {
     my $self = shift;
     return [] unless $self->id;
     return $self->group->members_non_inherited();
+}
+
+sub add_member {
+    my ($self, $member) = @_;
+    if (!blessed $member) {
+        if ($member =~ /^\d+$/) {
+            $member = Bugzilla::User->check({id => $member});
+        } else {
+            $member = Bugzilla::User->check($member);
+        }
+    }
+    return if defined  first { $_->id == $self->id } @{$member->agile_teams};
+
+    my $dbh = Bugzilla->dbh;
+
+    $dbh->do("INSERT INTO user_group_map (
+        user_id, group_id, isbless, grant_type
+        ) VALUES (?, ?, ?, ?)", undef,
+        ($member->id, $self->group->id, 0, GRANT_DIRECT));
+}
+
+sub remove_member {
+    my ($self, $member) = @_;
+    if (!blessed $member) {
+        if ($member =~ /^\d+$/) {
+            $member = Bugzilla::User->check({id => $member});
+        } else {
+            $member = Bugzilla::User->check($member);
+        }
+    }
+    return if !defined first {$_->id == $self->id} @{$member->agile_teams};
+    my $dbh = Bugzilla->dbh;
+
+    $dbh->do("DELETE FROM user_group_map
+        WHERE user_id = ? AND group_id = ? AND grant_type = ?", undef,
+        ($member->id, $self->group->id, GRANT_DIRECT));
 }
 
 # Team component methods
@@ -299,8 +338,15 @@ sub remove_from_db {
 BEGIN {
     *Bugzilla::User::agile_teams = sub {
         my $self = shift;
-        return Bugzilla::Extension::AgileTools::Team->match(
-            { WHERE => {'group_id IN (?)' => $self->groups_as_string} });
+        return $self->{agile_teams} if defined $self->{agile_teams};
+
+        my @group_ids = map { $_->id } @{$self->direct_group_membership};
+        my $team_ids = Bugzilla->dbh->selectcol_arrayref("
+            SELECT id FROM agile_teams
+             WHERE group_id IN (". join(",", @group_ids) .")");
+        $self->{agile_teams} = Bugzilla::Extension::AgileTools::Team->
+                new_from_list($team_ids);
+        return $self->{agile_teams};
     };
 }
 
@@ -327,10 +373,19 @@ Bugzilla::Extension::AgileTools::Team
     my $process_id = $team->process_id;
 
     my @members = @{$team->memebers};
-    my @component_resposibilities = @{$team->components};
-    my @keyword_resposibilities = @{$team->keywords};
+    $team->add_member("john.doe@example.com");
+    $team->add_member($user_id);
+    my $member = Bugzilla::User->check("john.doe@example.com");
+    $team->remove_member($member);
+    $team->remove_member($user_id);
 
-    my @teams = Bugzilla::Extension::AgileTools::Team->get_all;
+    my @component_resposibilities = @{$team->components};
+    $team->add_component($component_id);
+    $team->remove_component($component_id);
+
+    my @keyword_resposibilities = @{$team->keywords};
+    $team->add_keyword($keyword_id);
+    $team->remove_keyword($keyword_id);
 
     my $user = new Bugzilla::User(1);
     my @teams = @{$user->agile_teams};
@@ -342,6 +397,9 @@ and has all the same methods, plus the ones described below.
 
 =head1 METHODS
 
+
+=head2 Memebers
+
 =over
 
 =item C<members>
@@ -350,6 +408,32 @@ Description: Gets the list of team members.
 
 Returns:     Array ref of L<Bugzilla::User> objects.
 
+
+=item C<add_member($user)>
+
+Description: Adds a new member to the team.
+
+Params:      $user - User object, name or id
+
+Notes:       This method does not check permissions to modify the team or group
+             So remember to check those first
+
+
+=item C<remove_member($user)>
+
+Description: Removes a new member from the team.
+
+Params:      $user - User object, name or id
+
+Notes:       This method does not check permissions to modify the team or group
+             So remember to check those first
+
+=back
+
+
+=head2 Responsibilities
+
+=over
 
 =item C<components>
 
@@ -369,7 +453,7 @@ Returns:     Number of components affected.
 Notes:       Throws an error if component with given id does not exist.
 
 
-=item C<remove_component($component)
+=item C<remove_component($component)>
 
 Description: Removes component from team responsibilities
 
@@ -384,7 +468,26 @@ Description: Gets the list of keywords the team is responsible of
 
 Returns:     Array ref of L<Bugzilla::Keyword> objects
 
+
+=item C<add_keyword($keyword)>
+
+Description: Adds new keyword to team responsibilities
+
+Params:      $keyword - Keyword object or id to add
+
+Returns:     Number of keywords affected
+
+
+=item C<remove_keyword($keyword)>
+
+Description: Adds new keyword to team responsibilities
+
+Params:      $keyword - Keyword object or id to remove
+
+Returns:     Number of keywords affected
+
 =back
+
 
 =head1 RELATED METHODS
 
