@@ -155,38 +155,7 @@ sub remove_member {
         ($member->id, $self->group->id, GRANT_DIRECT));
 }
 
-# Team component methods
-########################
-
-sub components {
-    return $_[0]->_resposibilites("component");
-}
-
-sub add_component {
-    return $_[0]->_add_responsibility("component", $_[1]);
-}
-
-sub remove_component {
-    return $_[0]->_remove_responsibility("component", $_[1]);
-}
-
-# Team keyword methods
-######################
-
-sub keywords {
-    return $_[0]->_resposibilites("keyword");
-}
-
-sub add_keyword {
-    return $_[0]->_add_responsibility("keyword", $_[1]);
-}
-
-sub remove_keyword {
-    return $_[0]->_remove_responsibility("keyword", $_[1]);
-}
-
-
-# Responsibility helpers
+# Responsibility methods
 ########################
 
 use constant _RESP_CLASS => {
@@ -194,31 +163,47 @@ use constant _RESP_CLASS => {
     keyword => "Bugzilla::Keyword",
 };
 
-sub _resposibilites {
+sub components {
+    return $_[0]->resposibilites("component");
+}
+
+sub keywords {
+    return $_[0]->resposibilites("keyword");
+}
+
+sub resposibilites {
     my ($self, $type) = @_;
+    return [] unless $self->id;
     my $cache = $type."s";
     my $table = "agile_team_".$type."_map";
-    return $self->{$cache} if defined $self->{$cache};
-    return [] unless $self->id;
+    my $item_class = $self->_RESP_CLASS->{$type};
+    ThrowUserError("agile_bad_responsibility_type", {type => $type} )
+        unless defined $item_class;
 
-    my $dbh = Bugzilla->dbh;
-    my $item_ids = $dbh->selectcol_arrayref(
-        "SELECT ".$type."_id FROM ".$table."
-         WHERE team_id = ?", undef, $self->id);
+    if (!defined $self->{$cache}) {
+        my $dbh = Bugzilla->dbh;
+        my $item_ids = $dbh->selectcol_arrayref(
+            "SELECT ".$type."_id FROM ".$table."
+             WHERE team_id = ?", undef, $self->id);
 
-    $self->{$cache} = $self->_RESP_CLASS->{$type}->new_from_list($item_ids);
+        $self->{$cache} = $item_class->new_from_list($item_ids);
+    }
     return $self->{$cache};
 }
 
-sub _add_responsibility {
+sub add_responsibility {
     my ($self, $type, $item) = @_;
+
+    my $item_class = $self->_RESP_CLASS->{$type};
+    ThrowUserError("agile_bad_responsibility_type", {type => $type} )
+        unless defined $item_class;
 
     if (!blessed $item) {
         if ($item =~ /^\d+$/) {
-            $item = $self->_RESP_CLASS->{$type}->check({id => $item});
+            $item = $item_class->check({id => $item});
         } else {
             ThrowCodeError("bad_arg", { argument => $item,
-                    function => "Team::_add_responsibility" });
+                    function => "Team::add_responsibility" });
         }
     }
 
@@ -246,8 +231,11 @@ sub _add_responsibility {
     return $rows;
 }
 
-sub _remove_responsibility {
+sub remove_responsibility {
     my ($self, $type, $item) = @_;
+    ThrowUserError("agile_bad_responsibility_type", {type => $type} )
+        unless defined $self->_RESP_CLASS->{$type};
+
     my $item_id;
     if (blessed $item) {
         $item_id = $item->id;
@@ -255,7 +243,7 @@ sub _remove_responsibility {
         $item_id = $item;
     } else {
         ThrowCodeError("bad_arg", { argument => $item,
-                function => "Team::_remove_responsibility" });
+                function => "Team::remove_responsibility" });
     }
 
     my $cache = $type."s";
@@ -276,6 +264,30 @@ sub _remove_responsibility {
         $self->{$cache} = \@items;
     }
     return $rows;
+}
+
+# Permissions
+#############
+
+sub user_can_edit {
+    my ($self, $user) = @_;
+    $user ||= Bugzilla->user;
+    return 0 unless defined $user;
+    if (!defined $self->{user_can_edit}) {
+        if ($user->in_group("admin")) {
+            $self->{user_can_edit} = 1;
+        } else {
+            my $can_edit = Bugzilla->dbh->selectrow_array(
+                "SELECT can_edit_team FROM agile_role
+                   JOIN agile_user_role ON id = role_id
+                  WHERE team_id = ? AND
+                        user_id = ? AND
+                        can_edit_team = 1",
+                undef, ($self->id, $user->id));
+            $self->{user_can_edit} = $can_edit ? 1 : 0;
+        }
+    }
+    return $self->{user_can_edit};
 }
 
 # Overridden Bugzilla::Object methods
@@ -380,12 +392,10 @@ Bugzilla::Extension::AgileTools::Team
     $team->remove_member($user_id);
 
     my @component_resposibilities = @{$team->components};
-    $team->add_component($component_id);
-    $team->remove_component($component_id);
-
     my @keyword_resposibilities = @{$team->keywords};
-    $team->add_keyword($keyword_id);
-    $team->remove_keyword($keyword_id);
+
+    $team->add_responsibility("component", $component_id);
+    $team->remove_responsibility("keyword", $keyword_id);
 
     my $user = new Bugzilla::User(1);
     my @teams = @{$user->agile_teams};
@@ -437,54 +447,63 @@ Notes:       This method does not check permissions to modify the team or group
 
 =item C<components>
 
-Description: Gets the list of components the team is responsible of
+Description: Shorthand for C<Team::responsibilities>
 
 Returns:     Array ref of L<Bugzilla::Component> objects
 
 
-=item C<add_component($component)>
-
-Description: Adds new component into team responsibilities.
-
-Params:      $component - Component object or id to add.
-
-Returns:     Number of components affected.
-
-Notes:       Throws an error if component with given id does not exist.
-
-
-=item C<remove_component($component)>
-
-Description: Removes component from team responsibilities
-
-Params:      $component - Component object or id to remove.
-
-Returns:     Number of components affected.
-
-
 =item C<keywords>
 
-Description: Gets the list of keywords the team is responsible of
+Description: Shorthand for C<Team::responsibilities>
 
 Returns:     Array ref of L<Bugzilla::Keyword> objects
 
 
-=item C<add_keyword($keyword)>
+=item C<responsibilities>
 
-Description: Adds new keyword to team responsibilities
+Description: Gets the list of responsibilities the team has
 
-Params:      $keyword - Keyword object or id to add
+Params:      $type - Responsibility type, 'component' or 'keyword'
 
-Returns:     Number of keywords affected
+Returns:     Array ref of requested type responsibility objects
 
 
-=item C<remove_keyword($keyword)>
+=item C<add_responsibility($type, $item)>
 
-Description: Adds new keyword to team responsibilities
+Description: Adds new component into team responsibilities.
 
-Params:      $keyword - Keyword object or id to remove
+Params:      $type - 'component' or 'keyword'
+             $item - Object or id to add.
 
-Returns:     Number of keywords affected
+Returns:     Number of Objecs added
+
+Notes:       Throws an error if object with given id does not exist.
+
+
+=item C<remove_responsibility($type, $item)>
+
+Description: Removes component from team responsibilities
+
+Params:      $type - 'component' or 'keyword'
+             $item - Object or id to remove.
+
+Returns:     Number of objects removed.
+
+=back
+
+
+=head2 Permissions
+
+=over
+
+=item C<user_can_edit($user)>
+
+Description: Tests if user is allowed to edit the team.
+
+Params:      $user - (optional) C<User> object. Current logged in user is used
+                     if not given.
+
+Returns:     1 if user is allowed to edit the team, 0 otherwise.
 
 =back
 
