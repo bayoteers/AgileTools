@@ -29,6 +29,8 @@ use Bugzilla::User;
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
 
+use Scalar::Util qw(blessed);
+
 use constant DB_TABLE => 'agile_teams';
 
 use constant DB_COLUMNS => qw(
@@ -110,7 +112,98 @@ sub _check_name {
 
 sub members {
     my $self = shift;
+    return [] unless $self->id;
     return $self->group->members_non_inherited();
+}
+
+sub components {
+    my $self = shift;
+    return $self->{components} if defined $self->{components};
+    return [] unless $self->id;
+
+    my $dbh = Bugzilla->dbh;
+    my $component_ids = $dbh->selectcol_arrayref(
+        "SELECT component_id
+           FROM agile_team_component_map
+          WHERE team_id = ?", undef, $self->id);
+    $self->{components} = Bugzilla::Component->new_from_list($component_ids);
+    return $self->{components};
+}
+
+sub add_component {
+    my ($self, $component) = @_;
+
+    if (!blessed $component) {
+        if ($component =~ /^\d+$/) {
+            $component = Bugzilla::Component->check({id => $component});
+        } else {
+            ThrowCodeError("bad_arg", { argument => $component,
+                    function => "Team::add_component" });
+        }
+    }
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+
+    # Check that component is not already included
+    my $included = $dbh->selectrow_array(
+        "SELECT 1 FROM agile_team_component_map
+          WHERE team_id = ? AND component_id = ?",
+        undef, ($self->id, $component->id));
+    my $rows = 0;
+    if (!$included) {
+        $rows = $dbh->do("INSERT INTO agile_team_component_map
+            (team_id, component_id) VALUES (?, ?)",
+            undef, ($self->id, $component->id));
+
+        # Push the new component in cache if it has been fetched
+        push(@{$self->{components}}, $component)
+                if defined $self->{components};
+    }
+    $dbh->bz_commit_transaction();
+    return $rows;
+}
+
+sub remove_component {
+    my ($self, $component) = @_;
+    my $component_id;
+    if (blessed $component) {
+        $component_id = $component->id;
+    } elsif ($component =~ /^\d+$/) {
+        $component_id = $component;
+    } else {
+        ThrowCodeError("bad_arg", { argument => $component,
+                function => "Team::remove_component" });
+    }
+    my $dbh = Bugzilla->dbh;
+
+    my $rows = $dbh->do(
+        "DELETE FROM agile_team_component_map
+               WHERE team_id = ? AND component_id = ?",
+               undef, ($self->id, $component_id));
+
+    if ($rows && defined $self->{components}) {
+        my @components;
+        foreach my $item (@{$self->{components}}) {
+            next if ($item->id == $component_id);
+            push(@components, $item);
+        }
+        $self->{components} = \@components;
+    }
+    return $rows;
+}
+
+
+sub keywords {
+    my $self = shift;
+    return $self->{keywords} if defined $self->{keywords};
+    return [] unless $self->id;
+
+    my $dbh = Bugzilla->dbh;
+    my $keyword_ids = $dbh->selectcol_arrayref(
+        'SELECT keyword_id FROM agile_team_keyword_map '.
+        'WHERE team_id = ?', undef, $self->id);
+    $self->{keywords} = Bugzilla::Keyword->new_from_list($keyword_ids);
+    return $self->{keywords};
 }
 
 sub update {
@@ -198,6 +291,8 @@ Bugzilla::Extension::AgileTools::Team
     my $process_id = $team->process_id;
 
     my @members = @{$team->memebers};
+    my @component_resposibilities = @{$team->components};
+    my @keyword_resposibilities = @{$team->keywords};
 
     my @teams = Bugzilla::Extension::AgileTools::Team->get_all;
 
@@ -207,6 +302,7 @@ Bugzilla::Extension::AgileTools::Team
 =head1 DESCRIPTION
 
 Team.pm presents a AgileTools Team object inherited from L<Bugzilla::Object>
+and has all the same methods, plus the ones described below.
 
 =head1 METHODS
 
@@ -218,9 +314,46 @@ Description: Gets the list of team members.
 
 Returns:     Array ref of L<Bugzilla::User> objects.
 
+
+=item C<components>
+
+Description: Gets the list of components the team is responsible of
+
+Returns:     Array ref of L<Bugzilla::Component> objects
+
+
+=item C<add_component($component)>
+
+Description: Adds new component into team responsibilities.
+
+Params:      $component - Component object or id to add.
+
+Returns:     Number of components affected.
+
+Notes:       Throws an error if component with given id does not exist.
+
+
+=item C<remove_component($component)
+
+Description: Removes component from team responsibilities
+
+Params:      $component - Component object or id to remove.
+
+Returns:     Number of components affected.
+
+
+=item C<keywords>
+
+Description: Gets the list of keywords the team is responsible of
+
+Returns:     Array ref of L<Bugzilla::Keyword> objects
+
 =back
 
 =head1 RELATED METHODS
+
+The L<Bugzilla::User> object is also extended to provide easy access to teams
+where particular user is a member.
 
 =over
 
@@ -228,6 +361,6 @@ Returns:     Array ref of L<Bugzilla::User> objects.
 
 Description: Returns the list of teams the user is member in.
 
-Returns:     Array ref of C<Team> objects.
+Returns:     Array ref of C<Bugzilla::Extension::AgileTools::Team> objects.
 
 =back
