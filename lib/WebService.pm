@@ -28,6 +28,8 @@ use base qw(Bugzilla::WebService);
 
 use Bugzilla::Error;
 
+# Webservice methods in 'Agile' namespace
+
 1;
 
 __END__
