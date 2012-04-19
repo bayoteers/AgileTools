@@ -208,4 +208,9 @@ sub db_schema_abstract_schema {
     };
 }
 
+sub webservice {
+    my ($self, $args) = @_;
+    $args->{dispatch}->{Agile} = "Bugzilla::Extension::AgileTools::WebService";
+}
+
 __PACKAGE__->NAME;
