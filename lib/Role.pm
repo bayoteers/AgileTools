@@ -43,6 +43,8 @@ use constant UPDATE_COLUMNS => qw(
     can_edit_team
 );
 
+use constant VALIDATORS => {};
+
 # Accessors
 ###########
 
