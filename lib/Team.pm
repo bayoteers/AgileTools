@@ -107,8 +107,8 @@ sub _check_name {
     return $name;
 }
 
-# Methods
-#########
+# Team member methods
+#####################
 
 sub members {
     my $self = shift;
@@ -116,95 +116,131 @@ sub members {
     return $self->group->members_non_inherited();
 }
 
-sub components {
-    my $self = shift;
-    return $self->{components} if defined $self->{components};
-    return [] unless $self->id;
+# Team component methods
+########################
 
-    my $dbh = Bugzilla->dbh;
-    my $component_ids = $dbh->selectcol_arrayref(
-        "SELECT component_id
-           FROM agile_team_component_map
-          WHERE team_id = ?", undef, $self->id);
-    $self->{components} = Bugzilla::Component->new_from_list($component_ids);
-    return $self->{components};
+sub components {
+    return $_[0]->_resposibilites("component");
 }
 
 sub add_component {
-    my ($self, $component) = @_;
+    return $_[0]->_add_responsibility("component", $_[1]);
+}
 
-    if (!blessed $component) {
-        if ($component =~ /^\d+$/) {
-            $component = Bugzilla::Component->check({id => $component});
+sub remove_component {
+    return $_[0]->_remove_responsibility("component", $_[1]);
+}
+
+# Team keyword methods
+######################
+
+sub keywords {
+    return $_[0]->_resposibilites("keyword");
+}
+
+sub add_keyword {
+    return $_[0]->_add_responsibility("keyword", $_[1]);
+}
+
+sub remove_keyword {
+    return $_[0]->_remove_responsibility("keyword", $_[1]);
+}
+
+
+# Responsibility helpers
+########################
+
+use constant _RESP_CLASS => {
+    component => "Bugzilla::Component",
+    keyword => "Bugzilla::Keyword",
+};
+
+sub _resposibilites {
+    my ($self, $type) = @_;
+    my $cache = $type."s";
+    my $table = "agile_team_".$type."_map";
+    return $self->{$cache} if defined $self->{$cache};
+    return [] unless $self->id;
+
+    my $dbh = Bugzilla->dbh;
+    my $item_ids = $dbh->selectcol_arrayref(
+        "SELECT ".$type."_id FROM ".$table."
+         WHERE team_id = ?", undef, $self->id);
+
+    $self->{$cache} = $self->_RESP_CLASS->{$type}->new_from_list($item_ids);
+    return $self->{$cache};
+}
+
+sub _add_responsibility {
+    my ($self, $type, $item) = @_;
+
+    if (!blessed $item) {
+        if ($item =~ /^\d+$/) {
+            $item = $self->_RESP_CLASS->{$type}->check({id => $item});
         } else {
-            ThrowCodeError("bad_arg", { argument => $component,
-                    function => "Team::add_component" });
+            ThrowCodeError("bad_arg", { argument => $item,
+                    function => "Team::_add_responsibility" });
         }
     }
+
+    my $cache = $type."s";
+    my $table = "agile_team_".$type."_map";
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
 
-    # Check that component is not already included
+    # Check that item is not already included
     my $included = $dbh->selectrow_array(
-        "SELECT 1 FROM agile_team_component_map
-          WHERE team_id = ? AND component_id = ?",
-        undef, ($self->id, $component->id));
+        "SELECT 1 FROM ".$table."
+          WHERE team_id = ? AND ".$type."_id = ?",
+        undef, ($self->id, $item->id));
     my $rows = 0;
     if (!$included) {
-        $rows = $dbh->do("INSERT INTO agile_team_component_map
-            (team_id, component_id) VALUES (?, ?)",
-            undef, ($self->id, $component->id));
+        $rows = $dbh->do("INSERT INTO ".$table."
+            (team_id, ".$type."_id) VALUES (?, ?)",
+            undef, ($self->id, $item->id));
 
-        # Push the new component in cache if it has been fetched
-        push(@{$self->{components}}, $component)
-                if defined $self->{components};
+        # Push the new item in cache if cache has been fetched
+        push(@{$self->{$cache}}, $item)
+                if defined $self->{$cache};
     }
     $dbh->bz_commit_transaction();
     return $rows;
 }
 
-sub remove_component {
-    my ($self, $component) = @_;
-    my $component_id;
-    if (blessed $component) {
-        $component_id = $component->id;
-    } elsif ($component =~ /^\d+$/) {
-        $component_id = $component;
+sub _remove_responsibility {
+    my ($self, $type, $item) = @_;
+    my $item_id;
+    if (blessed $item) {
+        $item_id = $item->id;
+    } elsif ($item =~ /^\d+$/) {
+        $item_id = $item;
     } else {
-        ThrowCodeError("bad_arg", { argument => $component,
-                function => "Team::remove_component" });
+        ThrowCodeError("bad_arg", { argument => $item,
+                function => "Team::_remove_responsibility" });
     }
+
+    my $cache = $type."s";
+    my $table = "agile_team_".$type."_map";
     my $dbh = Bugzilla->dbh;
 
     my $rows = $dbh->do(
-        "DELETE FROM agile_team_component_map
-               WHERE team_id = ? AND component_id = ?",
-               undef, ($self->id, $component_id));
+        "DELETE FROM ".$table."
+               WHERE team_id = ? AND ".$type."_id = ?",
+               undef, ($self->id, $item_id));
 
-    if ($rows && defined $self->{components}) {
-        my @components;
-        foreach my $item (@{$self->{components}}) {
-            next if ($item->id == $component_id);
-            push(@components, $item);
+    if ($rows && defined $self->{$cache}) {
+        my @items;
+        foreach my $obj (@{$self->{$cache}}) {
+            next if ($obj->id == $item_id);
+            push(@items, $obj);
         }
-        $self->{components} = \@components;
+        $self->{$cache} = \@items;
     }
     return $rows;
 }
 
-
-sub keywords {
-    my $self = shift;
-    return $self->{keywords} if defined $self->{keywords};
-    return [] unless $self->id;
-
-    my $dbh = Bugzilla->dbh;
-    my $keyword_ids = $dbh->selectcol_arrayref(
-        'SELECT keyword_id FROM agile_team_keyword_map '.
-        'WHERE team_id = ?', undef, $self->id);
-    $self->{keywords} = Bugzilla::Keyword->new_from_list($keyword_ids);
-    return $self->{keywords};
-}
+# Overridden Bugzilla::Object methods
+#####################################
 
 sub update {
     my $self = shift;
@@ -257,8 +293,8 @@ sub remove_from_db {
     $group->remove_from_db();
 }
 
-# Add team methods in Bugzilla::User class
-##########################################
+# External team methods
+#######################
 
 BEGIN {
     *Bugzilla::User::agile_teams = sub {
