@@ -101,6 +101,38 @@ sub db_schema_abstract_schema {
                 FIELDS => ['team_id', 'component_id'],
                 TYPE => 'UNIQUE',
             },
+            agile_team_component_team_id_idx => ['team_id'],
+        ],
+    };
+
+    # Team keyword responsibilities
+    $schema->{agile_team_keyword_map} = {
+        FIELDS => [
+            team_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_teams',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            keyword_id => {
+                TYPE => 'INT2',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'keyworddefs',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+        ],
+        INDEXES => [
+            agile_team_keyword_unique_idx => {
+                FIELDS => ['team_id', 'keyword_id'],
+                TYPE => 'UNIQUE',
+            },
+            agile_team_keyword_team_id_idx => ['team_id'],
         ],
     };
 
