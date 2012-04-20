@@ -29,8 +29,50 @@ use Bugzilla::Extension::AgileTools::Team;
 
 our $VERSION = '0.01';
 
-# See the documentation of Bugzilla::Hook ("perldoc Bugzilla::Hook" 
-# in the bugzilla directory) for a list of all available hooks.
+my %template_handlers;
+
+# Add a handler for the given template.
+sub _add_template_handler {
+    my ($name, $sub) = @_;
+    push @{$template_handlers{$name} ||= []}, $sub;
+}
+
+#####################
+# Template handlers #
+#####################
+
+
+#########
+# Hooks #
+#########
+
+sub template_before_process {
+    my ($self, $params) = @_;
+    # Generic values for agiletools templates
+    if ($params->{file} =~ /agiletools/) {
+        my $vars = $params->{vars};
+        $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
+    }
+
+    # Check if _add_template_handler() has been called for the currently rendering
+    # template, and if so, call any associated handlers.
+    my $subs = $template_handlers{$params->{file}};
+    for my $sub (@{$subs || []}) {
+        $sub->($params);
+    }
+}
+
+sub bb_common_links {
+    my ($self, $args) = @_;
+    $args->{links}->{AgileTools} = [
+        {
+            text => "AgileTools",
+            href => "page.cgi?id=agiletools/index.html",
+            priority => 10
+        }
+    ];
+}
+
 sub install_update_db {
     my ($self, $args) = @_;
 
