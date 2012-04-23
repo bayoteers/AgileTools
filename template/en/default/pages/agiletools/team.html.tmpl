@@ -1,0 +1,64 @@
+[%#
+  # The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+  #
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the AgileTools Bugzilla Extension.
+  #
+  # The Initial Developer of the Original Code is Pami Ketolainen
+  # Portions created by the Initial Developer are Copyright (C) 2012 the
+  # Initial Developer. All Rights Reserved.
+  #
+  # Contributor(s):
+  #   Pami Ketolainen <pami.ketolainen@gmail.com>
+  #
+  #%]
+
+[% INCLUDE global/header.html.tmpl title = "Team $team.name" %]
+
+<h1>Team [% team.name FILTER html %]</h1>
+
+<h2>Members</h2>
+<ul>
+[% FOREACH member IN team.members %]
+    <li>[% member.realname FILTER html %]
+        [% FOREACH role IN member.agile_team_roles(team) %]
+            [% IF loop.first %]&nbsp;([% END %]
+            [% role.name FILTER html %]
+            [% IF loop.last %])[% ELSE %],&nbsp;[% END %]
+        [% END %]
+    </li>
+[% END %]
+[% IF team.user_can_edit %]
+    <li><input id="add_member"><button type="button">Add member</button></li>
+[% END %]
+</ul>
+
+<h2>Responsibilities</h2>
+<ul>
+    <li>Components:
+        <ul>
+        [% FOREACH component IN team.components %]
+            <li>[% component.name FILTER html %]</li>
+        [% END %]
+        </ul>
+    </li>
+    <li>Keywords:
+        <ul>
+        [% FOREACH keyword IN team.keywords %]
+            <li>[% keyword.name FILTER html %]</li>
+        [% END %]
+        </ul>
+    </li>
+</ul>
+
+<a href="page.cgi?id=agiletools/index.html">Back to teams list</a>
+
+[% INCLUDE global/footer.html.tmpl %]
+
