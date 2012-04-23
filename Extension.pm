@@ -32,6 +32,7 @@ use Bugzilla::Extension::AgileTools::Role;
 our $VERSION = '0.01';
 
 my %template_handlers;
+my %page_handlers;
 
 # Add a handler for the given template.
 sub _add_template_handler {
@@ -39,25 +40,51 @@ sub _add_template_handler {
     push @{$template_handlers{$name} ||= []}, $sub;
 }
 
-#####################
-# Template handlers #
-#####################
+sub _add_page_handler {
+    my ($name, $sub) = @_;
+    push @{$page_handlers{$name} ||= []}, $sub;
+}
+
+#################
+# Page handlers #
+#################
+
+_add_page_handler("agiletools/index.html", sub {
+    my ($vars) = @_;
+    $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
+});
+
+_add_page_handler("agiletools/team.html", sub {
+    my ($vars) = @_;
+
+    my $cgi = Bugzilla->cgi;
+    my $id = $cgi->param("team_id");
+    my $team = new Bugzilla::Extension::AgileTools::Team($id);
+    ThrowUserError('object_does_not_exist', {
+            id => $id, class => 'AgileTools::Team' })
+        unless defined $team;
+    $vars->{team} = $team;
+});
 
 
 #########
 # Hooks #
 #########
 
+sub page_before_template {
+    my ($self, $params) = @_;
+    my $page_id = $params->{page_id};
+    my $vars = $params->{vars};
+
+    my $subs = $page_handlers{$page_id};
+    for my $sub (@{$subs || []}) {
+        $sub->($vars);
+    }
+}
+
 sub template_before_process {
     my ($self, $params) = @_;
-    # Generic values for agiletools templates
-    if ($params->{file} =~ /agiletools/) {
-        my $vars = $params->{vars};
-        $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
-    }
 
-    # Check if _add_template_handler() has been called for the currently rendering
-    # template, and if so, call any associated handlers.
     my $subs = $template_handlers{$params->{file}};
     for my $sub (@{$subs || []}) {
         $sub->($params);
