@@ -25,7 +25,9 @@ use base qw(Bugzilla::Extension);
 
 # This code for this is in ./extensions/AgileTools/lib/Util.pm
 use Bugzilla::Extension::AgileTools::Util;
+use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Team;
+use Bugzilla::Extension::AgileTools::Role;
 
 our $VERSION = '0.01';
 
@@ -75,7 +77,33 @@ sub bb_common_links {
 
 sub install_update_db {
     my ($self, $args) = @_;
-
+    # Make sure agiletools user group exists
+    if (!defined Bugzilla::Group->new({name => AGILE_USERS_GROUP})) {
+        Bugzilla::Group->create(
+            {
+                name => AGILE_USERS_GROUP,
+                description => "Users allowed to use AgileTools",
+                userregexp => ".*",
+            }
+        );
+    }
+    # Create initial team member roles
+    if (!Bugzilla::Extension::AgileTools::Role->any_exist()) {
+        Bugzilla::Extension::AgileTools::Role->create(
+            {
+                name => "Product Owner",
+                custom => 0,
+                can_edit_team => 1,
+            }
+        );
+        Bugzilla::Extension::AgileTools::Role->create(
+            {
+                name => "Scrum Master",
+                custom => 0,
+                can_edit_team => 1,
+            }
+        );
+    }
 }
 
 sub db_schema_abstract_schema {
