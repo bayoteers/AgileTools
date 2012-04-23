@@ -29,6 +29,8 @@ use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Team;
 use Bugzilla::Extension::AgileTools::Role;
 
+use JSON;
+
 our $VERSION = '0.01';
 
 my %template_handlers;
@@ -64,6 +66,11 @@ _add_page_handler("agiletools/team.html", sub {
             id => $id, class => 'AgileTools::Team' })
         unless defined $team;
     $vars->{team} = $team;
+
+    $team->roles;
+    $team->components;
+    $team->keywords;
+    $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
 });
 
 

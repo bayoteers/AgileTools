@@ -103,7 +103,10 @@ sub _check_name {
 sub members {
     my $self = shift;
     return [] unless $self->id;
-    return $self->group->members_non_inherited();
+    if (!defined $self->{members}) {
+        $self->{members} = $self->group->members_non_inherited();
+    }
+    return $self->{members};
 }
 
 sub add_member {
@@ -136,6 +139,17 @@ sub remove_member {
     for my $role (@{$roles}) {
         $role->remove_user_role($self, $member);
     }
+}
+
+sub roles {
+    my ($self) = @_;
+    if (!defined $self->{roles}) {
+        $self->{roles} = {};
+        foreach my $member (@{$self->members}) {
+            $self->{roles}->{$member->id} = $member->agile_team_roles($self);
+        }
+    }
+    return $self->{roles};
 }
 
 # Responsibility methods

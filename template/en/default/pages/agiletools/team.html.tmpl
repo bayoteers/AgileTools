@@ -34,61 +34,68 @@
  * Page script entry point
  */
 var main = function() {
-    $("#toggle_editor").click(function(){
-        $(".team_editor").toggle();
+    $("button.toggleEditor").click(function(){
+        $(".editor").toggle();
     });
-    $("#new_member").userautocomplete();
-    $("button.add").button({
-        icons:{primary:"ui-icon-circle-plus"},
-        text: false,
-        });
-    $("button.remove").button({
-        icons:{primary:"ui-icon-circle-minus"},
-        text: false,
-        });
-    $("button").not(".add,.remove").button();
+    var team = new Team([% team_json %]);
 };
 
 $(main);
 </script>
 
+<div id="templetes" style="display:none;">
+<table>
+    <tr id="memberTemplate">
+        <td class="name"></td>
+        <td>
+            <button class="editor remove" type="button">Remove member</button>
+        </td>
+        <td>
+            <table class="roles">
+                <tr class="editor">
+                    <td><input class="newRole"></td>
+                    <td><button class="add" type="button">Add role</button></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    
+    <tr id="roleTemplate">
+        <td class="name"></td>
+        <td class="editor">
+            <button class="remove" type="button">Remove role</button>
+        </td>
+    </tr>
+
+    <tr id="responsibilityTemplate">
+        <td class="name"></td>
+        <td class="editor">
+            <button type="button" class="remove">Remove</button>
+        </td>
+    </tr>
+</table>
+
+</div>
+
 <h1>Team [% team.name FILTER html %]</h1>
 
 <h2>Members</h2>
-<table>
+<table id="teamMembers">
     <thead>
         <tr>
             <th>Name</th>
+            <th></th>
             <th>Roles</th>
-            <th class="team_editor">Actions</th>
         </tr>
     </thead>
     <tbody>
-    [% FOREACH member IN team.members %]
-        <tr>
-            <td>[% member.realname FILTER html %]</td>
-            <td>
-            [% FOREACH role IN member.agile_team_roles(team) %]
-                [% role.name FILTER html %]
-            [% END %]
-            </td>
-            [% IF team.user_can_edit %]
-            <td class="team_editor">
-                <button class="remove" type="button"
-                    value="removeMember_[% member.id %]">Remove member</button>
-                <button type="button" value="edit_[% member.id %]">Edit</button>
-            </td>
-            [% END %]
-        </tr>
-    [% END %]
     [% IF team.user_can_edit %]
-        <tr class="team_editor">
+        <tr class="editor">
             <td>
-                <input id="new_member">
+                <input class="newMember">
             </td>
-            <td></td>
             <td>
-                <button id="addMember" class="add" type="button">Add member</button>
+                <button class="add" type="button">Add member</button>
             </td>
         </tr>
     [% END %]
@@ -97,54 +104,38 @@ $(main);
 </ul>
 
 <h2>Responsibilities</h2>
-<table>
-    <thead></thead>
-    <tbody>
+<table id="teamComponents">
+    <thead>
         <tr>
             <th>Components</th>
         </tr>
-        [% FOREACH component IN team.components %]
-        <tr>
-            <td>[% component.name FILTER html %]</td>
-            [% IF team.user_can_edit %]
-            <td class="team_editor">
-                <button type="button" class="remove"
-                        value="removeComponent_[% component.id %]">Remove</button>
-            </td>
-            [% END %]
-        </tr>
-        [% END %]
+    </thead>
+    <tbody>
         [% IF team.user_can_edit %]
-        <tr class="team_editor">
-            <td><input id="new_component"/></td>
-            <td><button type="button" class="add" value="addComponent">Add</button></td>
+        <tr class="editor">
+            <td><input class="newComponent"/></td>
+            <td><button type="button" class="add">Add</button></td>
         </tr>
         [% END %]
-
+    </tbody>
+</table>
+<table id="teamKeywords">
+    <thead>
         <tr>
             <th>Keywords</th>
         </tr>
-        [% FOREACH keyword IN team.keywords %]
-        <tr>
-            <td>[% keyword.name FILTER html %]</td>
-            [% IF team.user_can_edit %]
-            <td class="team_editor">
-                <button type="button" class="remove"
-                        value="removeKeyword_[% keyword.id %]">Remove</button>
-            </td>
-            [% END %]
-        </tr>
-        [% END %]
+    </thead>
+    <tbody>
         [% IF team.user_can_edit %]
-        <tr class="team_editor">
-            <td><input id="new_keyword"/></td>
-            <td><button type="button" class="add" value="addKeyword">Add</button></td>
+        <tr class="editor">
+            <td><input class="newKeyword"/></td>
+            <td><button type="button" class="add">Add</button></td>
         </tr>
         [% END %]
     </tbody>
 </table>
 [% IF team.user_can_edit %]
-<button id="toggle_editor" type="button">Show/Hide Editing</button><br/>
+<button class="toggleEditor" type="button">Show/Hide Editing</button><br/>
 [% END %]
 
 <a href="page.cgi?id=agiletools/index.html">Back to team list</a>
