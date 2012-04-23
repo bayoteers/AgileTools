@@ -152,6 +152,20 @@ sub create {
     return $class->SUPER::create(@_);
 }
 
+# External team methods
+#######################
+
+BEGIN {
+    *Bugzilla::User::agile_team_roles = sub {
+        my ($self, $team) = @_;
+        $self->{agile_team_roles} ||= {};
+        if (!defined $self->{agile_team_roles}->{$team->id}) {
+            $self->{agile_team_roles}->{$team->id} =
+                Bugzilla::Extension::AgileTools::Role->get_user_roles($team, $self);
+        }
+        return $self->{agile_team_roles}->{$team->id}
+    };
+}
 1;
 
 __END__
@@ -170,6 +184,8 @@ Bugzilla::Extension::AgileTools::Role
     my $name = $role->name;
     my $is_custom = $role->custom;
     my $can_edit_team = $role->can_edit_team;
+
+    my $roles = Bugzilla->user-agile_team_roles($team);
 
 =head1 DESCRIPTION
 
