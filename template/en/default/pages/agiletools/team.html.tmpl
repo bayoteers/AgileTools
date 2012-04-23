@@ -20,45 +20,123 @@
   #
   #%]
 
-[% INCLUDE global/header.html.tmpl title = "Team $team.name" %]
+[% INCLUDE global/header.html.tmpl
+    title = "Team $team.name",
+    style_urls = [
+        "extensions/AgileTools/web/css/base.css",
+        ],
+    javascript_urls = [
+        "extensions/AgileTools/web/js/team.js",
+        ],
+%]
+<script>
+/**
+ * Page script entry point
+ */
+var main = function() {
+    $("#toggle_editor").click(function(){
+        $(".team_editor").toggle();
+    });
+    $("#new_member").userautocomplete();
+};
+
+$(main);
+</script>
 
 <h1>Team [% team.name FILTER html %]</h1>
 
 <h2>Members</h2>
-<ul>
-[% FOREACH member IN team.members %]
-    <li>[% member.realname FILTER html %]
-        [% FOREACH role IN member.agile_team_roles(team) %]
-            [% IF loop.first %]&nbsp;([% END %]
-            [% role.name FILTER html %]
-            [% IF loop.last %])[% ELSE %],&nbsp;[% END %]
-        [% END %]
-    </li>
-[% END %]
-[% IF team.user_can_edit %]
-    <li><input id="add_member"><button type="button">Add member</button></li>
-[% END %]
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Roles</th>
+            <th class="team_editor">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    [% FOREACH member IN team.members %]
+        <tr>
+            <td>[% member.realname FILTER html %]</td>
+            <td>
+            [% FOREACH role IN member.agile_team_roles(team) %]
+                [% role.name FILTER html %]
+            [% END %]
+            </td>
+            [% IF team.user_can_edit %]
+            <td class="team_editor">
+                <button type="button" value="edit_[% member.id %]">Edit</button>
+                <button type="button" value="remove_[% member.id %]">Remove</button>
+            </td>
+            [% END %]
+        </tr>
+    [% END %]
+    [% IF team.user_can_edit %]
+        <tr class="team_editor">
+            <td>
+                <input id="new_member">
+            </td>
+            <td>
+                <button id="add_member" type="button">Add</button>
+            </td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
 </ul>
 
 <h2>Responsibilities</h2>
-<ul>
-    <li>Components:
-        <ul>
+<table>
+    <thead></thead>
+    <tbody>
+        <tr>
+            <th>Components</th>
+        </tr>
         [% FOREACH component IN team.components %]
-            <li>[% component.name FILTER html %]</li>
+        <tr>
+            <td>[% component.name FILTER html %]</td>
+            [% IF team.user_can_edit %]
+            <td class="team_editor">
+                <button type="button" value="remove_component_[% component.id %]">
+                Remove</button>
+            </td>
+            [% END %]
+        </tr>
         [% END %]
-        </ul>
-    </li>
-    <li>Keywords:
-        <ul>
-        [% FOREACH keyword IN team.keywords %]
-            <li>[% keyword.name FILTER html %]</li>
+        [% IF team.user_can_edit %]
+        <tr class="team_editor">
+            <td><input id="new_component"/></td>
+            <td><button id="add_component" type="button">Add</button></td>
+        </tr>
         [% END %]
-        </ul>
-    </li>
-</ul>
 
-<a href="page.cgi?id=agiletools/index.html">Back to teams list</a>
+        <tr>
+            <th>Keywords</th>
+        </tr>
+        [% FOREACH keyword IN team.keywords %]
+        <tr>
+            <td>[% keyword.name FILTER html %]</td>
+            [% IF team.user_can_edit %]
+            <td class="team_editor">
+                <button type="button" value="remove_keyword_[% component.id %]">
+                Remove</button>
+            </td>
+            [% END %]
+        </tr>
+        [% END %]
+        [% IF team.user_can_edit %]
+        <tr class="team_editor">
+            <td><input id="new_keyword"/></td>
+            <td><button id="add_keyword" type="button">Add</button></td>
+        </tr>
+        [% END %]
+    </tbody>
+</table>
+[% IF team.user_can_edit %]
+<button id="toggle_editor" type="button">Show/Hide Editing</button><br/>
+[% END %]
+
+<a href="page.cgi?id=agiletools/index.html">Back to team list</a>
 
 [% INCLUDE global/footer.html.tmpl %]
 
