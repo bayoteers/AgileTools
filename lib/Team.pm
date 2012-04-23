@@ -25,6 +25,8 @@ package Bugzilla::Extension::AgileTools::Team;
 
 use base qw(Bugzilla::Object);
 
+use Bugzilla::Extension::AgileTools::Util qw(get_user);
+
 use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
@@ -50,7 +52,6 @@ use constant NUMERIC_COLUMNS => qw(
 
 use constant UPDATE_COLUMNS => qw(
     name
-    group_id
     process_id
 );
 
@@ -74,21 +75,7 @@ sub group {
 ##########
 
 sub set_name       { $_[0]->set('name', $_[1]); }
-sub set_group_id   { $_[0]->set('group_id', $_[1]); }
 sub set_process_id { $_[0]->set('process_id', $_[1]); }
-
-sub set_group {
-    my ($self, $value) = @_;
-    my $group_id;
-    if (ref($value)) {
-        $group_id = $value->id;
-    } elsif ($value =~ /\d+/) {
-        $group_id = $value;
-    } else {
-        $group_id = Bugzilla::Group->check($value)->id;
-    }
-    $self->set('group_id', $group_id);
-}
 
 # Validators
 ############
@@ -96,16 +83,16 @@ sub set_group {
 sub _check_name {
     my ($invocant, $name) = @_;
     $name = trim($name);
-    $name || ThrowUserError("empty_team_name");
+    $name || ThrowUserError("agile_empty_name");
 
     # If we're creating a Team or changing the name...
     if (!ref($invocant) || lc($invocant->name) ne lc($name)) {
-        my $exists = new Bugzilla::Extension::AgileTools::Team({name => $name});
-        ThrowUserError("agile_team_exists", { name => $name }) if $exists;
+        ThrowUserError("agile_team_exists", { name => $name })
+            if defined Bugzilla::Extension::AgileTools::Team->new({name => $name});
 
         # Check that there is no group with that name...
-        $exists = new Bugzilla::Group({name => $name});
-        ThrowUserError("group_exists", { name => $name }) if $exists;
+        ThrowUserError("group_exists", { name => "team ".$name })
+            if defined Bugzilla::Group->new({name => "team ".$name})
     }
     return $name;
 }
@@ -121,17 +108,11 @@ sub members {
 
 sub add_member {
     my ($self, $member) = @_;
-    if (!blessed $member) {
-        if ($member =~ /^\d+$/) {
-            $member = Bugzilla::User->check({id => $member});
-        } else {
-            $member = Bugzilla::User->check($member);
-        }
-    }
+    $member = get_user($member);
+
     return if defined  first { $_->id == $self->id } @{$member->agile_teams};
 
     my $dbh = Bugzilla->dbh;
-
     $dbh->do("INSERT INTO user_group_map (
         user_id, group_id, isbless, grant_type
         ) VALUES (?, ?, ?, ?)", undef,
@@ -140,19 +121,21 @@ sub add_member {
 
 sub remove_member {
     my ($self, $member) = @_;
-    if (!blessed $member) {
-        if ($member =~ /^\d+$/) {
-            $member = Bugzilla::User->check({id => $member});
-        } else {
-            $member = Bugzilla::User->check($member);
-        }
-    }
-    return if !defined first {$_->id == $self->id} @{$member->agile_teams};
-    my $dbh = Bugzilla->dbh;
+    $member = get_user($member);
 
+    return if !defined first {$_->id == $self->id} @{$member->agile_teams};
+
+    my $dbh = Bugzilla->dbh;
     $dbh->do("DELETE FROM user_group_map
         WHERE user_id = ? AND group_id = ? AND grant_type = ?", undef,
         ($member->id, $self->group->id, GRANT_DIRECT));
+
+    # Remove user roles
+    my $roles = Bugzilla::Extension::AgileTools::Role->get_user_roles(
+        $self, $member);
+    for my $role (@{$roles}) {
+        $role->remove_user_role($self, $member);
+    }
 }
 
 # Responsibility methods
@@ -273,21 +256,26 @@ sub user_can_edit {
     my ($self, $user) = @_;
     $user ||= Bugzilla->user;
     return 0 unless defined $user;
-    if (!defined $self->{user_can_edit}) {
+
+    $user = get_user($user);
+    $self->{user_can_edit} = {} unless defined $self->{user_can_edit};
+
+    if (!defined $self->{user_can_edit}->{$user->id}) {
+        my $can_edit = 0;
         if ($user->in_group("admin")) {
-            $self->{user_can_edit} = 1;
+            $can_edit = 1;
         } else {
-            my $can_edit = Bugzilla->dbh->selectrow_array(
-                "SELECT can_edit_team FROM agile_role
-                   JOIN agile_user_role ON id = role_id
-                  WHERE team_id = ? AND
-                        user_id = ? AND
-                        can_edit_team = 1",
-                undef, ($self->id, $user->id));
-            $self->{user_can_edit} = $can_edit ? 1 : 0;
+            my $roles = Bugzilla::Extension::AgileTools::Role->get_user_roles(
+                    $self, $user);
+            foreach my $role (@{$roles}) {
+                if ($role->can_edit_team) {
+                    $can_edit = 1;
+                }
+            }
         }
+        $self->{user_can_edit}->{$user->id} = $can_edit;
     }
-    return $self->{user_can_edit};
+    return $self->{user_can_edit}->{$user->id};
 }
 
 # Overridden Bugzilla::Object methods
@@ -300,7 +288,7 @@ sub update {
 
     if ($changes->{name}) {
         # Reflect the name change on the group
-        my $new_name = $changes->{name}->[1];
+        my $new_name = "team ".$changes->{name}->[1];
         $self->group->set_all({
                 name => $new_name,
                 description => "'" . $new_name . "' team member group",
@@ -323,7 +311,7 @@ sub create {
 
     # Greate the group and put ID in params
     my $group = Bugzilla::Group->create({
-            name => $params->{name},
+            name => "team ".$params->{name},
             description => "'" . $params->{name} . "' team member group",
             # isbuggroup = 0 means system group
             isbuggroup => 0,

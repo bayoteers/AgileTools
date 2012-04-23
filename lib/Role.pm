@@ -24,6 +24,12 @@ package Bugzilla::Extension::AgileTools::Role;
 
 use base qw(Bugzilla::Object);
 
+use Bugzilla::Extension::AgileTools::Util qw(get_user);
+
+use Bugzilla::Constants;
+use Bugzilla::Util qw(trim);
+
+
 use constant DB_TABLE => 'agile_roles';
 
 use constant DB_COLUMNS => qw(
@@ -43,7 +49,9 @@ use constant UPDATE_COLUMNS => qw(
     can_edit_team
 );
 
-use constant VALIDATORS => {};
+use constant VALIDATORS => {
+    name => \&_check_name,
+};
 
 # Accessors
 ###########
@@ -57,6 +65,92 @@ sub can_edit_team { return $_[0]->{can_edit_team}; }
 sub set_name          { $_[0]->set('name', $_[1]); }
 sub set_custom        { $_[0]->set('custom', $_[1]); }
 sub set_can_edit_team { $_[0]->set('can_edit_team', $_[1]); }
+
+# Validators
+############
+
+sub _check_name {
+    my ($invocant, $name) = @_;
+    $name = trim($name);
+    $name || ThrowUserError("agile_empty_name");
+    return $name;
+}
+
+# Methods
+#########
+
+sub add_user_role {
+    my ($self, $team, $user) = @_;
+    $user = get_user($user);
+
+    my $dbh = Bugzilla->dbh;
+
+    $dbh->bz_start_transaction();
+    my $has_role = $dbh->selectrow_array(
+        "SELECT 1 FROM agile_user_role
+          WHERE role_id = ? AND
+                team_id = ? AND
+                user_id = ?",
+        undef, ($self->id, $team->id, $user->id));
+    if (!$has_role) {
+        $dbh->do("INSERT INTO agile_user_role
+                              (role_id, team_id, user_id)
+                       VALUES (?, ?, ?)",
+            undef, ($self->id, $team->id, $user->id));
+    }
+    $dbh->bz_commit_transaction();
+}
+
+sub remove_user_role {
+    my ($self, $team, $user) = @_;
+    $user = get_user($user);
+
+    my $dbh = Bugzilla->dbh;
+
+    $dbh->bz_start_transaction();
+    my $has_role = $dbh->selectrow_array(
+        "SELECT 1 FROM agile_user_role
+          WHERE role_id = ? AND
+                team_id = ? AND
+                user_id = ?",
+        undef, ($self->id, $team->id, $user->id));
+    if ($has_role) {
+        $dbh->do("DELETE_FROM agile_user_role
+                        WHERE role_id = ? AND
+                              team_id = ? AND
+                              user_id = ?",
+            undef, ($self->id, $team->id, $user->id));
+    }
+    $dbh->bz_commit_transaction();
+}
+
+sub get_user_roles {
+    my ($class, $team, $user) = @_;
+    $user = get_user($user);
+    my $dbh = Bugzilla->dbh;
+
+    my $role_ids = $dbh->selectcol_arrayref(
+        "SELECT role_id FROM agile_user_role
+          WHERE team_id = ? AND
+                user_id = ?",
+        undef, ($team->id, $user->id));
+    return $class->new_from_list($role_ids);
+}
+
+# Overridden Bugzilla::Object methods
+#####################################
+
+sub create {
+    my $class = shift;
+    my ($params) = @_;
+
+    # Display the initial roles added on checksetup run
+    if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
+        print "Creating AgileTools team member role '". $params->{name} ."'\n";
+    }
+
+    return $class->SUPER::create(@_);
+}
 
 1;
 
@@ -81,3 +175,45 @@ Bugzilla::Extension::AgileTools::Role
 
 Role object represents a user role in a team and defines some permissions that
 the user has regarding the team. Role is inherited from L<Bugzilla::Object>.
+
+=head1 FIELDS
+
+=over
+
+=item C<name> - Role name
+
+=item C<is_custom> - Is this a custom role or built-in
+
+=item C<can_edit_team> - IS the member with this role allowed to edit the team
+
+=back
+
+=head1 METHODS
+
+=over
+
+=item C<add_user_role($team, $user)>
+
+Description: Add role for user in specific team
+
+Params:      $team - Team object where user role is added
+             $user - User object, id or login name for which the role is added
+
+=item C<remove_user_role($team, $user)>
+
+Description: Remove user role in specific team.
+
+Params:      $team - Team object where user role is removed
+             $user - User object, id or login name from which the role is
+                     removed
+
+=item C<get_user_roles($team, $user)>
+
+Description: Get users roles in specific team.
+
+Params:      $team - Team object for which to get the roles
+             $user - User object, id or login name for which to get the roles
+
+Returns:     Array ref of Role objects
+
+=back

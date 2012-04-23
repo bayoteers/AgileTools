@@ -23,8 +23,20 @@ package Bugzilla::Extension::AgileTools::Util;
 use strict;
 use base qw(Exporter);
 our @EXPORT = qw(
-    
+    get_user
 );
+
+sub get_user {
+    my $user = shift;
+    if (!blessed $user) {
+        if ($user =~ /^\d+$/) {
+            $user = Bugzilla::User->check({id => $user});
+        } else {
+            $user = Bugzilla::User->check($user);
+        }
+    }
+    return $user;
+}
 
 # This file can be loaded by your extension via 
 # "use Bugzilla::Extension::AgileTools::Util". You can put functions
@@ -32,3 +44,34 @@ our @EXPORT = qw(
 # @EXPORT.)
 
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Util
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Util;
+
+    my $user = get_user(1);
+    my $user = get_user('john.doe@example.com');
+
+=head1 DESCRIPTION
+
+AgileTools extension utility functions
+
+=head1 FUNCTIONS
+
+=over
+
+=item C<get_user($user)>
+
+Description: Gets user object or throws error if user is not found
+
+Params:      $user -> User ID or login name
+
+Returns:     L<Bugzilla::User> object
+
+=back
