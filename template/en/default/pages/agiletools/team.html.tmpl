@@ -38,6 +38,15 @@ var main = function() {
         $(".team_editor").toggle();
     });
     $("#new_member").userautocomplete();
+    $("button.add").button({
+        icons:{primary:"ui-icon-circle-plus"},
+        text: false,
+        });
+    $("button.remove").button({
+        icons:{primary:"ui-icon-circle-minus"},
+        text: false,
+        });
+    $("button").not(".add,.remove").button();
 };
 
 $(main);
@@ -65,8 +74,9 @@ $(main);
             </td>
             [% IF team.user_can_edit %]
             <td class="team_editor">
+                <button class="remove" type="button"
+                    value="removeMember_[% member.id %]">Remove member</button>
                 <button type="button" value="edit_[% member.id %]">Edit</button>
-                <button type="button" value="remove_[% member.id %]">Remove</button>
             </td>
             [% END %]
         </tr>
@@ -76,8 +86,9 @@ $(main);
             <td>
                 <input id="new_member">
             </td>
+            <td></td>
             <td>
-                <button id="add_member" type="button">Add</button>
+                <button id="addMember" class="add" type="button">Add member</button>
             </td>
         </tr>
     [% END %]
@@ -97,8 +108,8 @@ $(main);
             <td>[% component.name FILTER html %]</td>
             [% IF team.user_can_edit %]
             <td class="team_editor">
-                <button type="button" value="remove_component_[% component.id %]">
-                Remove</button>
+                <button type="button" class="remove"
+                        value="removeComponent_[% component.id %]">Remove</button>
             </td>
             [% END %]
         </tr>
@@ -106,7 +117,7 @@ $(main);
         [% IF team.user_can_edit %]
         <tr class="team_editor">
             <td><input id="new_component"/></td>
-            <td><button id="add_component" type="button">Add</button></td>
+            <td><button type="button" class="add" value="addComponent">Add</button></td>
         </tr>
         [% END %]
 
@@ -118,8 +129,8 @@ $(main);
             <td>[% keyword.name FILTER html %]</td>
             [% IF team.user_can_edit %]
             <td class="team_editor">
-                <button type="button" value="remove_keyword_[% component.id %]">
-                Remove</button>
+                <button type="button" class="remove"
+                        value="removeKeyword_[% keyword.id %]">Remove</button>
             </td>
             [% END %]
         </tr>
@@ -127,7 +138,7 @@ $(main);
         [% IF team.user_can_edit %]
         <tr class="team_editor">
             <td><input id="new_keyword"/></td>
-            <td><button id="add_keyword" type="button">Add</button></td>
+            <td><button type="button" class="add" value="addKeyword">Add</button></td>
         </tr>
         [% END %]
     </tbody>
