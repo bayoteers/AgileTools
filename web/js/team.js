@@ -104,7 +104,7 @@ var Team = Base.extend({
     rpc: function(method, params)
     {
         var rpc = new Rpc("Agile.Team", method, params);
-        rpc.fail(function(error) {alert(method + " failed: " + error);});
+        rpc.fail(function(error) {alert(method + " failed: " + error.message);});
         return rpc;
     },
 
@@ -121,11 +121,31 @@ var Team = Base.extend({
                 this._insertMember(member);
             }
         }
+        this.memberTable.find("input.newMember").val("");
     },
 
     _removeMemberClick: function(event)
     {
-        alert("remove member " + event.data.memberId);
+        this.rpc("remove_member", {
+                    id: this.id, user: event.data.memberId})
+            .done($.proxy(this, "_removeMemberDone"));
+
+    },
+    _removeMemberDone: function(result)
+    {
+        var ids = [];
+        for (var i=0; i < result.length; i++) {
+            ids.push(result[i].userid);
+        }
+        var team = this;
+        this.memberTable.children("tr").not(".editor").each(function() {
+            var $row = $(this);
+            var id = $row.data("memberId");
+            if(id && ids.indexOf(id) == -1) {
+                $row.remove();
+                delete team.members[id];
+            }
+        });
     },
     _addRoleClick: function(event)
     {
