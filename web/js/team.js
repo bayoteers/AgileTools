@@ -27,16 +27,10 @@ var Team = Base.extend({
             $roles.find("button.add").click(
                     {memberId: member.userid, input: $newRole},
                     $.proxy(this, "_addRoleClick"));
+
             for (var j=0; j < teamData.roles[member.userid].length; j++) {
                 var role = teamData.roles[member.userid][j];
-                member.roles[role.id] = role;
-                var $roleRow = cloneTemplate("#roleTemplate");
-                $roleRow.find(".name").text(role.name);
-                $roleRow.data("roleId", role.id);
-                $roleRow.find("button.remove").click(
-                        {memberId: member.userid, roleId: role.id},
-                        $.proxy(this, "_removeRoleClick"));
-                $roles.find("tr").last().before($roleRow);
+                this._insertRole(member, role);
             }
         }
 
@@ -92,6 +86,7 @@ var Team = Base.extend({
         member.roles = {};
         this.members[member.userid] = member;
         var $row = cloneTemplate("#memberTemplate");
+        member.row = $row;
         $row.data("memberId", member.userid);
         $row.find(".name").text(member.realname);
         $row.find("button.remove").click(
@@ -99,6 +94,19 @@ var Team = Base.extend({
                     $.proxy(this, "_removeMemberClick"));
         this.memberTable.find("tr").last().before($row);
         return $row;
+    },
+
+    _insertRole: function(member, role)
+    {
+        member.roles[role.id] = role;
+        var $roleRow = cloneTemplate("#roleTemplate");
+        $roleRow.find(".name").text(role.name);
+        $roleRow.data("roleId", role.id);
+        $roleRow.find("button.remove").click(
+                {memberId: member.userid, roleId: role.id},
+                $.proxy(this, "_removeRoleClick"));
+        member.row.find(".roles").find("tr").last().before($roleRow);
+        return $roleRow;
     },
 
     rpc: function(method, params)
@@ -114,6 +122,7 @@ var Team = Base.extend({
                     id: this.id, user: event.data.input.val()})
             .done($.proxy(this, "_addMemberDone"));
     },
+
     _addMemberDone: function(result) {
         for (var i=0; i < result.length; i++) {
             var member = result[i];
@@ -131,6 +140,7 @@ var Team = Base.extend({
             .done($.proxy(this, "_removeMemberDone"));
 
     },
+
     _removeMemberDone: function(result)
     {
         var ids = [];
@@ -147,16 +157,39 @@ var Team = Base.extend({
             }
         });
     },
+
     _addRoleClick: function(event)
     {
-        alert("add role " + event.data.input.val() + " for "
-                + event.data.memberId);
+        this.rpc("add_member_role", {
+                    id: this.id, user: event.data.memberId,
+                    role: event.data.input.val()})
+            .done($.proxy(this, "_addMemberRoleDone"));
     },
+    _addMemberRoleDone: function(result)
+    {
+        var member = this.members[result.userid];
+        this._insertRole(member, result.role)
+    },
+
     _removeRoleClick: function(event)
     {
-        alert("remove role " + event.data.roleId + " from "
-                + event.data.memberId);
+        this.rpc("remove_member_role", {
+                    id: this.id, user: event.data.memberId,
+                    role: event.data.roleId})
+            .done($.proxy(this, "_removeMemberRoleDone"));
     },
+    _removeMemberRoleDone: function(result)
+    {
+        var member = this.members[result.userid];
+        member.row.find(".roles tr").each(function() {
+            var $row = $(this);
+            if ($row.data("roleId") == result.role.id) {
+                $row.remove();
+            }
+        });
+        delete member.roles[result.role.id];
+    },
+
     _addComponentClick: function(event)
     {
         alert("add component " + event.data.input.val());
