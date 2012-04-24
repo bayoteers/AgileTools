@@ -29,18 +29,9 @@ use base qw(Bugzilla::WebService);
 use Bugzilla::Error;
 use Bugzilla::Extension::AgileTools::Team;
 
-# Webservice methods in 'Agile.Team' namespace
+use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
 
-sub _get_team {
-    my ($self, $id, $edit) = @_;
-    my $team = Bugzilla::Extension::AgileTools::Team->new($id);
-    ThrowUserError('object_does_not_exist', {
-            id => $id, class => 'AgileTools::Team' })
-        unless defined $team;
-    ThrowUserError('agile_team_edit_not_allowed', {name => $team->name})
-        if ($edit && !$team->user_can_edit);
-    return $team;
-}
+# Webservice methods in 'Agile.Team' namespace
 
 sub update {
     my ($self, $params) = @_;
@@ -50,7 +41,7 @@ sub update {
             param => 'id'})
         unless defined $params->{id};
 
-    my $team = $self->_get_team(delete $params->{id}, 1);
+    my $team = get_team(delete $params->{id}, 1);
     $team->set_all($params);
     return $team->update();
 }
@@ -62,7 +53,7 @@ sub add_member {
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member',
             param => 'user'}) unless defined $params->{user};
 
-    my $team = $self->_get_team($params->{id}, 1);
+    my $team = get_team($params->{id}, 1);
     $team->add_member($params->{user});
     return $team->members;
 }
@@ -74,9 +65,39 @@ sub remove_member {
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member',
             param => 'user'}) unless defined $params->{user};
 
-    my $team = $self->_get_team($params->{id}, 1);
+    my $team = get_team($params->{id}, 1);
     $team->remove_member($params->{user});
     return $team->members;
+}
+
+sub add_member_role {
+    my ($self, $params) = @_;
+    ThrowCodeError('param_required', {function => 'Agile.Team.add_member_role',
+            param => 'id'}) unless defined $params->{id};
+    ThrowCodeError('param_required', {function => 'Agile.Team.add_member_role',
+            param => 'user'}) unless defined $params->{user};
+    ThrowCodeError('param_required', {function => 'Agile.Team.add_member_role',
+            param => 'role'}) unless defined $params->{role};
+    my $team = get_team($params->{id}, 1);
+    my $role = get_role($params->{role});
+    my $user = get_user($params->{user});
+    $role->add_user_role($team, $user);
+    return {userid => $user->id, role => $role};
+}
+
+sub remove_member_role {
+    my ($self, $params) = @_;
+    ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
+            param => 'id'}) unless defined $params->{id};
+    ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
+            param => 'user'}) unless defined $params->{user};
+    ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
+            param => 'role'}) unless defined $params->{role};
+    my $team = get_team($params->{id}, 1);
+    my $role = get_role($params->{role});
+    my $user = get_user($params->{user});
+    $role->remove_user_role($team, $user);
+    return {userid => $user->id, role => $role};
 }
 
 sub add_responsibility {
@@ -88,7 +109,7 @@ sub add_responsibility {
     ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
             param => 'item_id'}) unless defined $params->{item_id};
 
-    my $team = $self->_get_team($params->{id}, 1);
+    my $team = get_team($params->{id}, 1);
     $team->add_responsibility($params->{type}, $params->{item_id});
     return $team->responsibilities($params->{type});
 }
@@ -102,7 +123,7 @@ sub remove_responsibility {
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_responsibility',
             param => 'item_id'}) unless defined $params->{item_id};
 
-    my $team = $self->_get_team($params->{id}, 1);
+    my $team = get_team($params->{id}, 1);
     $team->remove_responsibility($params->{type}, $params->{item_id});
     return $team->responsibilities($params->{type});
 }

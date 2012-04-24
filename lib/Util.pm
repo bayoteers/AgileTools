@@ -25,7 +25,11 @@ use strict;
 use base qw(Exporter);
 our @EXPORT = qw(
     get_user
+    get_team
+    get_role
 );
+
+use Bugzilla::Error;
 
 use Scalar::Util qw(blessed);
 
@@ -39,6 +43,29 @@ sub get_user {
         }
     }
     return $user;
+}
+
+sub get_team {
+    my ($id, $edit) = @_;
+    my $team = Bugzilla::Extension::AgileTools::Team->new($id);
+    ThrowUserError('object_does_not_exist', {
+            id => $id, class => 'AgileTools::Team' })
+        unless defined $team;
+    ThrowUserError('agile_team_edit_not_allowed', {name => $team->name})
+        if ($edit && !$team->user_can_edit);
+    return $team;
+}
+
+sub get_role {
+    my $role = shift;
+    if (!blessed $role) {
+        if ($role =~ /^\d+$/) {
+            $role = Bugzilla::Extension::AgileTools::Role->check({id => $role});
+        } else {
+            $role = Bugzilla::Extension::AgileTools::Role->check($role);
+        }
+    }
+    return $role;
 }
 
 # This file can be loaded by your extension via 
@@ -61,6 +88,11 @@ Bugzilla::Extension::AgileTools::Util
     my $user = get_user(1);
     my $user = get_user('john.doe@example.com');
 
+    my $team = get_team($team_id);
+
+    my $role = get_role($role_id);
+    my $role = get_role("Scrum Master");
+
 =head1 DESCRIPTION
 
 AgileTools extension utility functions
@@ -76,5 +108,24 @@ Description: Gets user object or throws error if user is not found
 Params:      $user -> User ID or login name
 
 Returns:     L<Bugzilla::User> object
+
+
+=item C<get_team($team_id, $edit)>
+
+Description: Gets team object or throws error if team is not found
+
+Params:      $team_id -> Team ID
+             $edit - If true, checks that user is allowed to edit the team
+
+Returns:     L<Bugzilla::Extension::AgileTools::Team> object
+
+
+=item C<get_role($role)>
+
+Description: Gets role object or throws error if role is not found
+
+Params:      $role -> Role ID or name
+
+Returns:     L<Bugzilla::Extension::AgileTools::Role> object
 
 =back
