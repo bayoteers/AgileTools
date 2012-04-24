@@ -23,7 +23,7 @@ var Team = Base.extend({
 
             // MEMBER ROLES
             var $roles = $row.find(".roles");
-            var $newRole = $roles.find("input.newRole");
+            var $newRole = $roles.find("select.newRole");
             $roles.find("button.add").click(
                     {memberId: member.userid, input: $newRole},
                     $.proxy(this, "_addRoleClick"));
@@ -43,7 +43,7 @@ var Team = Base.extend({
         // COMPONENTS
         var $componentTable = $("#teamComponents tbody");
         $componentTable.find("button.add").click(
-                {input: $componentTable.find("input.newComponent")},
+                {input: $componentTable.find("select.newComponent")},
                 $.proxy(this, "_addComponentClick"));
         for (var i=0; i< teamData.components.length; i++) {
             var comp = teamData.components[i];
@@ -61,7 +61,7 @@ var Team = Base.extend({
         // KEYWORDS
         var $keywordTable = $("#teamKeywords tbody");
         $keywordTable.find("button.add").click(
-                {input: $keywordTable.find("input.newKeyword")},
+                {input: $keywordTable.find("select.newKeyword")},
                 $.proxy(this, "_addKeywordClick"));
         for (var i=0; i< teamData.keywords.length; i++) {
             var keyw = teamData.keywords[i];

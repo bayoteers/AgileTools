@@ -53,7 +53,13 @@ $(main);
         <td>
             <table class="roles">
                 <tr class="editor">
-                    <td><input class="newRole"></td>
+                    <td>
+                        <select class="newRole">
+                        [% FOREACH role IN roles %]
+                            <option value="[% role.id %]">[% role.name FILTER html %]</option>
+                        [% END %]
+                        </select>
+                    </td>
                     <td><button class="add" type="button">Add role</button></td>
                 </tr>
             </table>
@@ -113,7 +119,13 @@ $(main);
     <tbody>
         [% IF team.user_can_edit %]
         <tr class="editor">
-            <td><input class="newComponent"/></td>
+            <td>
+                <select class="newComponent"/>
+                [% FOREACH component IN components %]
+                    <option value="[% component.id %]">[% component.name FILTER html %]</option>
+                [% END %]
+                </select>
+            </td>
             <td><button type="button" class="add">Add</button></td>
         </tr>
         [% END %]
@@ -128,7 +140,13 @@ $(main);
     <tbody>
         [% IF team.user_can_edit %]
         <tr class="editor">
-            <td><input class="newKeyword"/></td>
+            <td>
+                <select class="newKeyword"/>
+                [% FOREACH keyword IN keywords %]
+                    <option value="[% keyword.id %]">[% keyword.name FILTER html %]</option>
+                [% END %]
+                </select>
+            </td>
             <td><button type="button" class="add">Add</button></td>
         </tr>
         [% END %]

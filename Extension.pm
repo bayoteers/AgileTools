@@ -66,7 +66,21 @@ _add_page_handler("agiletools/team.html", sub {
             id => $id, class => 'AgileTools::Team' })
         unless defined $team;
     $vars->{team} = $team;
+    $vars->{roles} = Bugzilla::Extension::AgileTools::Role->match();
 
+    # TODO these values are probably cached already
+    $vars->{keywords} = Bugzilla::Keyword->match();
+    my @components;
+    foreach my $product (Bugzilla::Product->get_all()) {
+        next unless Bugzilla->user->can_see_product($product->name);
+        foreach my $component (@{$product->components}) {
+            push(@components, {
+                    id => $component->id,
+                    name => $product->name . " : " . $component->name,
+                });
+        }
+    }
+    $vars->{components} = \@components;
     $team->roles;
     $team->components;
     $team->keywords;
