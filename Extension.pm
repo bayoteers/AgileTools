@@ -54,6 +54,16 @@ sub _add_page_handler {
 
 _add_page_handler("agiletools/teams.html", sub {
     my ($vars) = @_;
+    my $cgi = Bugzilla->cgi;
+    if ($cgi->param("action") eq "remove") {
+        ThrowUserError("agile_team_manage_denied")
+            unless user_can_manage_teams;
+        my $team = Bugzilla::Extension::AgileTools::Team->check({
+                id => $cgi->param("team_id")});
+        $vars->{team} = {name=>$team->name};
+        $team->remove_from_db();
+        $vars->{message} = "agile_team_removed";
+    }
     $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
     $vars->{can_manage_teams} = user_can_manage_teams();
 });
@@ -62,11 +72,18 @@ _add_page_handler("agiletools/team.html", sub {
     my ($vars) = @_;
 
     my $cgi = Bugzilla->cgi;
-    my $id = $cgi->param("team_id");
-    my $team = new Bugzilla::Extension::AgileTools::Team($id);
-    ThrowUserError('object_does_not_exist', {
-            id => $id, class => 'AgileTools::Team' })
-        unless defined $team;
+    my $team;
+    if ($cgi->param("action") eq "create") {
+        ThrowUserError("agile_team_manage_denied")
+            unless user_can_manage_teams;
+        $team = Bugzilla::Extension::AgileTools::Team->create({
+                name => $cgi->param("name")});
+        $vars->{message} = "agile_team_created";
+    } else {
+        my $id = $cgi->param("team_id");
+        $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});
+    }
+
     $vars->{team} = $team;
     $vars->{roles} = Bugzilla::Extension::AgileTools::Role->match();
 
