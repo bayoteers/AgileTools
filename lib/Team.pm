@@ -345,9 +345,18 @@ sub create {
 sub remove_from_db {
     my $self = shift;
     my $group = $self->group;
+    
     $self->SUPER::remove_from_db(@_);
 
-    # We need to trick group to think that its not a system group
+    # Remove users from the group and change the group to non system group
+    # before deleting, so that if it fails, the group can be manually removed
+    # in the admin interface.
+    my $dbh = Bugzilla->dbh;
+    $dbh->do("DELETE FROM user_group_map
+        WHERE group_id = ?", undef, $group->id);
+    $dbh->do("UPDATE groups
+                 SET isbuggroup = 1
+               WHERE id = ?", undef, $group->id);
     $group->{isbuggroup} = 1;
     $group->remove_from_db();
 }
