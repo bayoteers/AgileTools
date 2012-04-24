@@ -21,10 +21,13 @@
 
 package Bugzilla::Extension::AgileTools::Util;
 use strict;
+
 use base qw(Exporter);
 our @EXPORT = qw(
     get_user
 );
+
+use Scalar::Util qw(blessed);
 
 sub get_user {
     my $user = shift;
