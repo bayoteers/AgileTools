@@ -23,7 +23,8 @@ package Bugzilla::Extension::AgileTools;
 use strict;
 use base qw(Bugzilla::Extension);
 
-# This code for this is in ./extensions/AgileTools/lib/Util.pm
+use Bugzilla::Error;
+
 use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Team;
@@ -51,9 +52,10 @@ sub _add_page_handler {
 # Page handlers #
 #################
 
-_add_page_handler("agiletools/index.html", sub {
+_add_page_handler("agiletools/teams.html", sub {
     my ($vars) = @_;
     $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
+    $vars->{can_manage_teams} = user_can_manage_teams();
 });
 
 _add_page_handler("agiletools/team.html", sub {
@@ -95,6 +97,10 @@ _add_page_handler("agiletools/team.html", sub {
 sub page_before_template {
     my ($self, $params) = @_;
     my $page_id = $params->{page_id};
+    if ($page_id =~ /^agiletools\//) {
+        ThrowUserError("agile_access_denied")
+            unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
+    }
     my $vars = $params->{vars};
 
     my $subs = $page_handlers{$page_id};
@@ -114,10 +120,11 @@ sub template_before_process {
 
 sub bb_common_links {
     my ($self, $args) = @_;
-    $args->{links}->{AgileTools} = [
+    return unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
+    $args->{links}->{teams} = [
         {
-            text => "AgileTools",
-            href => "page.cgi?id=agiletools/index.html",
+            text => "Teams",
+            href => "page.cgi?id=agiletools/teams.html",
             priority => 10
         }
     ];

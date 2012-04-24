@@ -11,4 +11,8 @@
 [% ELSIF error == "agile_bad_responsibility_type" %]
     [% title = "Unknown responsibility type" %]
     Responsibility type of [% type FILTER html %] is not supported
+[% ELSIF error == "agile_access_denied" %]
+    [% title = "Access denied" %]
+    You are not allowed to access AgileTools on this Bugzilla. Contact admins
+    for adding you to AgileTools user group.
 [% END %]

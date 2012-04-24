@@ -27,6 +27,7 @@ our @EXPORT = qw(
     get_user
     get_team
     get_role
+    user_can_manage_teams
 );
 
 use Bugzilla::Error;
@@ -66,6 +67,12 @@ sub get_role {
         }
     }
     return $role;
+}
+
+sub user_can_manage_teams {
+    my $user = shift || Bugzilla->user;
+    $user = get_user($user);
+    return $user->in_group("admin");
 }
 
 # This file can be loaded by your extension via 
