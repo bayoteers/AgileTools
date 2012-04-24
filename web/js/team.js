@@ -9,23 +9,17 @@ var Team = Base.extend({
         this.members = {};
         this.components = {};
         this.keywords = {};
+        this.id = teamData.id;
 
         // MEMBERS
-        var $memberTable = $("#teamMembers tbody");
-        $memberTable.find("button.add").click(
-                {input: $memberTable.find("input.newMember")},
+        this.memberTable = $("#teamMembers tbody");
+        this.memberTable.find("button.add").click(
+                {input: this.memberTable.find("input.newMember")},
                 $.proxy(this, "_addMemberClick"));
 
         for (var i=0; i< teamData.members.length; i++) {
             var member = teamData.members[i];
-
-            this.members[member.userid] = member;
-            var $row = cloneTemplate("#memberTemplate");
-            $row.data("memberId", member.userid);
-            $row.find(".name").text(member.realname);
-            $row.find("button.remove").click(
-                        {memberId: member.userid},
-                        $.proxy(this, "_removeMemberClick"));
+            var $row = this._insertMember(member);
 
             // MEMBER ROLES
             var $roles = $row.find(".roles");
@@ -33,7 +27,6 @@ var Team = Base.extend({
             $roles.find("button.add").click(
                     {memberId: member.userid, input: $newRole},
                     $.proxy(this, "_addRoleClick"));
-            member.roles = {};
             for (var j=0; j < teamData.roles[member.userid].length; j++) {
                 var role = teamData.roles[member.userid][j];
                 member.roles[role.id] = role;
@@ -43,9 +36,8 @@ var Team = Base.extend({
                 $roleRow.find("button.remove").click(
                         {memberId: member.userid, roleId: role.id},
                         $.proxy(this, "_removeRoleClick"));
-                $roles.prepend($roleRow);
+                $roles.find("tr").last().before($roleRow);
             }
-            $memberTable.prepend($row);
         }
 
         // COMPONENTS
@@ -95,10 +87,42 @@ var Team = Base.extend({
         $("button").not(".add,.remove").button();
     },
 
+    _insertMember: function(member)
+    {
+        member.roles = {};
+        this.members[member.userid] = member;
+        var $row = cloneTemplate("#memberTemplate");
+        $row.data("memberId", member.userid);
+        $row.find(".name").text(member.realname);
+        $row.find("button.remove").click(
+                    {memberId: member.userid},
+                    $.proxy(this, "_removeMemberClick"));
+        this.memberTable.find("tr").last().before($row);
+        return $row;
+    },
+
+    rpc: function(method, params)
+    {
+        var rpc = new Rpc("Agile.Team", method, params);
+        rpc.fail(function(error) {alert(method + " failed: " + error);});
+        return rpc;
+    },
+
     _addMemberClick: function(event)
     {
-        alert("add member " + event.data.input.val());
+        this.rpc("add_member", {
+                    id: this.id, user: event.data.input.val()})
+            .done($.proxy(this, "_addMemberDone"));
     },
+    _addMemberDone: function(result) {
+        for (var i=0; i < result.length; i++) {
+            var member = result[i];
+            if (this.members[member.userid] == undefined) {
+                this._insertMember(member);
+            }
+        }
+    },
+
     _removeMemberClick: function(event)
     {
         alert("remove member " + event.data.memberId);
