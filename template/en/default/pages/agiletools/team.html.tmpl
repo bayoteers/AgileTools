@@ -55,6 +55,7 @@ $(main);
                 <tr class="editor">
                     <td>
                         <select class="newRole">
+                            <option value=""></option>
                         [% FOREACH role IN roles %]
                             <option value="[% role.id %]">[% role.name FILTER html %]</option>
                         [% END %]
@@ -121,6 +122,7 @@ $(main);
         <tr class="editor">
             <td>
                 <select class="newComponent"/>
+                    <option value=""></option>
                 [% FOREACH component IN components %]
                     <option value="[% component.id %]">[% component.name FILTER html %]</option>
                 [% END %]
@@ -142,6 +144,7 @@ $(main);
         <tr class="editor">
             <td>
                 <select class="newKeyword"/>
+                    <option value=""></option>
                 [% FOREACH keyword IN keywords %]
                     <option value="[% keyword.id %]">[% keyword.name FILTER html %]</option>
                 [% END %]
