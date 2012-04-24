@@ -99,6 +99,7 @@ sub add_user_role {
             undef, ($self->id, $team->id, $user->id));
     }
     $dbh->bz_commit_transaction();
+    return $has_role ? 0 : 1;
 }
 
 sub remove_user_role {
@@ -115,13 +116,14 @@ sub remove_user_role {
                 user_id = ?",
         undef, ($self->id, $team->id, $user->id));
     if ($has_role) {
-        $dbh->do("DELETE_FROM agile_user_role
+        $dbh->do("DELETE FROM agile_user_role
                         WHERE role_id = ? AND
                               team_id = ? AND
                               user_id = ?",
             undef, ($self->id, $team->id, $user->id));
     }
     $dbh->bz_commit_transaction();
+    return $has_role ? 1 : 0;
 }
 
 sub get_user_roles {

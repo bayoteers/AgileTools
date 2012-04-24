@@ -167,6 +167,7 @@ var Team = Base.extend({
     },
     _addMemberRoleDone: function(result)
     {
+        if (!result.role) return;
         var member = this.members[result.userid];
         this._insertRole(member, result.role)
     },
@@ -180,6 +181,7 @@ var Team = Base.extend({
     },
     _removeMemberRoleDone: function(result)
     {
+        if (!result.role) return;
         var member = this.members[result.userid];
         member.row.find(".roles tr").each(function() {
             var $row = $(this);

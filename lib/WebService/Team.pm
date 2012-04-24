@@ -81,8 +81,10 @@ sub add_member_role {
     my $team = get_team($params->{id}, 1);
     my $role = get_role($params->{role});
     my $user = get_user($params->{user});
-    $role->add_user_role($team, $user);
-    return {userid => $user->id, role => $role};
+    if ($role->add_user_role($team, $user)) {
+        return {userid => $user->id, role => $role};
+    }
+    return {};
 }
 
 sub remove_member_role {
@@ -96,8 +98,10 @@ sub remove_member_role {
     my $team = get_team($params->{id}, 1);
     my $role = get_role($params->{role});
     my $user = get_user($params->{user});
-    $role->remove_user_role($team, $user);
-    return {userid => $user->id, role => $role};
+    if ($role->remove_user_role($team, $user)) {
+        return {userid => $user->id, role => $role};
+    }
+    return {};
 }
 
 sub add_responsibility {
