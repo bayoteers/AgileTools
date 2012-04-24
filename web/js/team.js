@@ -112,7 +112,8 @@ var Team = Base.extend({
     rpc: function(method, params)
     {
         var rpc = new Rpc("Agile.Team", method, params);
-        rpc.fail(function(error) {alert(method + " failed: " + error.message);});
+        rpc.fail(function(error) {alert("Operation failed: " + (error.message ||
+                        "Probably internal error.."));});
         return rpc;
     },
 
