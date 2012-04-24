@@ -115,7 +115,8 @@ sub add_responsibility {
 
     my $team = get_team($params->{id}, 1);
     $team->add_responsibility($params->{type}, $params->{item_id});
-    return $team->responsibilities($params->{type});
+    return {type => $params->{type},
+        items => $team->responsibilities($params->{type})};
 }
 
 sub remove_responsibility {
@@ -129,7 +130,8 @@ sub remove_responsibility {
 
     my $team = get_team($params->{id}, 1);
     $team->remove_responsibility($params->{type}, $params->{item_id});
-    return $team->responsibilities($params->{type});
+    return {type => $params->{type},
+        items => $team->responsibilities($params->{type})};
 }
 
 

@@ -31,7 +31,7 @@ use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::Error;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(trim trick_taint detaint_natural);
 
 use Scalar::Util qw(blessed);
 use List::Util qw(first);
@@ -161,21 +161,22 @@ use constant _RESP_CLASS => {
 };
 
 sub components {
-    return $_[0]->resposibilites("component");
+    return $_[0]->responsibilities("component");
 }
 
 sub keywords {
-    return $_[0]->resposibilites("keyword");
+    return $_[0]->responsibilities("keyword");
 }
 
-sub resposibilites {
+sub responsibilities {
     my ($self, $type) = @_;
     return [] unless $self->id;
-    my $cache = $type."s";
-    my $table = "agile_team_".$type."_map";
     my $item_class = $self->_RESP_CLASS->{$type};
     ThrowUserError("agile_bad_responsibility_type", {type => $type} )
         unless defined $item_class;
+    trick_taint($type);
+    my $cache = $type."s";
+    my $table = "agile_team_".$type."_map";
 
     if (!defined $self->{$cache}) {
         my $dbh = Bugzilla->dbh;
@@ -194,6 +195,7 @@ sub add_responsibility {
     my $item_class = $self->_RESP_CLASS->{$type};
     ThrowUserError("agile_bad_responsibility_type", {type => $type} )
         unless defined $item_class;
+    trick_taint($type);
 
     if (!blessed $item) {
         if ($item =~ /^\d+$/) {
@@ -232,6 +234,7 @@ sub remove_responsibility {
     my ($self, $type, $item) = @_;
     ThrowUserError("agile_bad_responsibility_type", {type => $type} )
         unless defined $self->_RESP_CLASS->{$type};
+    trick_taint($type);
 
     my $item_id;
     if (blessed $item) {
@@ -242,6 +245,9 @@ sub remove_responsibility {
         ThrowCodeError("bad_arg", { argument => $item,
                 function => "Team::remove_responsibility" });
     }
+    ThrowCodeError("bad_arg", { argument => $item,
+                function => "Team::remove_responsibility" })
+        unless detaint_natural($item_id);
 
     my $cache = $type."s";
     my $table = "agile_team_".$type."_map";

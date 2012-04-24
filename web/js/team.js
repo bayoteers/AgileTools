@@ -10,11 +10,14 @@ var Team = Base.extend({
         this.components = {};
         this.keywords = {};
         this.id = teamData.id;
+        this.responsibilities = {component:{}, keyword:{}};
 
         // MEMBERS
         this.memberTable = $("#teamMembers tbody");
         this.memberTable.find("button.add").click(
-                {input: this.memberTable.find("input.newMember")},
+                {
+                    input: this.memberTable.find("input.newMember"),
+                },
                 $.proxy(this, "_addMemberClick"));
 
         for (var i=0; i< teamData.members.length; i++) {
@@ -23,9 +26,11 @@ var Team = Base.extend({
 
             // MEMBER ROLES
             var $roles = $row.find(".roles");
-            var $newRole = $roles.find("select.newRole");
             $roles.find("button.add").click(
-                    {memberId: member.userid, input: $newRole},
+                    {
+                        memberId: member.userid,
+                        input: $roles.find("select.newRole"),
+                    },
                     $.proxy(this, "_addRoleClick"));
 
             for (var j=0; j < teamData.roles[member.userid].length; j++) {
@@ -34,39 +39,33 @@ var Team = Base.extend({
             }
         }
 
+        this.respTables = {};
         // COMPONENTS
         var $componentTable = $("#teamComponents tbody");
         $componentTable.find("button.add").click(
-                {input: $componentTable.find("select.newComponent")},
-                $.proxy(this, "_addComponentClick"));
+                {
+                    input: $componentTable.find("select.newComponent"),
+                    type: "component",
+                },
+                $.proxy(this, "_addRespClick"));
+        this.respTables["component"] = $componentTable;
         for (var i=0; i< teamData.components.length; i++) {
             var comp = teamData.components[i];
-            this.components[comp.id] = comp;
-            var $row = cloneTemplate("#responsibilityTemplate");
-            $row.data("componentId", comp.id);
-            $row.find(".name").text(comp.name);
-            $row.find("button.remove").click(
-                        {componentId: comp.id},
-                        $.proxy(this, "_removeComponentClick"));
-            $componentTable.prepend($row);
-
+            this._insertResp("component", comp);
         }
 
         // KEYWORDS
         var $keywordTable = $("#teamKeywords tbody");
         $keywordTable.find("button.add").click(
-                {input: $keywordTable.find("select.newKeyword")},
-                $.proxy(this, "_addKeywordClick"));
+                {
+                    input: $keywordTable.find("select.newKeyword"),
+                    type: "keyword",
+                },
+                $.proxy(this, "_addRespClick"));
+        this.respTables["keyword"] = $keywordTable;
         for (var i=0; i< teamData.keywords.length; i++) {
             var keyw = teamData.keywords[i];
-            this.keywords[keyw.id] = keyw;
-            var $row = cloneTemplate("#responsibilityTemplate");
-            $row.data("keywordId", keyw.id);
-            $row.find(".name").text(keyw.name);
-            $row.find("button.remove").click(
-                        {keywordId: keyw.id},
-                        $.proxy(this, "_removeKeywordClick"));
-            $keywordTable.prepend($row);
+            this._insertResp("keyword", keyw);
         }
 
         $("input.newMember").userautocomplete();
@@ -107,6 +106,21 @@ var Team = Base.extend({
                 $.proxy(this, "_removeRoleClick"));
         member.row.find(".roles").find("tr").last().before($roleRow);
         return $roleRow;
+    },
+
+    _insertResp: function(type, item)
+    {
+        this.responsibilities[type][item.id] = item;
+        var $row = cloneTemplate("#responsibilityTemplate");
+        $row.data("itemId", item.id);
+        $row.find(".name").text(item.name);
+        $row.find("button.remove").click(
+                    {
+                        itemId: item.id,
+                        type: type,
+                    },
+                    $.proxy(this, "_removeRespClick"));
+        this.respTables[type].find("tr").last().before($row);
     },
 
     rpc: function(method, params)
@@ -193,20 +207,51 @@ var Team = Base.extend({
         delete member.roles[result.role.id];
     },
 
-    _addComponentClick: function(event)
+    _addRespClick: function(event)
     {
-        alert("add component " + event.data.input.val());
+        this.rpc("add_responsibility", {
+                    id: this.id,
+                    type: event.data.type,
+                    item_id: event.data.input.val()})
+            .done($.proxy(this, "_addRespDone"));
     },
-    _removeComponentClick: function(event)
+
+    _addRespDone: function(result)
     {
-        alert("remove component " + event.data.componentId);
+        var type = result.type;
+        for (var i=0; i < result.items.length; i++) {
+            var item = result.items[i];
+            if (this.responsibilities[type][item.id] == undefined) {
+                this._insertResp(type, item);
+            }
+        }
+
     },
-    _addKeywordClick: function(event)
+    _removeRespClick: function(event)
     {
-        alert("add keyword " + event.data.input.val());
+        this.rpc("remove_responsibility",
+                {
+                    id: this.id,
+                    type: event.data.type,
+                    item_id: event.data.itemId,
+                }
+            ).done($.proxy(this, "_removeRespDone"));
     },
-    _removeKeywordClick: function(event)
+    _removeRespDone: function(result)
     {
-        alert("remove keyword " + event.data.keywordId);
+        var type = result.type;
+        var ids = [];
+        for (var i=0; i < result.items.length; i++) {
+            ids.push(result.items[i].id);
+        }
+        var team = this;
+        this.respTables[type].children("tr").not(".editor").each(function() {
+            var $row = $(this);
+            var id = $row.data("itemId");
+            if(id && ids.indexOf(id) == -1) {
+                $row.remove();
+                delete team.responsibilities[type][id];
+            }
+        });
     },
 });
