@@ -25,14 +25,6 @@ var Team = Base.extend({
             var $row = this._insertMember(member);
 
             // MEMBER ROLES
-            var $roles = $row.find(".roles");
-            $roles.find("button.add").click(
-                    {
-                        memberId: member.userid,
-                        input: $roles.find("select.newRole"),
-                    },
-                    $.proxy(this, "_addRoleClick"));
-
             for (var j=0; j < teamData.roles[member.userid].length; j++) {
                 var role = teamData.roles[member.userid][j];
                 this._insertRole(member, role);
@@ -69,12 +61,8 @@ var Team = Base.extend({
         }
 
         $("input.newMember").userautocomplete();
-        $("button.add").button({
+        $("table").not("#templates").find("button.add").button({
             icons:{primary:"ui-icon-circle-plus"},
-            text: false,
-        });
-        $("button.remove").button({
-            icons:{primary:"ui-icon-circle-minus"},
             text: false,
         });
         $("button").not(".add,.remove").button();
@@ -88,9 +76,24 @@ var Team = Base.extend({
         member.row = $row;
         $row.data("memberId", member.userid);
         $row.find(".name").text(member.realname);
-        $row.find("button.remove").click(
-                    {memberId: member.userid},
-                    $.proxy(this, "_removeMemberClick"));
+        $row.find("button.remove")
+            .button({
+                icons:{primary:"ui-icon-circle-minus"},
+                text: false,})
+            .click({
+                memberId: member.userid},
+                $.proxy(this, "_removeMemberClick"));
+            
+        var $roles = $row.find(".roles");
+        $roles.find("button.add")
+            .button({
+                icons:{primary:"ui-icon-circle-plus"},
+                text: false,})
+            .click({
+                memberId: member.userid,
+                input: $roles.find("select.newRole"),
+                }, $.proxy(this, "_addRoleClick"));
+
         this.memberTable.find("tr").last().before($row);
         return $row;
     },
@@ -101,9 +104,14 @@ var Team = Base.extend({
         var $roleRow = cloneTemplate("#roleTemplate");
         $roleRow.find(".name").text(role.name);
         $roleRow.data("roleId", role.id);
-        $roleRow.find("button.remove").click(
-                {memberId: member.userid, roleId: role.id},
-                $.proxy(this, "_removeRoleClick"));
+        $roleRow.find("button.remove")
+            .button({
+                icons:{primary:"ui-icon-circle-minus"},
+                text: false,
+            }).click({
+                memberId: member.userid,
+                roleId: role.id
+                }, $.proxy(this, "_removeRoleClick"));
         member.row.find(".roles").find("tr").last().before($roleRow);
         return $roleRow;
     },
@@ -114,12 +122,15 @@ var Team = Base.extend({
         var $row = cloneTemplate("#responsibilityTemplate");
         $row.data("itemId", item.id);
         $row.find(".name").text(item.name);
-        $row.find("button.remove").click(
-                    {
-                        itemId: item.id,
-                        type: type,
-                    },
-                    $.proxy(this, "_removeRespClick"));
+        $row.find("button.remove")
+            .button({
+                icons:{primary:"ui-icon-circle-minus"},
+                text: false,
+            }).click({
+                itemId: item.id,
+                type: type,
+                }, $.proxy(this, "_removeRespClick"));
+
         this.respTables[type].find("tr").last().before($row);
     },
 
