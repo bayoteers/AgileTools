@@ -19,6 +19,16 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::WebService::Team
+
+=head1 DESCRIPTION
+
+Web service methods available under namespase 'Agile.Team'.
+
+=cut
+
 use strict;
 use warnings;
 
@@ -31,7 +41,18 @@ use Bugzilla::Extension::AgileTools::Team;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
 
-# Webservice methods in 'Agile.Team' namespace
+=head1 METHODS
+
+=over
+
+=item C<update>
+
+    Description: Updates team details
+    Params:      id - Team id
+                 name - (optional) Change team name
+    Returns:     Changes hash like from L<Bugzilla::Object::update> 
+
+=cut
 
 sub update {
     my ($self, $params) = @_;
@@ -46,6 +67,15 @@ sub update {
     return $team->update();
 }
 
+=item C<add_member>
+
+    Description: Add a new team member
+    Params:      id - Team ID
+                 user - User login name or id
+    Returns:     The new list of team members
+
+=cut
+
 sub add_member {
     my ($self, $params) = @_;
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member',
@@ -58,6 +88,15 @@ sub add_member {
     return $team->members;
 }
 
+=item C<remove_member>
+
+    Description: Remove a team member
+    Params:      id - Team ID
+                 user - User login name or id
+    Returns:     The new list of team members
+
+=cut
+
 sub remove_member {
     my ($self, $params) = @_;
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member',
@@ -69,6 +108,16 @@ sub remove_member {
     $team->remove_member($params->{user});
     return $team->members;
 }
+
+=item C<add_member_role>
+
+    Description: Add new role to a team member
+    Params:      id - Team id
+                 user - Team member user id or login name
+                 role -> New role id or name
+    Returns:     The new role or empty object if user already had that role
+
+=cut
 
 sub add_member_role {
     my ($self, $params) = @_;
@@ -87,6 +136,17 @@ sub add_member_role {
     return {};
 }
 
+=item C<remove_member_role>
+
+    Description: Remove role from a team member
+    Params:      id - Team id
+                 user - Team member user id or login name
+                 role -> New role id or name
+    Returns:     The role that was removed or empty object if user did not have
+                 that role
+
+=cut
+
 sub remove_member_role {
     my ($self, $params) = @_;
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
@@ -104,6 +164,16 @@ sub remove_member_role {
     return {};
 }
 
+=item C<add_responsibility>
+
+    Description: Add a new team responsibility
+    Params:      id => Team ID
+                 type => Responsibility type, 'component' or 'keyword'
+                 item_id - Object ID of the component or keyword
+    Returns:     The new list of team responsibilities for that type
+
+=cut
+
 sub add_responsibility {
     my ($self, $params) = @_;
     ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
@@ -118,6 +188,16 @@ sub add_responsibility {
     return {type => $params->{type},
         items => $team->responsibilities($params->{type})};
 }
+
+=item C<remove_responsibility>
+
+    Description: Remove a team responsibility
+    Params:      id - Team ID
+                 type - Responsibility type, 'component' or 'keyword'
+                 item_id - Object ID of the component or keyword
+    Returns:     The new list of team responsibilities for that type
+
+=cut
 
 sub remove_responsibility {
     my ($self, $params) = @_;
@@ -139,69 +219,9 @@ sub remove_responsibility {
 
 __END__
 
-=head1 NAME
-
-Bugzilla::Extension::AgileTools::WebService::Team
-
-=head1 SYNOPSIS
-
-Web service methods available under namespase 'Agile.Team'.
-
-=head1 METHODS
-
-=over
-
-=item C<update>
-
-Description: Updates team details
-
-Params:      id - Team id
-             name - (optional) Change team name
-
-Returns:     Changes hash like from L<Bugzilla::Object::update> 
-
-
-=item C<add_member>
-
-Description: Add a new team member
-
-Params:      id - Team ID
-             user - User login name or id
-
-Returns:     The new list of team members
-
-
-=item C<remove_member>
-
-Description: Remove a team member
-
-Params:      id - Team ID
-             user - User login name or id
-
-Returns:     The new list of team members
-
-
-=item C<add_responsibility>
-
-Description: Add a new team responsibility
-
-Params:      id => Team ID
-             type => Responsibility type, 'component' or 'keyword'
-             item_id => Responsibility ID
-
-Returns:     The new list of team responsibilities for that type
-
-
-=item C<remove_responsibility>
-
-Description: Remove a team responsibility
-
-Params:      id - Team ID
-             type - Responsibility type, 'component' or 'keyword'
-             item_id - Responsibility ID
-
-Returns:     The new list of team responsibilities for that type
-
-
 =back
+
+=head1 SEE ALSO
+
+L<Bugzilla::WebService>
 

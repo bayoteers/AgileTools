@@ -19,6 +19,42 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Role
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Role;
+
+    my $role = new Bugzilla::Extension::AgileTools::Role(1);
+
+    my $role_id = $role->id;
+    my $name = $role->name;
+    my $is_custom = $role->custom;
+    my $can_edit_team = $role->can_edit_team;
+
+    my $roles = Bugzilla->user-agile_team_roles($team);
+
+=head1 DESCRIPTION
+
+Role object represents a user role in a team and defines some permissions that
+the user has regarding the team. Role is inherited from L<Bugzilla::Object>.
+
+=head1 FIELDS
+
+=over
+
+=item C<name> - Role name
+
+=item C<is_custom> - Is this a custom role or built-in
+
+=item C<can_edit_team> - IS the member with this role allowed to edit the team
+
+=back
+
+=cut
+
 use strict;
 package Bugzilla::Extension::AgileTools::Role;
 
@@ -76,8 +112,17 @@ sub _check_name {
     return $name;
 }
 
-# Methods
-#########
+=head1 METHODS
+
+=over
+
+=item C<add_user_role($team, $user)>
+
+    Description: Add role for user in specific team
+    Params:      $team - Team object where user role is added
+                 $user - User object, id or login name for which the role is added
+
+=cut
 
 sub add_user_role {
     my ($self, $team, $user) = @_;
@@ -101,6 +146,15 @@ sub add_user_role {
     $dbh->bz_commit_transaction();
     return $has_role ? 0 : 1;
 }
+
+=item C<remove_user_role($team, $user)>
+
+    Description: Remove user role in specific team.
+    Params:      $team - Team object where user role is removed
+                 $user - User object, id or login name from which the role is
+                         removed
+
+=cut
 
 sub remove_user_role {
     my ($self, $team, $user) = @_;
@@ -126,6 +180,22 @@ sub remove_user_role {
     return $has_role ? 1 : 0;
 }
 
+=back
+
+=head1 CLASS FUNCTIONS
+
+=over
+
+=item C<get_user_roles($team, $user)>
+
+    Description: Get users roles in specific team.
+    Params:      $team - Team object for which to get the roles
+                 $user - User object, id or login name for which to get the
+                         roles
+    Returns:     Array ref of Role objects
+
+=cut
+
 sub get_user_roles {
     my ($class, $team, $user) = @_;
     $user = get_user($user);
@@ -138,6 +208,7 @@ sub get_user_roles {
         undef, ($team->id, $user->id));
     return $class->new_from_list($role_ids);
 }
+
 
 # Overridden Bugzilla::Object methods
 #####################################
@@ -154,8 +225,26 @@ sub create {
     return $class->SUPER::create(@_);
 }
 
-# External team methods
-#######################
+=back
+
+=head1 RELATED METHODS
+
+=head2 Bugzilla::User object methods
+
+The L<Bugzilla::User> object is also extended to provide easy access to team
+member roles.
+
+    my $roles = Bugzilla->user->agile_team_roles($team);
+
+=over
+
+=item C<agile_team_roles($team)>
+
+    Description: Returns the list of roles the user has in specific team
+    Params:      $team - Team object
+    Returns:     Array ref of C<Bugzilla::Extension::AgileTools::Role> objects.
+
+=cut
 
 BEGIN {
     *Bugzilla::User::agile_team_roles = sub {
@@ -172,66 +261,8 @@ BEGIN {
 
 __END__
 
-=head1 NAME
-
-Bugzilla::Extension::AgileTools::Role
-
-=head1 SYNOPSIS
-
-    use Bugzilla::Extension::AgileTools::Role;
-
-    my $role = new Bugzilla::Extension::AgileTools::Role(1);
-
-    my $role_id = $role->id;
-    my $name = $role->name;
-    my $is_custom = $role->custom;
-    my $can_edit_team = $role->can_edit_team;
-
-    my $roles = Bugzilla->user-agile_team_roles($team);
-
-=head1 DESCRIPTION
-
-Role object represents a user role in a team and defines some permissions that
-the user has regarding the team. Role is inherited from L<Bugzilla::Object>.
-
-=head1 FIELDS
-
-=over
-
-=item C<name> - Role name
-
-=item C<is_custom> - Is this a custom role or built-in
-
-=item C<can_edit_team> - IS the member with this role allowed to edit the team
-
 =back
 
-=head1 METHODS
+=head1 SEE ALSO
 
-=over
-
-=item C<add_user_role($team, $user)>
-
-Description: Add role for user in specific team
-
-Params:      $team - Team object where user role is added
-             $user - User object, id or login name for which the role is added
-
-=item C<remove_user_role($team, $user)>
-
-Description: Remove user role in specific team.
-
-Params:      $team - Team object where user role is removed
-             $user - User object, id or login name from which the role is
-                     removed
-
-=item C<get_user_roles($team, $user)>
-
-Description: Get users roles in specific team.
-
-Params:      $team - Team object for which to get the roles
-             $user - User object, id or login name for which to get the roles
-
-Returns:     Array ref of Role objects
-
-=back
+L<Bugzilla::Object>

@@ -19,6 +19,16 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::WebService
+
+=head1 DESCRIPTION
+
+Webservice methods in 'Agile' namespace
+
+=cut
+
 use strict;
 use warnings;
 
@@ -26,19 +36,16 @@ package Bugzilla::Extension::AgileTools::WebService;
 
 use base qw(Bugzilla::WebService);
 
-use Bugzilla::Error;
+=head1 METHODS
 
-# Webservice methods in 'Agile' namespace
+None at the moment
+
+=cut
 
 1;
 
 __END__
 
-=head1 NAME
+=head1 SEE ALSO
 
-Bugzilla::Extension::AgileTools::WebService
-
-=head1 SYNOPSIS
-
-=head1 METHODS
-
+L<Bugzilla::Extension::AgileTools::WebService::Team>

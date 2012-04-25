@@ -19,6 +19,20 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Constants
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Constans
+
+=head1 DESCRIPTION
+
+Constants used by AgileTools extension.
+
+=cut
+
 package Bugzilla::Extension::AgileTools::Constants;
 use strict;
 use warnings;
@@ -29,6 +43,18 @@ use base qw(Exporter);
     AGILE_USERS_GROUP
 );
 
+=head1 CONSTANTS
+
+=over
+
+=item AGILE_USERS_GROUP - Name of the user group allowed to use AgileTools
+
+=cut
+
 use constant AGILE_USERS_GROUP => "AgileTools users";
 
 1;
+
+__END__
+
+=back

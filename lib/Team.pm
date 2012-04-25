@@ -19,6 +19,45 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 
+=head1 NAME
+
+Bugzilla::Extension::AgileTools::Team
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Extension::AgileTools::Team
+
+    my $team = new Bugzilla::Extension::AgileTools::Team(1);
+
+    my $team_id = $team->id;
+    my $name = $team->name;
+    my $group = $team->group;
+    my $group_id = $team->group_id;
+    my $process_id = $team->process_id;
+
+    my @members = @{$team->memebers};
+    $team->add_member("john.doe@example.com");
+    $team->add_member($user_id);
+    my $member = Bugzilla::User->check("john.doe@example.com");
+    $team->remove_member($member);
+    $team->remove_member($user_id);
+
+    my @component_resposibilities = @{$team->components};
+    my @keyword_resposibilities = @{$team->keywords};
+
+    $team->add_responsibility("component", $component_id);
+    $team->remove_responsibility("keyword", $keyword_id);
+
+    my $user = new Bugzilla::User(1);
+    my @teams = @{$user->agile_teams};
+
+=head1 DESCRIPTION
+
+Team.pm presents a AgileTools Team object inherited from L<Bugzilla::Object>
+and has all the same methods, plus the ones described below.
+
+=cut
+
 use strict;
 use warnings;
 package Bugzilla::Extension::AgileTools::Team;
@@ -59,6 +98,12 @@ use constant VALIDATORS => {
     name => \&_check_name,
 };
 
+# Allowed team responsibility types an corresponding classes
+use constant _RESP_CLASS => {
+    component => "Bugzilla::Component",
+    keyword => "Bugzilla::Keyword",
+};
+
 # Accessors
 ###########
 
@@ -97,8 +142,18 @@ sub _check_name {
     return $name;
 }
 
-# Team member methods
-#####################
+=head1 METHODS
+
+=head2 For managing team members
+
+=over
+
+=item C<members>
+
+    Description: Gets the list of team members.
+    Returns:     Array ref of L<Bugzilla::User> objects.
+
+=cut
 
 sub members {
     my $self = shift;
@@ -108,6 +163,13 @@ sub members {
     }
     return $self->{members};
 }
+
+=item C<add_member($user)>
+
+    Description: Adds a new member to the team.
+    Params:      $user - User object, name or id
+
+=cut
 
 sub add_member {
     my ($self, $member) = @_;
@@ -121,6 +183,13 @@ sub add_member {
         ) VALUES (?, ?, ?, ?)", undef,
         ($member->id, $self->group->id, 0, GRANT_DIRECT));
 }
+
+=item C<remove_member($user)>
+
+    Description: Removes a new member from the team.
+    Params:      $user - User object, name or id
+
+=cut
 
 sub remove_member {
     my ($self, $member) = @_;
@@ -141,6 +210,14 @@ sub remove_member {
     }
 }
 
+=item C<roles>
+
+    Description: Get all team members roles
+    Returns:     Hash ref where keys are userids and values are array refs of
+                 L<Bugzilla::Extension::AgileTools::Role> objects
+
+=cut
+
 sub roles {
     my ($self) = @_;
     if (!defined $self->{roles}) {
@@ -152,21 +229,43 @@ sub roles {
     return $self->{roles};
 }
 
-# Responsibility methods
-########################
+=back
 
-use constant _RESP_CLASS => {
-    component => "Bugzilla::Component",
-    keyword => "Bugzilla::Keyword",
-};
+=head2 For managing team responsibilities
+
+=over
+
+=cut
+
+=item C<components>
+
+    Description: Shorthand for C<Team::responsibilities>
+    Returns:     Array ref of L<Bugzilla::Component> objects
+
+=cut
 
 sub components {
     return $_[0]->responsibilities("component");
 }
 
+=item C<keywords>
+
+    Description: Shorthand for C<Team::responsibilities>
+    Returns:     Array ref of L<Bugzilla::Keyword> objects
+
+=cut
+
 sub keywords {
     return $_[0]->responsibilities("keyword");
 }
+
+=item C<responsibilities($type)>
+
+    Description: Gets the list of responsibilities the team has
+    Params:      $type - Responsibility type, 'component' or 'keyword'
+    Returns:     Array ref of requested type responsibility objects
+
+=cut
 
 sub responsibilities {
     my ($self, $type) = @_;
@@ -188,6 +287,16 @@ sub responsibilities {
     }
     return $self->{$cache};
 }
+
+=item C<add_responsibility($type, $item)>
+
+    Description: Adds new component into team responsibilities.
+    Params:      $type - 'component' or 'keyword'
+                 $item - Object or id to add.
+    Returns:     Number of Objecs added
+    Notes:       Throws an error if object with given id does not exist.
+
+=cut
 
 sub add_responsibility {
     my ($self, $type, $item) = @_;
@@ -230,6 +339,15 @@ sub add_responsibility {
     return $rows;
 }
 
+=item C<remove_responsibility($type, $item)>
+
+    Description: Removes component from team responsibilities
+    Params:      $type - 'component' or 'keyword'
+                 $item - Object or id to remove.
+    Returns:     Number of objects removed.
+
+=cut
+
 sub remove_responsibility {
     my ($self, $type, $item) = @_;
     ThrowUserError("agile_bad_responsibility_type", {type => $type} )
@@ -269,8 +387,20 @@ sub remove_responsibility {
     return $rows;
 }
 
-# Permissions
-#############
+=back
+
+=head2 For user permissions
+
+=over
+
+=item C<user_can_edit($user)>
+
+    Description: Tests if user is allowed to edit the team.
+    Params:      $user - (optional) C<User> object. Current logged in user is used
+                         if not given.
+    Returns:     1 if user is allowed to edit the team, 0 otherwise.
+
+=cut
 
 sub user_can_edit {
     my ($self, $user) = @_;
@@ -361,8 +491,25 @@ sub remove_from_db {
     $group->remove_from_db();
 }
 
-# External team methods
-#######################
+=back
+
+=head1 RELATED METHODS
+
+=head2 Bugzilla::User object methods
+
+The L<Bugzilla::User> object is also extended to provide easy access to teams
+where particular user is a member.
+
+    my $teams = Bugzilla->user->agile_teams;
+
+=over
+
+=item C<Bugzilla::User::agile_teams>
+
+    Description: Returns the list of teams the user is member in.
+    Returns:     Array ref of C<Bugzilla::Extension::AgileTools::Team> objects.
+
+=cut
 
 BEGIN {
     *Bugzilla::User::agile_teams = sub {
@@ -379,163 +526,18 @@ BEGIN {
     };
 }
 
-
-
 1;
 
 __END__
 
-=head1 NAME
-
-Bugzilla::Extension::AgileTools::Team
-
-=head1 SYNOPSIS
-
-    use Bugzilla::Extension::AgileTools::Team
-
-    my $team = new Bugzilla::Extension::AgileTools::Team(1);
-
-    my $team_id = $team->id;
-    my $name = $team->name;
-    my $group = $team->group;
-    my $group_id = $team->group_id;
-    my $process_id = $team->process_id;
-
-    my @members = @{$team->memebers};
-    $team->add_member("john.doe@example.com");
-    $team->add_member($user_id);
-    my $member = Bugzilla::User->check("john.doe@example.com");
-    $team->remove_member($member);
-    $team->remove_member($user_id);
-
-    my @component_resposibilities = @{$team->components};
-    my @keyword_resposibilities = @{$team->keywords};
-
-    $team->add_responsibility("component", $component_id);
-    $team->remove_responsibility("keyword", $keyword_id);
-
-    my $user = new Bugzilla::User(1);
-    my @teams = @{$user->agile_teams};
-
-=head1 DESCRIPTION
-
-Team.pm presents a AgileTools Team object inherited from L<Bugzilla::Object>
-and has all the same methods, plus the ones described below.
-
-=head1 METHODS
-
-
-=head2 Memebers
-
-=over
-
-=item C<members>
-
-Description: Gets the list of team members.
-
-Returns:     Array ref of L<Bugzilla::User> objects.
-
-
-=item C<add_member($user)>
-
-Description: Adds a new member to the team.
-
-Params:      $user - User object, name or id
-
-Notes:       This method does not check permissions to modify the team or group
-             So remember to check those first
-
-
-=item C<remove_member($user)>
-
-Description: Removes a new member from the team.
-
-Params:      $user - User object, name or id
-
-Notes:       This method does not check permissions to modify the team or group
-             So remember to check those first
-
 =back
 
+=head1 NOTES
 
-=head2 Responsibilities
+None of the methods check if user is allowed to modify the teams. This should be
+done by higher level controller methods using this as only a interface to the
+stored data.
 
-=over
+=head1 SEE ALSO
 
-=item C<components>
-
-Description: Shorthand for C<Team::responsibilities>
-
-Returns:     Array ref of L<Bugzilla::Component> objects
-
-
-=item C<keywords>
-
-Description: Shorthand for C<Team::responsibilities>
-
-Returns:     Array ref of L<Bugzilla::Keyword> objects
-
-
-=item C<responsibilities>
-
-Description: Gets the list of responsibilities the team has
-
-Params:      $type - Responsibility type, 'component' or 'keyword'
-
-Returns:     Array ref of requested type responsibility objects
-
-
-=item C<add_responsibility($type, $item)>
-
-Description: Adds new component into team responsibilities.
-
-Params:      $type - 'component' or 'keyword'
-             $item - Object or id to add.
-
-Returns:     Number of Objecs added
-
-Notes:       Throws an error if object with given id does not exist.
-
-
-=item C<remove_responsibility($type, $item)>
-
-Description: Removes component from team responsibilities
-
-Params:      $type - 'component' or 'keyword'
-             $item - Object or id to remove.
-
-Returns:     Number of objects removed.
-
-=back
-
-
-=head2 Permissions
-
-=over
-
-=item C<user_can_edit($user)>
-
-Description: Tests if user is allowed to edit the team.
-
-Params:      $user - (optional) C<User> object. Current logged in user is used
-                     if not given.
-
-Returns:     1 if user is allowed to edit the team, 0 otherwise.
-
-=back
-
-
-=head1 RELATED METHODS
-
-The L<Bugzilla::User> object is also extended to provide easy access to teams
-where particular user is a member.
-
-=over
-
-=item C<Bugzilla::User::agile_teams>
-
-Description: Returns the list of teams the user is member in.
-
-Returns:     Array ref of C<Bugzilla::Extension::AgileTools::Team> objects.
-
-=back
+L<Bugzilla::Object>
