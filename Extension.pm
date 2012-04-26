@@ -24,6 +24,8 @@ use strict;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Error;
+use Bugzilla::Constants;
+use Bugzilla::Field;
 
 use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::Constants;
@@ -31,6 +33,8 @@ use Bugzilla::Extension::AgileTools::Team;
 use Bugzilla::Extension::AgileTools::Role;
 
 use JSON;
+
+use Data::Dumper;
 
 our $VERSION = '0.01';
 
@@ -147,6 +151,53 @@ sub bb_common_links {
     ];
 }
 
+sub buglist_columns {
+    my ($self, $args) = @_;
+    my $columns = $args->{columns};
+    $columns->{"agile_pool.name"} = {
+        name => "COALESCE(agile_pool.name,'')",
+        title => "Pool" };
+    $columns->{"bug_agile_pool.pool_order"} = {
+        name => "COALESCE(bug_agile_pool.bug_order, -1)",
+        title => "Pool order" };
+    $columns->{"bug_agile_pool.pool_id"} = {
+        name => "COALESCE(bug_agile_pool.pool_id, -1)",
+        title => "Pool ID" };
+    warn "******COLUMNS*******";
+    foreach my $line (split(/\n/, Dumper($columns))) {
+        warn $line;
+    }
+}
+
+sub buglist_column_joins {
+    my ($self, $args) = @_;
+    my $joins = $args->{column_joins};
+    $joins->{"agile_pool.name"} = {
+        table => "bug_agile_pool",
+        as => "bug_agile_pool",
+        then_to => {
+            as => "agile_pool",
+            table => "agile_pool",
+            from => "bug_agile_pool.pool_id",
+            to => "id",
+        },
+    };
+    $joins->{"bug_agile_pool.pool_order"} = {
+        table => "bug_agile_pool",
+        as => "bug_agile_pool",
+    };
+    $joins->{"bug_agile_pool.pool_id"} = {
+        table => "bug_agile_pool",
+        as => "bug_agile_pool",
+    };
+    warn "******JOINS*******";
+    foreach my $line (split(/\n/, Dumper($joins))) {
+        warn $line;
+    }
+}
+
+
+
 sub install_update_db {
     my ($self, $args) = @_;
     # Make sure agiletools user group exists
@@ -176,6 +227,96 @@ sub install_update_db {
             }
         );
     }
+    # Create pool filed definitions
+    if (!defined Bugzilla::Field->new({name=>"agile_pool.name"})) {
+        Bugzilla::Field->create(
+            {
+                name => "agile_pool.name",
+                description => "Pool",
+                buglist => 1,
+            }
+        );
+    }
+    if (!defined Bugzilla::Field->new({name=>"bug_agile_pool.pool_order"})) {
+        Bugzilla::Field->create(
+            {
+                name => "bug_agile_pool.pool_order",
+                description => "Pool Order",
+                is_numeric => 1,
+                buglist => 1,
+            }
+        );
+    }
+    if (!defined Bugzilla::Field->new({name=>"bug_agile_pool.pool_id"})) {
+        Bugzilla::Field->create(
+            {
+                name => "bug_agile_pool.pool_id",
+                description => "Pool ID",
+                is_numeric => 1,
+                buglist => 1,
+            }
+        );
+    }
+}
+
+sub search_operator_field_override {
+    my ($self, $args) = @_;
+    my $operators = $args->{'operators'};
+    my $search = $args->{'search'};
+
+    $operators->{'agile_pool.name'}->{_default} = sub {
+        _add_agile_pool_join($search, @_)
+    };
+    $operators->{'bug_agile_pool.pool_order'}->{_default} = sub {
+        _add_bug_agile_pool_join($search, @_)
+    };
+    $operators->{'bug_agile_pool.pool_id'}->{_default} = sub {
+        _add_bug_agile_pool_join($search, @_)
+    };
+}
+
+sub _add_agile_pool_join {
+    my $search = shift;
+    my ($invocant, $args) = @_;
+    my ($joins) = @$args{qw(joins)};
+    if(! grep $_->{table} eq 'bug_agile_pool', @$joins) {
+        my $join = {
+            table => "bug_agile_pool",
+            as => "bug_agile_pool",
+            then_to => {
+                table => "agile_pool",
+                as => "agile_pool",
+                from => "bug_agile_pool.pool_id",
+                to => "id",
+            },
+        };
+        push(@$joins, $join);
+    }
+    $args->{full_field} = "COALESCE($args->{full_field}, '')";
+    warn "******OPERATOR ARGS*******";
+    foreach my $line (split(/\n/, Dumper($args))) {
+        warn $line;
+    }
+    $search->_do_operator_function($args);
+}
+
+sub _add_bug_agile_pool_join {
+    my $search = shift;
+    my ($invocant, $args) = @_;
+    my ($joins) = @$args{qw(joins)};
+    if(! grep $_->{table} eq 'bug_agile_pool', @$joins) {
+        my $join = {
+            table => "bug_agile_pool",
+            as => "bug_agile_pool",
+        };
+        push(@$joins, $join);
+    }
+    $args->{full_field} = "COALESCE($args->{full_field}, -1)";
+    warn "******OPERATOR ARGS*******";
+    foreach my $line (split(/\n/, Dumper($args))) {
+        warn $line;
+    }
+    $search->_do_operator_function($args);
 }
 
 sub db_schema_abstract_schema {
@@ -346,6 +487,54 @@ sub db_schema_abstract_schema {
                 TYPE   => 'UNIQUE',
             },
             agile_user_role_user_idx => ['user_id'],
+        ],
+    };
+
+    # Bug pool
+    $schema->{agile_pool} = {
+        FIELDS => [
+            id => {
+                TYPE => 'MEDIUMSERIAL',
+                NOTNULL => 1,
+                PRIMARYKEY => 1,
+            },
+            name => {
+                TYPE => 'varchar(64)',
+                NOTNULL => 1,
+            },
+        ],
+    };
+
+    $schema->{bug_agile_pool} = {
+        FIELDS => [
+            bug_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'bugs',
+                    COLUMN => 'bug_id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            pool_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            pool_order => {
+                TYPE => 'INT3',
+            },
+
+        ],
+        INDEXES => [
+            agile_bug_pool_uniq_idx => {
+                FIELDS => ['pool_id', 'bug_id'],
+                TYPE => 'UNIQUE',
+            },
         ],
     };
 }
