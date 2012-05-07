@@ -158,7 +158,7 @@ sub buglist_columns {
         name => "COALESCE(agile_pool.name,'')",
         title => "Pool" };
     $columns->{"bug_agile_pool.pool_order"} = {
-        name => "COALESCE(bug_agile_pool.bug_order, -1)",
+        name => "COALESCE(bug_agile_pool.pool_order, -1)",
         title => "Pool order" };
     $columns->{"bug_agile_pool.pool_id"} = {
         name => "COALESCE(bug_agile_pool.pool_id, -1)",
@@ -535,6 +535,43 @@ sub db_schema_abstract_schema {
                 FIELDS => ['pool_id', 'bug_id'],
                 TYPE => 'UNIQUE',
             },
+        ],
+    };
+
+    # Sprint
+    $schema->{agile_sprint} = {
+        FIELDS => [
+            id => {
+                TYPE => 'MEDIUMSERIAL',
+                NOTNULL => 1,
+                PRIMARYKEY => 1,
+            },
+            start_date => {
+                TYPE => 'DATETIME',
+                NOTNULL => 1,
+            },
+            end_date => {
+                TYPE => 'DATETIME',
+                NOTNULL => 1,
+            },
+            team_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_team',
+                    COLUMN => 'id',
+                },
+            },
+            pool_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                },
+            },
+        ],
+        INDEXES => [
         ],
     };
 }
