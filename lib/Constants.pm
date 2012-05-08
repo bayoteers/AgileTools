@@ -41,6 +41,8 @@ use base qw(Exporter);
 
 @Bugzilla::Extension::AgileTools::Constants::EXPORT = qw(
     AGILE_USERS_GROUP
+    AGILE_PROCESS_SCRUM
+    AGILE_PROCESS_NAMES
 );
 
 =head1 CONSTANTS
@@ -52,6 +54,20 @@ use base qw(Exporter);
 =cut
 
 use constant AGILE_USERS_GROUP => "AgileTools users";
+
+=item AGILE_PROCESS_SCRUM - Process type for Scrum
+
+=cut
+
+use constant AGILE_PROCESS_SCRUM => 1;
+
+=item AGILE_PROCESS_NAMES - Process type - name mapping
+
+=cut
+
+use constant AGILE_PROCESS_NAMES => {
+    AGILE_PROCESS_SCRUM => "Scrum",
+};
 
 1;
 

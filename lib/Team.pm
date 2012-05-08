@@ -65,6 +65,7 @@ package Bugzilla::Extension::AgileTools::Team;
 use base qw(Bugzilla::Object);
 
 use Bugzilla::Extension::AgileTools::Util qw(get_user);
+use Bugzilla::Extension::AgileTools::Constants;
 
 use Bugzilla::Constants;
 use Bugzilla::Group;
@@ -96,6 +97,7 @@ use constant UPDATE_COLUMNS => qw(
 
 use constant VALIDATORS => {
     name => \&_check_name,
+    process_id => \&_check_process_id,
 };
 
 # Allowed team responsibility types an corresponding classes
@@ -141,6 +143,15 @@ sub _check_name {
     }
     return $name;
 }
+
+sub _check_process_id {
+    my ($invocant, $id) = @_;
+    if (!defined AGILE_PROCESS_NAMES->{$id}) {
+        ThrowUserError("agile_unkown_process", { id => $id });
+    }
+    return $id;
+}
+
 
 =head1 METHODS
 

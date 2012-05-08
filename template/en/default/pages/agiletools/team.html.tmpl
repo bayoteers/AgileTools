@@ -86,6 +86,8 @@ $(main);
 
 <h1>Team [% team.name FILTER html %]</h1>
 
+[% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+
 <h2>Members</h2>
 <table id="teamMembers">
     <thead>
