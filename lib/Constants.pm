@@ -66,7 +66,7 @@ use constant AGILE_PROCESS_SCRUM => 1;
 =cut
 
 use constant AGILE_PROCESS_NAMES => {
-    AGILE_PROCESS_SCRUM => "Scrum",
+    AGILE_PROCESS_SCRUM, "Scrum",
 };
 
 1;

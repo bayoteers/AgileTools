@@ -146,9 +146,14 @@ sub _check_name {
 
 sub _check_process_id {
     my ($invocant, $id) = @_;
-    if (!defined AGILE_PROCESS_NAMES->{$id}) {
-        ThrowUserError("agile_unkown_process", { id => $id });
-    }
+    warn "validating process id ".$id;
+    
+    ThrowUserError("agile_unkown_process", { id => $id })
+        unless ($id =~ /\d*/);
+
+    ThrowUserError("agile_unkown_process", { id => $id })
+        unless defined AGILE_PROCESS_NAMES->{$id};
+
     return $id;
 }
 
@@ -529,7 +534,7 @@ BEGIN {
 
         my @group_ids = map { $_->id } @{$self->direct_group_membership};
         my $team_ids = Bugzilla->dbh->selectcol_arrayref("
-            SELECT id FROM agile_teams
+            SELECT id FROM agile_team
              WHERE group_id IN (". join(",", @group_ids) .")");
         $self->{agile_teams} = Bugzilla::Extension::AgileTools::Team->
                 new_from_list($team_ids);

@@ -81,13 +81,16 @@ _add_page_handler("agiletools/team.html", sub {
         ThrowUserError("agile_team_manage_denied")
             unless user_can_manage_teams;
         $team = Bugzilla::Extension::AgileTools::Team->create({
-                name => $cgi->param("name")});
+                name => $cgi->param("name"),
+                process_id => $cgi->param("process_id"),
+            });
         $vars->{message} = "agile_team_created";
     } else {
         my $id = $cgi->param("team_id");
         $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});
     }
 
+    $vars->{processes} = AGILE_PROCESS_NAMES;
     $vars->{team} = $team;
     $vars->{roles} = Bugzilla::Extension::AgileTools::Role->match();
 
@@ -110,6 +113,10 @@ _add_page_handler("agiletools/team.html", sub {
     $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
 });
 
+_add_page_handler("agiletools/create_team.html", sub {
+    my ($vars) = @_;
+    $vars->{processes} = AGILE_PROCESS_NAMES;
+});
 
 #########
 # Hooks #
