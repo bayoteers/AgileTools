@@ -163,10 +163,6 @@ sub buglist_columns {
     $columns->{"bug_agile_pool.pool_id"} = {
         name => "COALESCE(bug_agile_pool.pool_id, -1)",
         title => "Pool ID" };
-    warn "******COLUMNS*******";
-    foreach my $line (split(/\n/, Dumper($columns))) {
-        warn $line;
-    }
 }
 
 sub buglist_column_joins {
@@ -190,10 +186,6 @@ sub buglist_column_joins {
         table => "bug_agile_pool",
         as => "bug_agile_pool",
     };
-    warn "******JOINS*******";
-    foreach my $line (split(/\n/, Dumper($joins))) {
-        warn $line;
-    }
 }
 
 
@@ -293,10 +285,6 @@ sub _add_agile_pool_join {
         push(@$joins, $join);
     }
     $args->{full_field} = "COALESCE($args->{full_field}, '')";
-    warn "******OPERATOR ARGS*******";
-    foreach my $line (split(/\n/, Dumper($args))) {
-        warn $line;
-    }
     $search->_do_operator_function($args);
 }
 
@@ -312,10 +300,6 @@ sub _add_bug_agile_pool_join {
         push(@$joins, $join);
     }
     $args->{full_field} = "COALESCE($args->{full_field}, -1)";
-    warn "******OPERATOR ARGS*******";
-    foreach my $line (split(/\n/, Dumper($args))) {
-        warn $line;
-    }
     $search->_do_operator_function($args);
 }
 
@@ -324,7 +308,7 @@ sub db_schema_abstract_schema {
     my $schema = $args->{schema};
 
     # Team information
-    $schema->{agile_teams} = {
+    $schema->{agile_team} = {
         FIELDS => [
             id => {
                 TYPE => 'MEDIUMSERIAL',
@@ -349,22 +333,22 @@ sub db_schema_abstract_schema {
             },
         ],
         INDEXES => [
-            agile_teams_name_idx => {
+            agile_team_name_idx => {
                 FIELDS => ['name'],
                 TYPE => 'UNIQUE',
             },
-            agile_teams_group_id_idx => ['group_id'],
+            agile_team_group_id_idx => ['group_id'],
         ],
     };
 
     # Team component responsibilities
-    $schema->{agile_team_component_map} = {
+    $schema->{agile_team_component} = {
         FIELDS => [
             team_id => {
                 TYPE => 'INT3',
                 NOTNULL => 1,
                 REFERENCES => {
-                    TABLE => 'agile_teams',
+                    TABLE => 'agile_team',
                     COLUMN => 'id',
                     DELETE => 'CASCADE',
                 },
@@ -389,13 +373,13 @@ sub db_schema_abstract_schema {
     };
 
     # Team keyword responsibilities
-    $schema->{agile_team_keyword_map} = {
+    $schema->{agile_team_keyword} = {
         FIELDS => [
             team_id => {
                 TYPE => 'INT3',
                 NOTNULL => 1,
                 REFERENCES => {
-                    TABLE => 'agile_teams',
+                    TABLE => 'agile_team',
                     COLUMN => 'id',
                     DELETE => 'CASCADE',
                 },
@@ -420,7 +404,7 @@ sub db_schema_abstract_schema {
     };
 
     # User role definitions
-    $schema->{agile_roles} = {
+    $schema->{agile_role} = {
         FIELDS => [
             id => {
                 TYPE => 'SMALLSERIAL',
@@ -443,7 +427,7 @@ sub db_schema_abstract_schema {
             }
         ],
         INDEXES => [
-            'agile_roles_name_idx' => {
+            'agile_role_name_idx' => {
                 FIELDS => ['name'],
                 TYPE => 'UNIQUE',
             }
@@ -457,7 +441,7 @@ sub db_schema_abstract_schema {
                 TYPE => 'INT3',
                 NOTNULL => 1,
                 REFERENCES => {
-                    TABLE => 'agile_teams',
+                    TABLE => 'agile_team',
                     COLUMN => 'id',
                     DELETE => 'CASCADE',
                 },
@@ -475,7 +459,7 @@ sub db_schema_abstract_schema {
                 TYPE => 'INT2',
                 NOTNULL => 1,
                 REFERENCES => {
-                    TABLE => 'agile_roles',
+                    TABLE => 'agile_role',
                     COLUMN => 'id',
                     DELETE => 'CASCADE',
                 },
@@ -505,6 +489,7 @@ sub db_schema_abstract_schema {
         ],
     };
 
+    # Bug - Pool mapping with bug ordering
     $schema->{bug_agile_pool} = {
         FIELDS => [
             bug_id => {

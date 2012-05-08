@@ -66,7 +66,7 @@ use Bugzilla::Constants;
 use Bugzilla::Util qw(trim);
 
 
-use constant DB_TABLE => 'agile_roles';
+use constant DB_TABLE => 'agile_role';
 
 use constant DB_COLUMNS => qw(
     id

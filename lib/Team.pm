@@ -76,7 +76,7 @@ use Bugzilla::Util qw(trim trick_taint detaint_natural);
 use Scalar::Util qw(blessed);
 use List::Util qw(first);
 
-use constant DB_TABLE => 'agile_teams';
+use constant DB_TABLE => 'agile_team';
 
 use constant DB_COLUMNS => qw(
     id
@@ -286,7 +286,7 @@ sub responsibilities {
         unless defined $item_class;
     trick_taint($type);
     my $cache = $type."s";
-    my $table = "agile_team_".$type."_map";
+    my $table = "agile_team_".$type;
 
     if (!defined $self->{$cache}) {
         my $dbh = Bugzilla->dbh;
@@ -327,7 +327,7 @@ sub add_responsibility {
     }
 
     my $cache = $type."s";
-    my $table = "agile_team_".$type."_map";
+    my $table = "agile_team_".$type;
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
 
@@ -379,7 +379,7 @@ sub remove_responsibility {
         unless detaint_natural($item_id);
 
     my $cache = $type."s";
-    my $table = "agile_team_".$type."_map";
+    my $table = "agile_team_".$type;
     my $dbh = Bugzilla->dbh;
 
     my $rows = $dbh->do(
