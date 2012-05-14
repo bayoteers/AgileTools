@@ -562,6 +562,11 @@ sub db_schema_abstract_schema {
                     COLUMN => 'id',
                 },
             },
+            capacity => {
+                TYPE => 'INT2',
+                NOTNULL => 1,
+                DEFAULT => 0,
+            },
         ],
         INDEXES => [
         ],

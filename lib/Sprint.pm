@@ -40,6 +40,12 @@ team and start and end dates.
 
 =item C<end_date> - End date of the sprint
 
+=item C<pool_id> - ID of the pool related to this backlog
+
+=item C<team_id> - ID of the team owning this backlog
+
+=item C<capacity> - Estimated work capacity for the sprint
+
 =back
 
 =cut
@@ -49,25 +55,32 @@ package Bugzilla::Extension::AgileTools::Sprint;
 
 use base qw(Bugzilla::Object);
 
-use Bugzilla::Extension::AgileTools::Util qw(get_user);
-
 use Bugzilla::Constants;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(datetime_from);
 
 
 use constant DB_TABLE => 'agile_sprint';
 
-use constant DB_COLUMNS => qw(
-    id
-    start_date
-    end_date
-    team_id
-    pool_id
-);
+use constant LIST_ORDER => 'start_date';
+
+sub DB_COLUMNS {
+    my $dbh = Bugzilla->dbh;
+    my @columns = (qw(
+        id
+        team_id
+        pool_id
+        capacity
+    ),
+    $dbh->sql_date_format('start_date', '%Y-%m-%d 00:00:00') . ' AS start_date',
+    $dbh->sql_date_format('end_date', '%Y-%m-%d 23:59:59') . ' AS end_date',
+    );
+    return @columns;
+}
 
 use constant NUMERIC_COLUMNS => qw(
     team_id
     pool_id
+    capacity
 );
 
 use constant DATE_COLUMNS => qw(
@@ -81,6 +94,15 @@ use constant UPDATE_COLUMNS => qw(
 );
 
 use constant VALIDATORS => {
+    start_date => \&_check_start_date,
+    end_date => \&_check_end_date,
+};
+
+use constant VALIDATOR_DEPENDENCIES => {
+    # Start date is checked against existing sprint end dates
+    start_date => ['team_id'],
+    # End date is checked against start date
+    end_date => ['start_date'],
 };
 
 # Accessors
@@ -88,8 +110,9 @@ use constant VALIDATORS => {
 
 sub start_date  { return $_[0]->{start_date}; }
 sub end_date    { return $_[0]->{end_date}; }
-sub team_id    { return $_[0]->{team_id}; }
-sub pool_id    { return $_[0]->{pool_id}; }
+sub team_id     { return $_[0]->{team_id}; }
+sub pool_id     { return $_[0]->{pool_id}; }
+sub capacity    { return $_[0]->{capacity}; }
 
 sub team {
     my $self = shift;
@@ -109,20 +132,82 @@ sub pool {
     return $self->{pool};
 }
 
+sub name {
+    my $self = shift;
+    if (!defined $self->{name}) {
+        $self->{name} = $self->pool->name;
+    }
+    return $self->{name};
+}
+
 # Mutators
 ##########
 
 sub set_start_date  { $_[0]->set('start_date', $_[1]); }
 sub set_end_date    { $_[0]->set('end_date', $_[1]); }
-sub set_team_id     { $_[0]->set('team_id', $_[1]); }
-sub set_pool_id     { $_[0]->set('pool_id', $_[1]); }
+sub set_capacity    { $_[0]->set('capacity', $_[1]); }
 
 # Validators
 ############
 
-sub _check_dates {
-    # TODO
+sub _check_start_date {
+    my ($invocant, $date, undef, $params) = @_;
+    warn "checking start date ".$date;
+    my $start_date = datetime_from($date);
+    $start_date->set({hour=>0, minute=>0, second=>0});
+    my $team_id;
+    if (ref $invocant) {
+        $team_id = $invocant->team_id;
+    } else {
+        $team_id = $params->{team_id};
+    }
+
+    my $dbh = Bugzilla->dbh;
+
+    my $overlaping = $dbh->selectcol_arrayref(
+        "SELECT id 
+           FROM agile_sprint
+          WHERE team_id = ?
+                AND end_date < ?",
+        undef, ($team_id, $start_date->datetime));
+    ThrowUserError("agile_overlaping_sprint") if ($overlaping);
+    return $tart_date->datetime;
 }
+
+sub _check_end_date {
+    my ($invocant, $date, undef, $params) = @_;
+    warn "checking end date ".$date;
+    my $end_date = datetime_from($date);
+    $end_date->set({hour=>23, minute=>59, second=>59});
+
+    my $start_date;
+    if (ref $invocant) {
+        $start_date = datetime_from($invocant->start_date);
+    } else {
+        $start_date = datetime_from($params->{start_date});
+    }
+    ThrowUserError("agile_sprint_end_before_start") if ($end_date < $start_date);
+    return $end_date->datetime;
+}
+
+sub create {
+    my ($class, $params) = @_;
+
+    $class->check_required_create_fields($params);
+    my $clean_params = $class->run_create_validators($params);
+
+    # Create pool for this sprint
+    my $start = datetime_from($params->{start_date});
+    my $name = Bugzilla->dbh->selectrow_array("
+        SELECT name FROM agile_team
+            WHERE id = ?", undef, $params->{team_id});
+    $name = $name." sprint W".$start->week_number;
+    my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
+    $clean_params->{pool_id} = $pool->id;
+
+    return $class->insert_create_data($clean_params);
+}
+
 
 =head1 METHODS
 
