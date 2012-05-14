@@ -64,8 +64,9 @@ package Bugzilla::Extension::AgileTools::Team;
 
 use base qw(Bugzilla::Object);
 
-use Bugzilla::Extension::AgileTools::Util qw(get_user);
+use Bugzilla::Extension::AgileTools::Backlog;
 use Bugzilla::Extension::AgileTools::Constants;
+use Bugzilla::Extension::AgileTools::Util qw(get_user);
 
 use Bugzilla::Constants;
 use Bugzilla::Group;
@@ -130,7 +131,7 @@ sub set_process_id { $_[0]->set('process_id', $_[1]); }
 sub _check_name {
     my ($invocant, $name) = @_;
     $name = trim($name);
-    $name || ThrowUserError("agile_empty_name");
+    $name || ThrowUserError("agile_missing_field", {field=>'name'});
 
     # If we're creating a Team or changing the name...
     if (!ref($invocant) || lc($invocant->name) ne lc($name)) {
@@ -485,7 +486,12 @@ sub create {
     );
     $clean_params->{group_id} = $group->id;
 
-    return $class->insert_create_data($clean_params);
+    my $team = $class->insert_create_data($clean_params);
+
+    # Create backlog
+    Bugzilla::Extension::AgileTools::Backlog->create({team_id=>$team->id});
+
+    return $team;
 }
 
 sub remove_from_db {

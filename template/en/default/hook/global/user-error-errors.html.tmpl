@@ -5,9 +5,12 @@
 [% IF error == "agile_team_exists" %]
     [% title = "The team already exists" %]
     The team [% name FILTER html %] already exists.
-[% ELSIF error == "agile_empty_name" %]
-    [% title = "Name required" %]
-    Name is required and you did not provide any.
+[% ELSIF error == "agile_missing_field" %]
+    [% title = "Field required" %]
+    Field [% field FILTER html %] is required and you did not provide any.
+[% ELSIF error == "agile_invalid_field" %]
+    [% title = "Invalid field" %]
+    Field [% field FILTER html %] has invalid value [% value FILTER html %].
 [% ELSIF error == "agile_team_edit_not_allowed" %]
     [% title = "Team editing denied" %]
     You are not allowed to edit team [% name FILTER html %]

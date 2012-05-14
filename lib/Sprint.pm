@@ -56,7 +56,8 @@ package Bugzilla::Extension::AgileTools::Sprint;
 use base qw(Bugzilla::Object);
 
 use Bugzilla::Constants;
-use Bugzilla::Util qw(datetime_from);
+use Bugzilla::Error;
+use Bugzilla::Util qw(datetime_from detaint_natural trim);
 
 
 use constant DB_TABLE => 'agile_sprint';
@@ -96,6 +97,7 @@ use constant UPDATE_COLUMNS => qw(
 use constant VALIDATORS => {
     start_date => \&_check_start_date,
     end_date => \&_check_end_date,
+    team_id => \&_check_team_id,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -152,9 +154,17 @@ sub set_capacity    { $_[0]->set('capacity', $_[1]); }
 
 sub _check_start_date {
     my ($invocant, $date, undef, $params) = @_;
+    $date = trim($date);
+    $date || ThrowUserError("agile_missing_field", {field=>'start_date'});
+
     warn "checking start date ".$date;
+
     my $start_date = datetime_from($date);
+    $start_date || ThrowUserError("agile_invalid_field", {
+            field => "start_date", value => $date});
     $start_date->set({hour=>0, minute=>0, second=>0});
+    $start_date = $start_date->datetime;
+
     my $team_id;
     if (ref $invocant) {
         $team_id = $invocant->team_id;
@@ -164,20 +174,26 @@ sub _check_start_date {
 
     my $dbh = Bugzilla->dbh;
 
-    my $overlaping = $dbh->selectcol_arrayref(
+    my $overlaping = $dbh->selectrow_array(
         "SELECT id 
            FROM agile_sprint
           WHERE team_id = ?
-                AND end_date < ?",
-        undef, ($team_id, $start_date->datetime));
+                AND end_date > ?
+                AND start_date < ?",
+        undef, ($team_id, $start_date, $start_date ));
     ThrowUserError("agile_overlaping_sprint") if ($overlaping);
-    return $tart_date->datetime;
+    return $start_date;
 }
 
 sub _check_end_date {
     my ($invocant, $date, undef, $params) = @_;
+    $date = trim($date);
+    $date || ThrowUserError("agile_missing_field", {field=>'end_date'});
+
     warn "checking end date ".$date;
     my $end_date = datetime_from($date);
+    $end_date || ThrowUserError("agile_invalid_field", {
+            field => "end_date", value => $date});
     $end_date->set({hour=>23, minute=>59, second=>59});
 
     my $start_date;
@@ -190,6 +206,17 @@ sub _check_end_date {
     return $end_date->datetime;
 }
 
+# TODO Move overlaping check to separate validator and check both start and
+#      end at the same time.
+
+sub _check_team_id {
+    my ($invocant, $team_id) = @_;
+    ThrowUserError("invalid_parameter", {name=>'team_id', err=>'Not a number'})
+        unless detaint_natural($team_id);
+    return $team_id;
+}
+
+
 sub create {
     my ($class, $params) = @_;
 
@@ -201,6 +228,9 @@ sub create {
     my $name = Bugzilla->dbh->selectrow_array("
         SELECT name FROM agile_team
             WHERE id = ?", undef, $params->{team_id});
+    $name || ThrowUserError('object_does_not_exist', {
+            id => $params->{team_id}, class => 'AgileTools::Team' });
+
     $name = $name." sprint W".$start->week_number;
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{pool_id} = $pool->id;
@@ -208,12 +238,17 @@ sub create {
     return $class->insert_create_data($clean_params);
 }
 
-
 =head1 METHODS
 
 =over
 
 =item C<()>
+
+=cut
+
+1;
+
+__END__
 
 =back
 

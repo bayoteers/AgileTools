@@ -46,6 +46,9 @@ Pool object presents a ordered set of bugs
 use strict;
 package Bugzilla::Extension::AgileTools::Pool;
 
+use Bugzilla::Error;
+use Bugzilla::Util qw(detaint_natural);
+
 use base qw(Bugzilla::Object);
 
 
@@ -83,7 +86,7 @@ sub bugs {
     my $dbh = Bugzilla->dbh;
 
     if (!defined $self->{bugs}) {
-        my $bug_ids = dbh->selectcol_arrayref(
+        my $bug_ids = $dbh->selectcol_arrayref(
             "SELECT bug_id FROM bug_agile_pool
               WHERE pool_id = ? ORDER BY pool_order",
               undef, $self->id);
@@ -108,9 +111,9 @@ sub insert_bug {
     my ($bug_id, $order) = @_;
 
     ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
-        unless detaint_natural(bug_id);
+        unless detaint_natural($bug_id);
     ThrowUserError("invalid_parameter", {name=>'order', err=>'Not a number'})
-        unless detaint_natural(order);
+        unless detaint_natural($order);
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -132,17 +135,17 @@ sub insert_bug {
     # number of bugs in the pool, otherwise + 1 (the bug being added)
     $max = ($old_pool == $self->id) ? $max : $max + 1;
 
-    $order = $max unless (defined $order && $order < $max)
+    $order = $max unless (defined $order && $order < $max);
 
     my $changed = ($old_pool != $self->id || $old_order != $order);
 
     if (defined $old_pool && $changed) {
         # Delete old entry
-        dbh->do("DELETE FROM bug_agile_pool
+        $dbh->do("DELETE FROM bug_agile_pool
                     WHERE pool_id = ? AND bug_id = ?",
             undef, ($old_pool, $bug_id));
         # Shift bugs in old pool
-        dbh->do("UPDATE bug_agile_pool
+        $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order - 1
                   WHERE pool_id = ? AND pool_order > ?",
             undef, ($old_pool, $old_order));
@@ -152,12 +155,12 @@ sub insert_bug {
     # queries is probably not worth the introduced complexity...
     if ($changed) {
         # Shift bugs in this pool
-        dbh->do("UPDATE bug_agile_pool
+        $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order + 1
                   WHERE pool_id = ? AND pool_order >= ?",
             undef, ($self->id, $order));
         # Insert new entry
-        dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
+        $dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
                       VALUES (?, ?, ?)",
             undef, ($bug_id, $self->id, $order));
         delete $self->{bugs};
@@ -167,6 +170,11 @@ sub insert_bug {
 }
 
 #TODO: Add pool and pool_order methods to Bug class
+
+
+1;
+
+__END__
 
 =back
 

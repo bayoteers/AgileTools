@@ -530,7 +530,7 @@ sub db_schema_abstract_schema {
         ],
     };
 
-    # Sprint
+    # Scrum Sprint
     $schema->{agile_sprint} = {
         FIELDS => [
             id => {
@@ -566,6 +566,36 @@ sub db_schema_abstract_schema {
                 TYPE => 'INT2',
                 NOTNULL => 1,
                 DEFAULT => 0,
+            },
+        ],
+        INDEXES => [
+        ],
+    };
+
+    # Scrum Backlog
+    $schema->{agile_backlog} = {
+        FIELDS => [
+            id => {
+                TYPE => 'MEDIUMSERIAL',
+                NOTNULL => 1,
+                PRIMARYKEY => 1,
+            },
+            team_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_team',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            pool_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                REFERENCES => {
+                    TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                },
             },
         ],
         INDEXES => [
