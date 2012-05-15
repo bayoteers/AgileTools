@@ -24,4 +24,10 @@
 [% ELSIF error == "agile_team_manage_denied" %]
     [% title = "Access denied" %]
     You are not allowed to manage teams in AgileTools
+[% ELSIF error == "agile_overlaping_sprint" %]
+    [% title = "Overlapping sprint" %]
+    The selected start date overlaps with existing sprint.
+[% ELSIF error == "agile_sprint_end_before_start" %]
+    [% title = "Bad end date" %]
+    The selected end date is before start date.
 [% END %]

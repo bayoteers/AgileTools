@@ -92,12 +92,14 @@ use constant DATE_COLUMNS => qw(
 use constant UPDATE_COLUMNS => qw(
     start_date
     end_date
+    capacity
 );
 
 use constant VALIDATORS => {
     start_date => \&_check_start_date,
     end_date => \&_check_end_date,
-    team_id => \&_check_team_id,
+    team_id => \&_check_number,
+    capacity => \&_check_number,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -209,11 +211,11 @@ sub _check_end_date {
 # TODO Move overlaping check to separate validator and check both start and
 #      end at the same time.
 
-sub _check_team_id {
-    my ($invocant, $team_id) = @_;
-    ThrowUserError("invalid_parameter", {name=>'team_id', err=>'Not a number'})
-        unless detaint_natural($team_id);
-    return $team_id;
+sub _check_number {
+    my ($invocant, $value, $field) = @_;
+    ThrowUserError("invalid_parameter", {name=>$field, err=>'Not a number'})
+        unless detaint_natural($value);
+    return $value;
 }
 
 
@@ -224,12 +226,12 @@ sub create {
     my $clean_params = $class->run_create_validators($params);
 
     # Create pool for this sprint
-    my $start = datetime_from($params->{start_date});
+    my $start = datetime_from($clean_params->{start_date});
     my $name = Bugzilla->dbh->selectrow_array("
         SELECT name FROM agile_team
-            WHERE id = ?", undef, $params->{team_id});
+            WHERE id = ?", undef, $clean_params->{team_id});
     $name || ThrowUserError('object_does_not_exist', {
-            id => $params->{team_id}, class => 'AgileTools::Team' });
+            id => $clean_params->{team_id}, class => 'AgileTools::Team' });
 
     $name = $name." sprint W".$start->week_number;
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});

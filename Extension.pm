@@ -609,6 +609,8 @@ sub webservice {
         "Bugzilla::Extension::AgileTools::WebService";
     $args->{dispatch}->{'Agile.Team'} =
         "Bugzilla::Extension::AgileTools::WebService::Team";
+    $args->{dispatch}->{'Agile.Sprint'} =
+        "Bugzilla::Extension::AgileTools::WebService::Sprint";
 }
 
 __PACKAGE__->NAME;
