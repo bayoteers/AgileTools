@@ -86,34 +86,44 @@ sub bugs {
     my $dbh = Bugzilla->dbh;
 
     if (!defined $self->{bugs}) {
-        my $bug_ids = $dbh->selectcol_arrayref(
-            "SELECT bug_id FROM bug_agile_pool
-              WHERE pool_id = ? ORDER BY pool_order",
+        my $pool_bugs = $dbh->selectall_arrayref(
+            "SELECT bug_id, pool_order FROM bug_agile_pool
+              WHERE pool_id = ?",
               undef, $self->id);
-        $self->{bugs} = Bugzilla::Bug->new_from_list($bug_ids);
+        my %bug_order = map { ("$_->[0]" => $_->[1]) } @$pool_bugs;
+        $self->{bugs} = Bugzilla::Bug->new_from_list([keys %bug_order]);
+
+        # Set pool and pool_order in bug objects so that they are not fetched again
+        foreach my $bug (@{$self->{bugs}}) {
+            $bug->{pool_order} = $bug_order{$bug->id};
+            $bug->{pool} = $self;
+        }
     }
     return $self->{bugs};
 }
 
-=item C<insert_bug($bug_id, $order)>
+=item C<add_bug($bug_id, $order)>
 
     Description: Inserts new bug into the pool
     Params:      $bug_id - Bug ID
                  $order - (optional) Order of the new bug in this pool,
                           goes last if not given
+    Returns:     Boolean value telling if pool was changed
     Note:        Bug can be only in one pool at the time and it will be removed
                  from any previous pool.
 
 =cut
 
-sub insert_bug {
+sub add_bug {
     my $self = shift;
     my ($bug_id, $order) = @_;
 
     ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
         unless detaint_natural($bug_id);
     ThrowUserError("invalid_parameter", {name=>'order', err=>'Not a number'})
-        unless detaint_natural($order);
+        unless (!defined $order || detaint_natural($order));
+
+    Bugzilla::Bug->check({id => $bug_id});
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -135,7 +145,7 @@ sub insert_bug {
     # number of bugs in the pool, otherwise + 1 (the bug being added)
     $max = ($old_pool == $self->id) ? $max : $max + 1;
 
-    $order = $max unless (defined $order && $order < $max);
+    $order = $max unless (defined $order && $order < $max && $order > 0);
 
     my $changed = ($old_pool != $self->id || $old_order != $order);
 
@@ -166,11 +176,99 @@ sub insert_bug {
         delete $self->{bugs};
     }
     $dbh->bz_commit_transaction();
-    return $self->bugs;
+    return $changed;
 }
 
-#TODO: Add pool and pool_order methods to Bug class
+=item C<remove_bug($bug_id)>
 
+    Description: Remove bug from pool
+    Params:      $bug_id - ID of the bug to be removed
+    Returns:     Boolean value telling if pool was changed
+
+=cut
+
+sub remove_bug {
+    my ($self, $bug_id) = @_;
+    ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
+        unless detaint_natural($bug_id);
+
+    Bugzilla::Bug->check({id => $bug_id});
+
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+
+    # order in this pool
+    my $order = $dbh->selectrow_array(
+        "SELECT pool_order
+           FROM bug_agile_pool
+          WHERE pool_id = ? AND bug_id = ?",
+          undef, ($self->id, $bug_id));
+
+    if (defined $order) {
+        # Delete old entry
+        $dbh->do("DELETE FROM bug_agile_pool
+                    WHERE pool_id = ? AND bug_id = ?",
+            undef, ($self->id, $bug_id));
+        # Shift bugs in old pool
+        $dbh->do("UPDATE bug_agile_pool
+                    SET pool_order = pool_order - 1
+                  WHERE pool_id = ? AND pool_order > ?",
+            undef, ($self->id, $order));
+        delete $self->{bugs};
+    }
+    $dbh->bz_commit_transaction();
+    return defined $order;
+}
+
+=back
+
+=head1 RELATED METHODS
+
+=head2 Bugzilla::Bug object methods
+
+The L<Bugzilla::Bug> object is extended to provide easy access to pool
+
+=over
+
+=item C<Bugzilla::Bug::pool_order>
+
+    Description: Returns the pool order of bug or undef if bug is not in a pool
+
+=cut
+
+BEGIN {
+*Bugzilla::Bug::pool_order = sub {
+    my $self = shift;
+    if (!exists $self->{pool_order}) {
+        $self->{pool_order} = Bugzilla->dbh->selectrow_array("
+            SELECT pool_order FROM bug_agile_pool
+             WHERE bug_id = ?", undef, $self->id);
+    }
+    return $self->{pool_order};
+};
+
+=item C<Bugzilla::Bug::pool>
+
+    Description: Returns the pool containing this bug or undef if bug is not in
+                 a pool
+
+=cut
+
+*Bugzilla::Bug::pool = sub {
+    my $self = shift;
+    if (!exists $self->{pool}) {
+        my $pool_id = Bugzilla->dbh->selectrow_array("
+            SELECT pool_id FROM bug_agile_pool
+             WHERE bug_id = ?", undef, $self->id);
+        if ($pool_id) {
+            $self->{pool} = new Bugzilla::Extension::AgileTools::Pool($pool_id);
+        } else {
+            $self->{pool} = undef;
+        }
+    }
+    return $self->{pool};
+};
+} # END BEGIN
 
 1;
 
