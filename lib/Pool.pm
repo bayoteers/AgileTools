@@ -96,7 +96,7 @@ sub bugs {
         # Set pool and pool_order in bug objects so that they are not fetched again
         foreach my $bug (@{$self->{bugs}}) {
             $bug->{pool_order} = $bug_order{$bug->id};
-            $bug->{pool} = $self;
+            $bug->{pool_id} = $self->id;
         }
     }
     return $self->{bugs};
@@ -240,33 +240,34 @@ BEGIN {
 *Bugzilla::Bug::pool_order = sub {
     my $self = shift;
     if (!exists $self->{pool_order}) {
-        $self->{pool_order} = Bugzilla->dbh->selectrow_array("
-            SELECT pool_order FROM bug_agile_pool
+        my ($pool_id, $pool_order) = Bugzilla->dbh->selectrow_array("
+            SELECT pool_id, pool_order FROM bug_agile_pool
              WHERE bug_id = ?", undef, $self->id);
+
+        $self->{pool_id} = $pool_id;
+        $self->{pool_order} = $pool_order;
     }
     return $self->{pool_order};
 };
 
-=item C<Bugzilla::Bug::pool>
+=item C<Bugzilla::Bug::pool_id>
 
-    Description: Returns the pool containing this bug or undef if bug is not in
+    Description: Returns the pool id of bug or undef if bug is not in
                  a pool
 
 =cut
 
-*Bugzilla::Bug::pool = sub {
+*Bugzilla::Bug::pool_id = sub {
     my $self = shift;
-    if (!exists $self->{pool}) {
-        my $pool_id = Bugzilla->dbh->selectrow_array("
-            SELECT pool_id FROM bug_agile_pool
+    if (!exists $self->{pool_id}) {
+        my ($pool_id, $pool_order) = Bugzilla->dbh->selectrow_array("
+            SELECT pool_id, pool_order FROM bug_agile_pool
              WHERE bug_id = ?", undef, $self->id);
-        if ($pool_id) {
-            $self->{pool} = new Bugzilla::Extension::AgileTools::Pool($pool_id);
-        } else {
-            $self->{pool} = undef;
-        }
+
+        $self->{pool_id} = $pool_id;
+        $self->{pool_order} = $pool_order;
     }
-    return $self->{pool};
+    return $self->{pool_id};
 };
 } # END BEGIN
 
