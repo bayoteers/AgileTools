@@ -189,23 +189,23 @@ sub add_responsibility {
         items => $team->responsibilities($params->{type})};
 }
 
-=item C<remove_responsibility>
+=item c<remove_responsibility>
 
-    Description: Remove a team responsibility
-    Params:      id - Team ID
-                 type - Responsibility type, 'component' or 'keyword'
-                 item_id - Object ID of the component or keyword
-    Returns:     The new list of team responsibilities for that type
+    description: remove a team responsibility
+    params:      id - team id
+                 type - responsibility type, 'component' or 'keyword'
+                 item_id - object id of the component or keyword
+    returns:     the new list of team responsibilities for that type
 
 =cut
 
 sub remove_responsibility {
     my ($self, $params) = @_;
-    ThrowCodeError('param_required', {function => 'Agile.Team.remove_responsibility',
+    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
             param => 'id'}) unless defined $params->{id};
-    ThrowCodeError('param_required', {function => 'Agile.Team.remove_responsibility',
+    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
             param => 'type'}) unless defined $params->{type};
-    ThrowCodeError('param_required', {function => 'Agile.Team.remove_responsibility',
+    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
             param => 'item_id'}) unless defined $params->{item_id};
 
     my $team = get_team($params->{id}, 1);
@@ -214,6 +214,25 @@ sub remove_responsibility {
         items => $team->responsibilities($params->{type})};
 }
 
+=item c<unprioritized_items>
+
+    description: Get unprioritized bugs in teams responsibilites
+    params:      id - team id
+                 include - Resposibilities to include
+                           { type: [ IDs ], }
+    returns:     { bugs: [list of bugs,... ] }
+
+=cut
+
+sub unprioritized_items {
+    my ($self, $params) = @_;
+    throwcodeerror('param_required', {function => 'Agile.Team.unprioritized_items',
+            param => 'id'}) unless defined $params->{id};
+
+    my $team = get_team($params->{id});
+
+    return {bugs => $team->unprioritized_items($params->{include})};
+}
 
 1;
 

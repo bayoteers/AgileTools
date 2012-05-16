@@ -445,6 +445,60 @@ sub user_can_edit {
     return $self->{user_can_edit}->{$user->id};
 }
 
+=back
+
+=head2 For items
+
+=over
+
+=item C<unprioritized_items()>
+
+    Description: Get unprioritized bugs in teams responsibilites
+    Params:      include - (optional) Resposibilities to include
+                           { type: [ IDs ], }
+    Returns:     Array ref of Bug objects
+
+=cut
+
+sub unprioritized_items {
+    my ($self, $include) = @_;
+
+    # Generate search params
+    # Open bugs which are not in a pool
+    my $params = {
+        resolution => "---",
+        f1 => "bug_agile_pool.pool_id",
+        o1 => "equals",
+        v1 => "-1",
+        f2 => "OP", j2 => "OR"
+    };
+
+    my $fidx = 3;
+    # Add filtered responsibilities to params
+    foreach my $type (qw(component keyword)) {
+        my $field = $type eq "keyword" ? $type."s" : $type;
+
+        next if (defined $include && !defined $include->{$type});
+        foreach my $item (@{$self->responsibilities($type)}) {
+            next if (defined $include &&
+                !grep {$item->id == $_} @{$include->{$type} || []});
+
+            $params->{"f".$fidx} = $field;
+            $params->{"o".$fidx} = "equals";
+            $params->{"v".$fidx} = $item->name;
+            $fidx++;
+            warn "added ".$type." ".$item->name;
+        }
+    }
+    # Return directly if nothing was included
+    return [] if ($fidx == 3);
+    # Use search to get the bug ids
+    my $search = new Bugzilla::Search(fields => ["bug_id"], params => $params);
+    my $dbh = Bugzilla->dbh;
+    my $bug_ids = $dbh->selectcol_arrayref($search->sql);
+    return Bugzilla::Bug->new_from_list($bug_ids);
+}
+
 # Overridden Bugzilla::Object methods
 #####################################
 
