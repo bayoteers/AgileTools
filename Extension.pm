@@ -27,10 +27,12 @@ use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Field;
 
-use Bugzilla::Extension::AgileTools::Util;
+
 use Bugzilla::Extension::AgileTools::Constants;
-use Bugzilla::Extension::AgileTools::Team;
+use Bugzilla::Extension::AgileTools::Pool;
 use Bugzilla::Extension::AgileTools::Role;
+use Bugzilla::Extension::AgileTools::Team;
+use Bugzilla::Extension::AgileTools::Util;
 
 use JSON;
 
@@ -611,6 +613,8 @@ sub webservice {
         "Bugzilla::Extension::AgileTools::WebService::Team";
     $args->{dispatch}->{'Agile.Sprint'} =
         "Bugzilla::Extension::AgileTools::WebService::Sprint";
+    $args->{dispatch}->{'Agile.Pool'} =
+        "Bugzilla::Extension::AgileTools::WebService::Pool";
 }
 
 __PACKAGE__->NAME;
