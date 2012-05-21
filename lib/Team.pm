@@ -487,7 +487,6 @@ sub unprioritized_items {
             $params->{"o".$fidx} = "equals";
             $params->{"v".$fidx} = $item->name;
             $fidx++;
-            warn "added ".$type." ".$item->name;
         }
     }
     # Return directly if nothing was included
