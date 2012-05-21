@@ -56,6 +56,8 @@ use Bugzilla::Util qw(datetime_from);
 
 use constant DB_TABLE => 'agile_backlog';
 
+use constant LIST_ORDER => 'id';
+
 use constant DB_COLUMNS  => qw(
         id
         team_id

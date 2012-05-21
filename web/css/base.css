@@ -13,3 +13,54 @@ button.remove {
     width: 1.5em;
     height: 1.5em;
 }
+
+.listContainer {
+    width: 50%;
+}
+.listHeader {
+
+}
+.buglist {
+    border: 1px dotted;
+    list-style-type: none;
+    padding: 2px;
+    height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.buglist li {
+    border: 1px solid;
+    margin: 1px;
+}
+
+.bugItem span {
+    margin-left: 1em;
+}
+
+.bugItem .status {
+}
+.bugItem .severity {
+}
+.bugItem .description {
+}
+.bugItem .estimates {
+    float: right;
+}
+.bugItem .details {
+    display: none;
+}
+
+
+.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+.left {
+    margin-left: 0px;
+    float: left;
+}
+.right {
+    margin-right: 0px;
+    float: right;
+}
+

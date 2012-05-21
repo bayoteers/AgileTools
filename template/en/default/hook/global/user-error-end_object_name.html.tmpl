@@ -1,5 +1,9 @@
-[% IF class == "Bugzilla::Extension::AgileTools::Team" %]
+[% IF class.match("AgileTools::Team") %]
 team
-[% ELSIF class == "Bugzilla::Extension::AgileTools::Role" %]
+[% ELSIF class.match("AgileTools::Role") %]
 role
+[% ELSIF class.match("AgileTools::Pool") %]
+pool
+[% ELSIF class.match("AgileTools::Sprint") %]
+sprint
 [% END %]

@@ -120,6 +120,18 @@ _add_page_handler("agiletools/create_team.html", sub {
     $vars->{processes} = AGILE_PROCESS_NAMES;
 });
 
+_add_page_handler("agiletools/scrum/planing.html", sub {
+    my ($vars) = @_;
+    my $cgi = Bugzilla->cgi;
+    my $id = $cgi->param("team_id");
+    ThrowUserError("invalid_parameter",
+        {name=>"team_id", err => "Not specified"})
+            unless defined $id;
+    my $team = get_team($id);
+    $team->pools;
+    $vars->{team} = $team;
+});
+
 #########
 # Hooks #
 #########

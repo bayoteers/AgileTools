@@ -66,6 +66,7 @@ use base qw(Bugzilla::Object);
 
 use Bugzilla::Extension::AgileTools::Backlog;
 use Bugzilla::Extension::AgileTools::Constants;
+use Bugzilla::Extension::AgileTools::Sprint;
 use Bugzilla::Extension::AgileTools::Util qw(get_user);
 
 use Bugzilla::Constants;
@@ -147,8 +148,7 @@ sub _check_name {
 
 sub _check_process_id {
     my ($invocant, $id) = @_;
-    warn "validating process id ".$id;
-    
+
     ThrowUserError("agile_unkown_process", { id => $id })
         unless ($id =~ /\d*/);
 
@@ -498,6 +498,37 @@ sub unprioritized_items {
     return Bugzilla::Bug->new_from_list($bug_ids);
 }
 
+=item C<pools()>
+
+    Description: Get pools
+    Params:      include - (optional) Resposibilities to include
+                           { type: [ IDs ], }
+    Returns:     Array ref of Bug objects
+
+=cut
+
+sub pools {
+    my $self = shift;
+    return $self->{pools} if defined $self->{pools};
+
+    my @pools;
+    if($self->process_id == AGILE_PROCESS_SCRUM) {
+        my $backlog = Bugzilla::Extension::AgileTools::Backlog->match(
+            {team_id => $self->id});
+        push(@pools, $backlog->[0]->pool) if (@$backlog);
+
+        my @sprints = sort { $b->start_date cmp $a->start_date } @{
+            Bugzilla::Extension::AgileTools::Sprint->match(
+                {team_id => $self->id}) };
+
+        foreach (@sprints) {
+            push(@pools, $_->pool);
+        }
+    }
+    $self->{pools} = \@pools;
+    return $self->{pools};
+}
+
 # Overridden Bugzilla::Object methods
 #####################################
 
@@ -550,7 +581,7 @@ sub create {
 sub remove_from_db {
     my $self = shift;
     my $group = $self->group;
-    
+
     $self->SUPER::remove_from_db(@_);
 
     # Remove users from the group and change the group to non system group

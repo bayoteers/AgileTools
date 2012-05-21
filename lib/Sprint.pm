@@ -233,7 +233,7 @@ sub create {
     $name || ThrowUserError('object_does_not_exist', {
             id => $clean_params->{team_id}, class => 'AgileTools::Team' });
 
-    $name = $name." sprint W".$start->week_number;
+    $name = $name." sprint ".$start->year."W".$start->week_number;
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{pool_id} = $pool->id;
 
