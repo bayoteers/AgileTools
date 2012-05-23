@@ -538,6 +538,41 @@ sub pools {
     return $self->{pools};
 }
 
+=item C<current_sprint()>
+
+    Description: Get current Sprint
+    Returns:     Sprint object or undef
+
+=cut
+
+sub current_sprint {
+    my $self = shift;
+    return undef if ($self->process_id != AGILE_PROCESS_SCRUM);
+    if (!defined $self->{current_sprint}) {
+        $self->{current_sprint} =
+            Bugzilla::Extension::AgileTools::Sprint->current_sprint($self->id);
+    }
+    return $self->{current_sprint};
+}
+
+=item C<previous_sprint()>
+
+    Description: Get previous Sprint
+    Returns:     Sprint object or undef
+
+=cut
+
+sub previous_sprint {
+    my $self = shift;
+    return undef if ($self->process_id != AGILE_PROCESS_SCRUM);
+    if (!defined $self->{pevious_sprint}) {
+        $self->{previous_sprint} =
+            Bugzilla::Extension::AgileTools::Sprint->previous_sprint($self->id);
+    }
+    return $self->{previous_sprint};
+}
+
+
 # Overridden Bugzilla::Object methods
 #####################################
 

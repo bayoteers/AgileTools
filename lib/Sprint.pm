@@ -241,13 +241,55 @@ sub create {
     return $class->insert_create_data($clean_params);
 }
 
-=head1 METHODS
+=head1 ADDITIONAL CONSTRUCTORS
 
 =over
 
-=item C<()>
+=item C<current_sprint($team_id)>
+
+    Description: Get the current sprint of given team.
+    Params:      $team_id - Team ID.
+    Returns:     Sprint object or undef if team does not have current sprint.
 
 =cut
+
+sub current_sprint {
+    my ($class, $team_id) = @_;
+    ThrowCodeError("param_must_be_numeric", {
+            param => "team_id", function => "current_sprint"})
+        unless detaint_natural($team_id);
+    my $now = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+    my $sprints = $class->match({
+            WHERE => {
+                "start_date <= ?" => $now,
+                "end_date > ?" => $now,
+                "team_id = ?" => $team_id,
+            }
+        });
+    # There should be only one, if there is more, we don't care
+    return $sprints->[0];
+}
+
+=item C<previous_sprint($team_id)>
+
+    Description: Get the previous sprint of given team.
+    Params:      $team_id - Team ID.
+    Returns:     Sprint object or undef if team does not have previous sprint.
+
+=cut
+
+sub previous_sprint {
+    my ($class, $team_id) = @_;
+    ThrowCodeError("param_must_be_numeric", {
+            param => "team_id", function => "previous_sprint"})
+        unless detaint_natural($team_id);
+    my $sprint_id = Bugzilla->dbh->selectrow_array(
+        "SELECT id FROM agile_sprint ".
+         "WHERE end_date < NOW() AND team_id = ? ".
+         "ORDER BY start_date DESC", undef, $team_id);
+    my $sprint = $sprint_id ? $class->new($sprint_id) : undef;
+    return $sprint;
+}
 
 1;
 
