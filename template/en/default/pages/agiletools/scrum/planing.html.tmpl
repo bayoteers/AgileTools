@@ -85,7 +85,16 @@ var SCRUM = {
 
     <div id="resposibility_filter_template">
         Show responsibilities:<br/>
-        <select name="resposibilities" multiple="multiple"></select>
+        <select name="resposibilities" multiple="multiple">
+        [% FOREACH item IN team.responsibilities('component') %]
+            <option value="component:[% item.id %]" selected="selected">
+            component: [% item.name %]</option>
+        [% END %]
+        [% FOREACH item IN team.responsibilities('keyword') %]
+            <option value="keyword:[% item.id %]" selected="selected">
+            keyword: [% item.name %]</option>
+        [% END %]
+        </select>
     </div>
 
 </div>

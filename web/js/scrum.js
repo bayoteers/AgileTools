@@ -88,6 +88,8 @@ var ListContainer = Base.extend(
         option.attr("value", result.pool.id);
         this.contentSelector.append(option);
         option.prop("selected", true);
+        this.onChangeContent.fire(result.pool.id, result.pool.name);
+        this._updateSprintInfo(result);
     },
 
     _changeContent: function()
@@ -95,6 +97,15 @@ var ListContainer = Base.extend(
         var id = this.contentSelector.val();
         var name = this.contentSelector.find(":selected").text();
         this.onChangeContent.fire(id, name);
+        if (/sprint/.test(name)) {
+            this.openSprint(id);
+        } else if (/backlog/.test(name)) {
+            this.openBacklog(id);
+        } else if (id == -1) {
+            this.openUnprioritized();
+        } else {
+            alert("Sorry, don't know how to open '" + name + "'");
+        }
     },
 
     disableContentOption: function(id, name)
@@ -107,6 +118,38 @@ var ListContainer = Base.extend(
             option.prop("disabled", true);
             this.contentSelector.append(option);
         }
+    },
+
+    openSprint: function(id)
+    {
+        var rpc = callRpc("Agile.Sprint", "get", {id:id});
+        rpc.done($proxy(this, "_getSprintDone"));
+    },
+    _getSprintDone: function(result)
+    {
+        this._updateSprintInfo(result);
+        // Load bug list
+    },
+    _updateSprintInfo: function(sprint)
+    {
+        var info = $("#sprint_info_template").clone().attr("id", null);
+        info.find(".startDate").text(sprint.start_date);
+        info.find(".endDate").text(sprint.end_date);
+        info.find(".capacity").text(sprint.capacity);
+        info.find("[name='edit']").click($.proxy(this, "_editSprint"));
+        this.footer.html(info);
+    },
+
+    openBacklog: function(id)
+    {
+        this.footer.empty();
+    },
+
+    openUnprioritized: function()
+    {
+        var filter = $("#resposibility_filter_template").clone().attr("id", null);
+        filter.change($.proxy(this, "_filterUnprioritized"));
+        this.footer.html(filter);
     }
 
 });
