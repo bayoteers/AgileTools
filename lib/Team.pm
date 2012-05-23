@@ -64,7 +64,6 @@ package Bugzilla::Extension::AgileTools::Team;
 
 use base qw(Bugzilla::Object);
 
-use Bugzilla::Extension::AgileTools::Backlog;
 use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Sprint;
 use Bugzilla::Extension::AgileTools::Util qw(get_user);
@@ -85,11 +84,13 @@ use constant DB_COLUMNS => qw(
     name
     group_id
     process_id
+    backlog_id
 );
 
 use constant NUMERIC_COLUMNS => qw(
     group_id
     process_id
+    backlog_id
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -113,11 +114,23 @@ use constant _RESP_CLASS => {
 
 sub group_id   { return $_[0]->{group_id}; }
 sub process_id { return $_[0]->{process_id}; }
+sub backlog_id { return $_[0]->{process_id}; }
 
 sub group {
     my $self = shift;
     $self->{group} ||= Bugzilla::Group->new($self->group_id);
     return $self->{group};
+}
+
+sub backlog {
+    my $self = shift;
+    # Currently team always has a backlog, but that might not be true in the future
+    if (!exists $self->{backlog}) {
+        $self->{backlog} = $self->backlog_id ?
+            Bugzilla::Extension::AgileTools::Pool->new($self->backlog_id) :
+            undef;
+    }
+    return $self->{backlog};
 }
 
 # Mutators
@@ -501,9 +514,7 @@ sub unprioritized_items {
 =item C<pools()>
 
     Description: Get pools
-    Params:      include - (optional) Resposibilities to include
-                           { type: [ IDs ], }
-    Returns:     Array ref of Bug objects
+    Returns:     Array ref of Pool objects
 
 =cut
 
@@ -512,11 +523,9 @@ sub pools {
     return $self->{pools} if defined $self->{pools};
 
     my @pools;
-    if($self->process_id == AGILE_PROCESS_SCRUM) {
-        my $backlog = Bugzilla::Extension::AgileTools::Backlog->match(
-            {team_id => $self->id});
-        push(@pools, $backlog->[0]->pool) if (@$backlog);
+    push(@pools, $self->backlog) if (defined $self->backlog);
 
+    if($self->process_id == AGILE_PROCESS_SCRUM) {
         my @sprints = sort { $b->start_date cmp $a->start_date } @{
             Bugzilla::Extension::AgileTools::Sprint->match(
                 {team_id => $self->id}) };
@@ -570,10 +579,13 @@ sub create {
     );
     $clean_params->{group_id} = $group->id;
 
-    my $team = $class->insert_create_data($clean_params);
+    # Greate the backlog pool
+    my $pool = Bugzilla::Extension::AgileTools::Pool->create({
+            name => $params->{name} . " backlog",
+        });
+    $clean_params->{backlog_id} = $pool->id;
 
-    # Create backlog
-    Bugzilla::Extension::AgileTools::Backlog->create({team_id=>$team->id});
+    my $team = $class->insert_create_data($clean_params);
 
     return $team;
 }
@@ -581,6 +593,7 @@ sub create {
 sub remove_from_db {
     my $self = shift;
     my $group = $self->group;
+    my $backlog = $self->backlog;
 
     $self->SUPER::remove_from_db(@_);
 
@@ -595,6 +608,9 @@ sub remove_from_db {
                WHERE id = ?", undef, $group->id);
     $group->{isbuggroup} = 1;
     $group->remove_from_db();
+
+    # Remove the backlog pool if it exists
+    $backlog->remove_from_db() if defined $backlog;
 }
 
 =back
