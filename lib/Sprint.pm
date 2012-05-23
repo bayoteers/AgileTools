@@ -159,8 +159,6 @@ sub _check_start_date {
     $date = trim($date);
     $date || ThrowUserError("agile_missing_field", {field=>'start_date'});
 
-    warn "checking start date ".$date;
-
     my $start_date = datetime_from($date);
     $start_date || ThrowUserError("agile_invalid_field", {
             field => "start_date", value => $date});
@@ -192,7 +190,6 @@ sub _check_end_date {
     $date = trim($date);
     $date || ThrowUserError("agile_missing_field", {field=>'end_date'});
 
-    warn "checking end date ".$date;
     my $end_date = datetime_from($date);
     $end_date || ThrowUserError("agile_invalid_field", {
             field => "end_date", value => $date});
@@ -227,13 +224,17 @@ sub create {
 
     # Create pool for this sprint
     my $start = datetime_from($clean_params->{start_date});
+    my $end = datetime_from($clean_params->{end_date});
     my $name = Bugzilla->dbh->selectrow_array("
         SELECT name FROM agile_team
             WHERE id = ?", undef, $clean_params->{team_id});
     $name || ThrowUserError('object_does_not_exist', {
             id => $clean_params->{team_id}, class => 'AgileTools::Team' });
 
-    $name = $name." sprint ".$start->year."W".$start->week_number;
+    $name .= " sprint ".$start->year."W".$start->week_number;
+    if ($start->week_number != $end->week_number) {
+        $name .= "-".$end->week_number;
+    }
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{pool_id} = $pool->id;
 
