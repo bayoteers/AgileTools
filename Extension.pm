@@ -556,9 +556,13 @@ sub db_schema_abstract_schema {
     $schema->{agile_sprint} = {
         FIELDS => [
             id => {
-                TYPE => 'MEDIUMSERIAL',
+                TYPE => 'INT3',
                 NOTNULL => 1,
                 PRIMARYKEY => 1,
+                REFERENCES => {
+                    TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                },
             },
             start_date => {
                 TYPE => 'DATETIME',
@@ -573,14 +577,6 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 REFERENCES => {
                     TABLE => 'agile_team',
-                    COLUMN => 'id',
-                },
-            },
-            pool_id => {
-                TYPE => 'INT3',
-                NOTNULL => 1,
-                REFERENCES => {
-                    TABLE => 'agile_pool',
                     COLUMN => 'id',
                 },
             },

@@ -69,7 +69,6 @@ sub DB_COLUMNS {
     my @columns = (qw(
         id
         team_id
-        pool_id
         capacity
     ),
     $dbh->sql_date_format('start_date', '%Y-%m-%d 00:00:00') . ' AS start_date',
@@ -80,7 +79,6 @@ sub DB_COLUMNS {
 
 use constant NUMERIC_COLUMNS => qw(
     team_id
-    pool_id
     capacity
 );
 
@@ -115,7 +113,6 @@ use constant VALIDATOR_DEPENDENCIES => {
 sub start_date  { return $_[0]->{start_date}; }
 sub end_date    { return $_[0]->{end_date}; }
 sub team_id     { return $_[0]->{team_id}; }
-sub pool_id     { return $_[0]->{pool_id}; }
 sub capacity    { return $_[0]->{capacity}; }
 
 sub team {
@@ -131,7 +128,7 @@ sub pool {
     my $self = shift;
     if (!defined $self->{pool}) {
         $self->{pool} = Bugzilla::Extension::AgileTools::Pool->new(
-            $self->pool_id);
+            $self->id);
     }
     return $self->{pool};
 }
@@ -236,7 +233,7 @@ sub create {
         $name .= "-".$end->week_number;
     }
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
-    $clean_params->{pool_id} = $pool->id;
+    $clean_params->{id} = $pool->id;
 
     return $class->insert_create_data($clean_params);
 }
