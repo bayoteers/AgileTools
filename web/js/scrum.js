@@ -54,10 +54,43 @@ var ListContainer = Base.extend(
         this.onChangeContent = $.Callbacks();
         this._changeContent();
     },
+
+    /**
+     * List content change related methods
+     */
+    _changeContent: function()
+    {
+        var id = this.contentSelector.val();
+        var name = this.contentSelector.find(":selected").text();
+        this.onChangeContent.fire(id, name);
+        if (/sprint/.test(name)) {
+            this.openSprint(id);
+        } else if (/backlog/.test(name)) {
+            this.openBacklog(id);
+        } else if (id == -1) {
+            this.openUnprioritized();
+        } else {
+            alert("Sorry, don't know how to open '" + name + "'");
+        }
+    },
+    disableContentOption: function(id, name)
+    {
+        this.contentSelector.find(":disabled").prop("disabled", false);
+        var option = this.contentSelector.find("[value='" + id + "']").prop("disabled", true);
+        if (option.size() == 0) {
+            option = $("<option>" + name + "</option>");
+            option.attr("value", id);
+            option.prop("disabled", true);
+            this.contentSelector.append(option);
+        }
+    },
+
+    /**
+     * Sprint related methods
+     */
     _openCreateSprint: function()
     {
-        this._dialog = $("#sprint_editor_template").clone();
-        this._dialog.attr("id", null);
+        this._dialog = $("#sprint_editor_template").clone().attr("id", null);
         $("[name='startDate'],[name='endDate']", this._dialog).datepicker({
             dateFormat:"yy-mm-dd",
         });
@@ -79,10 +112,10 @@ var ListContainer = Base.extend(
         params["end_date"] = this._dialog.find("[name='endDate']").val();
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
         var rpc = callRpc("Agile.Sprint", "create", params);
-        rpc.done($.proxy(this, "_onSprintCreateDone"));
+        rpc.done($.proxy(this, "_onCreateSprintDone"));
         this._dialog.dialog("close");
     },
-    _onSprintCreateDone: function(result)
+    _onCreateSprintDone: function(result)
     {
         console.log(result);
         var option = $("<option>" + result.pool.name + "</option>");
@@ -92,35 +125,6 @@ var ListContainer = Base.extend(
         this.onChangeContent.fire(result.pool.id, result.pool.name);
         this._updateSprintInfo(result);
     },
-
-    _changeContent: function()
-    {
-        var id = this.contentSelector.val();
-        var name = this.contentSelector.find(":selected").text();
-        this.onChangeContent.fire(id, name);
-        if (/sprint/.test(name)) {
-            this.openSprint(id);
-        } else if (/backlog/.test(name)) {
-            this.openBacklog(id);
-        } else if (id == -1) {
-            this.openUnprioritized();
-        } else {
-            alert("Sorry, don't know how to open '" + name + "'");
-        }
-    },
-
-    disableContentOption: function(id, name)
-    {
-        this.contentSelector.find(":disabled").prop("disabled", false);
-        var option = this.contentSelector.find("[value='" + id + "']").prop("disabled", true);
-        if (option.size() == 0) {
-            option = $("<option>" + name + "</option>");
-            option.attr("value", id);
-            option.prop("disabled", true);
-            this.contentSelector.append(option);
-        }
-    },
-
     openSprint: function(id)
     {
         var rpc = callRpc("Agile.Sprint", "get", {id:id});
@@ -137,15 +141,65 @@ var ListContainer = Base.extend(
         info.find(".startDate").text(sprint.start_date);
         info.find(".endDate").text(sprint.end_date);
         info.find(".capacity").text(sprint.capacity);
-        info.find("[name='edit']").click($.proxy(this, "_editSprint"));
+        info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
         this.footer.html(info);
+        this._sprint = sprint;
+    },
+    _openEditSprint: function()
+    {
+        if (!this._sprint) return;
+        this._dialog = $("#sprint_editor_template").clone().attr("id", null);
+        this._dialog.find("[name='startDate']").val(this._sprint.start_date);
+        this._dialog.find("[name='endDate']").val(this._sprint.end_date);
+        this._dialog.find("[name='capacity']").val(this._sprint.capacity);
+        this._dialog.find("[name='startDate'],[name='endDate']").datepicker({
+            dateFormat:"yy-mm-dd",
+        });
+        this._dialog.dialog({
+            title: "Edit sprint",
+            modal: true,
+            buttons: {
+                "Save": $.proxy(this, "_updateSprint"),
+                "Cancel": function() { $(this).dialog("close") },
+                },
+            close: function() { $(this).dialog("destroy") },
+        });
+
+    },
+    _updateSprint: function()
+    {
+        if (!this._sprint) return;
+        var params = {};
+        params["id"] = this._sprint.id;
+        params["start_date"] = this._dialog.find("[name='startDate']").val() ||
+            this._sprint.start_date;
+        params["end_date"] = this._dialog.find("[name='endDate']").val() ||
+            this._sprint.end_date;
+        params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
+        var rpc = callRpc("Agile.Sprint", "update", params);
+        rpc.done($.proxy(this, "_onUpdateSprintDone"));
+        this._dialog.dialog("close");
+    },
+    _onUpdateSprintDone: function(result)
+    {
+        if (!this._sprint || this._sprint.id != result.id) return;
+        for (var key in result.changes) {
+            this._sprint[key] = result.changes[key][1];
+        }
+        this._updateSprintInfo(this._sprint);
     },
 
+    /**
+     * Backlog related methods
+     */
     openBacklog: function(id)
     {
         this.footer.empty();
     },
 
+    /**
+     * Unprioritized related methods
+     */
     openUnprioritized: function()
     {
         var filter = $("#resposibility_filter_template").clone().attr("id", null);
