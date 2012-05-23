@@ -20,15 +20,15 @@ button.remove {
 .listHeader {
 
 }
-.buglist {
+.bugList {
     border: 1px dotted;
     list-style-type: none;
     padding: 2px;
-    height: 400px;
+    height: 100px;
     overflow-y: auto;
     overflow-x: hidden;
 }
-.buglist li {
+.bugList li {
     border: 1px solid;
     margin: 1px;
 }

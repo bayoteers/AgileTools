@@ -52,6 +52,7 @@ var ListContainer = Base.extend(
         this.footer = $("div.listFooter", this.element);
 
         this.onChangeContent = $.Callbacks();
+        this._changeContent();
     },
     _openCreateSprint: function()
     {
@@ -123,7 +124,7 @@ var ListContainer = Base.extend(
     openSprint: function(id)
     {
         var rpc = callRpc("Agile.Sprint", "get", {id:id});
-        rpc.done($proxy(this, "_getSprintDone"));
+        rpc.done($.proxy(this, "_getSprintDone"));
     },
     _getSprintDone: function(result)
     {
