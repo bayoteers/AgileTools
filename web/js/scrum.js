@@ -44,11 +44,14 @@ var ListContainer = Base.extend(
     {
         this.element = $(selector);
         this.contentSelector = $("select[name='contentSelector']", this.element);
+        this.contentSelector.change($.proxy(this, "_changeContent"));
         this.contentFilter = $("input[name='contentFilter']", this.element);
         this.createSprint = $("button[name='createSprint']", this.element);
         this.createSprint.click($.proxy(this, "_openCreateSprint"));
         this.bugList = $("ul.bugList", this.element);
         this.footer = $("div.listFooter", this.element);
+
+        this.onChangeContent = $.Callbacks();
     },
     _openCreateSprint: function()
     {
@@ -81,7 +84,30 @@ var ListContainer = Base.extend(
     _onSprintCreateDone: function(result)
     {
         console.log(result);
+        var option = $("<option>" + result.pool.name + "</option>");
+        option.attr("value", result.pool.id);
+        this.contentSelector.append(option);
+        option.prop("selected", true);
     },
+
+    _changeContent: function()
+    {
+        var id = this.contentSelector.val();
+        var name = this.contentSelector.find(":selected").text();
+        this.onChangeContent.fire(id, name);
+    },
+
+    disableContentOption: function(id, name)
+    {
+        this.contentSelector.find(":disabled").prop("disabled", false);
+        var option = this.contentSelector.find("[value='" + id + "']").prop("disabled", true);
+        if (option.size() == 0) {
+            option = $("<option>" + name + "</option>");
+            option.attr("value", id);
+            option.prop("disabled", true);
+            this.contentSelector.append(option);
+        }
+    }
 
 });
 
@@ -94,5 +120,7 @@ var PlaningPage = Base.extend(
     {
         this.left = new ListContainer(".listContainer.left");
         this.right = new ListContainer(".listContainer.right");
+        this.left.onChangeContent.add($.proxy(this.right, "disableContentOption"));
+        this.right.onChangeContent.add($.proxy(this.left, "disableContentOption"));
     },
 });

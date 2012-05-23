@@ -95,7 +95,7 @@ var SCRUM = {
     <div class="listContainer left">
         <div class="listHeader">
             <select name="contentSelector">
-                <option value"-1">[% team.name FILTER html %] unprioritized items</option>
+                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
             [% FOREACH pool IN team.pools %]
                 [% disabled = team.backlog_id == pool.id ?
                     'disabled="disabled"' : "" %]
@@ -120,7 +120,7 @@ var SCRUM = {
     <div class="listContainer right">
         <div class="listHeader">
             <select name="contentSelector">
-                <option value"-1">[% team.name FILTER html %] unprioritized items</option>
+                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
             [% FOREACH pool IN team.pools %]
                 [% disabled = team.current_sprint.pool_id == pool.id ?
                     'disabled="disabled"' : "" %]

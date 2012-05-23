@@ -241,6 +241,13 @@ sub create {
     return $class->insert_create_data($clean_params);
 }
 
+sub TO_JSON {
+    my $self = shift;
+    # fetch the pool
+    $self->pool;
+    return { %{$self} };
+}
+
 =head1 ADDITIONAL CONSTRUCTORS
 
 =over
