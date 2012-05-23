@@ -31,7 +31,6 @@
 %]
 
 [% pool_options = BLOCK %]
-    <option value"-1">[% team.name FILTER html %] unprioritized items</option>
     [% FOREACH pool IN team.pools %]
     <option value="[% pool.id %]">[% pool.name FILTER html %]</option>
     [% END %]
@@ -96,7 +95,15 @@ var SCRUM = {
     <div class="listContainer left">
         <div class="listHeader">
             <select name="contentSelector">
-                [% pool_options %]
+                <option value"-1">[% team.name FILTER html %] unprioritized items</option>
+            [% FOREACH pool IN team.pools %]
+                [% disabled = team.backlog_id == pool.id ?
+                    'disabled="disabled"' : "" %]
+                [% selected = team.current_sprint.pool_id == pool.id ?
+                    'selected="selected"' : "" %]
+                <option value="[% pool.id %]" [% disabled %] [% selected %]>
+                [% pool.name FILTER html %]</option>
+            [% END %]
             </select>
             <button type="button" name="createSprint">Create Sprint</button>
             <br/>
@@ -113,7 +120,15 @@ var SCRUM = {
     <div class="listContainer right">
         <div class="listHeader">
             <select name="contentSelector">
-                [% pool_options %]
+                <option value"-1">[% team.name FILTER html %] unprioritized items</option>
+            [% FOREACH pool IN team.pools %]
+                [% disabled = team.current_sprint.pool_id == pool.id ?
+                    'disabled="disabled"' : "" %]
+                [% selected = team.backlog_id == pool.id ?
+                    'selected="selected"' : "" %]
+                <option value="[% pool.id %]" [% disabled %] [% selected %]>
+                [% pool.name FILTER html %]</option>
+            [% END %]
             </select>
             <button type="button" name="createSprint">Create Sprint</button>
             <br/>
