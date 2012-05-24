@@ -37,6 +37,8 @@ package Bugzilla::Extension::AgileTools::WebService::Pool;
 use base qw(Bugzilla::WebService);
 
 use Bugzilla::Error;
+use Bugzilla::WebService::Bug;
+
 use Bugzilla::Extension::AgileTools::Sprint;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
@@ -61,7 +63,16 @@ sub get {
         unless defined $params->{id};
     my $pool = Bugzilla::Extension::AgileTools::Pool->check({
             id => $params->{id}});
-    return { name => $pool->name, bugs => $pool->bugs };
+    my @bugs;
+    foreach my $bug (sort { $a->pool_order cmp $b->pool_order } @{$pool->bugs}) {
+        my $bug_hash = Bugzilla::WebService::Bug::_bug_to_hash(
+            $self, $bug, $params);
+        $bug_hash->{pool_order} = $self->type("int", $bug->pool_order);
+        $bug_hash->{pool_id} = $self->type("int", $bug->pool_id);
+        push(@bugs, $bug_hash);
+    }
+
+    return { name => $pool->name, id =>, $pool->id, bugs => \@bugs };
 }
 
 
@@ -91,7 +102,7 @@ sub add_bug {
             id => $params->{id}});
 
     my $changed = $pool->add_bug($params->{bug_id}, $params->{order});
-    return { name => $pool->name, changed => $changed, bugs => $pool->bugs };
+    return { name => $pool->name, changed => $changed };
 }
 
 =item C<remove_bug>
@@ -119,7 +130,7 @@ sub remove_bug {
             id => $params->{id}});
 
     my $changed = $pool->remove_bug($params->{bug_id});
-    return { name => $pool->name, changed => $changed, bugs => $pool->bugs };
+    return { name => $pool->name, changed => $changed };
 }
 
 1;

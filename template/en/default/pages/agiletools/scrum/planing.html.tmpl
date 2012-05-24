@@ -26,6 +26,7 @@
         "extensions/AgileTools/web/css/base.css",
         ],
     javascript_urls = [
+        "extensions/AgileTools/web/js/buglist.js",
         "extensions/AgileTools/web/js/scrum.js",
         ],
 %]
@@ -83,7 +84,7 @@ var SCRUM = {
         </tr>
         <tr>
             <td></td>
-            <td><button type="button" name="edit">Edit</button></td>
+            <td><button type="button" name="edit">Edit Sprint</button></td>
         </tr>
     </table>
 
@@ -103,16 +104,19 @@ var SCRUM = {
 
     <ul>
         <li id="bug_item_template" class="bugItem ui-corner-all">
-            <a href="#" title="bug_id"></a>
-            <span title="severity"></span>
+            <a href="#" target="_blank" title="id"></a>
             <span title="status"></span>
-            <span title="summary"></span>
-            <span title="times">
+            <span title="summary"></span><br/>
+            <button type="button" class="expand">[v]</button>
+            <span class="times">
                 <span title="estimated_time">0</span>/
-                <span title="work_time">0</span>/
                 <span title="remaining_time">0</span>
             </span>
             <div class="details">
+                Assigned to:<span title="assigned_to"></span><br/>
+                Severity:<span title="severity"></span><br/>
+                Depends on:<a  title="depends_on" href="#" target="_blank"></a><br/>
+                Blocks:<a title="blocks" href="#" target="_blank"></a><br/>
                 <pre title="description"></pre>
             </div>
         </li>
@@ -137,7 +141,8 @@ var SCRUM = {
             </select>
             <button type="button" name="createSprint">Create Sprint</button>
             <br/>
-            Filter:<input name="contentFilter" />
+            <button type="button" name="reload">Reload</button>
+            Search:<input name="contentSearch" value="TBD"/>
         </div>
 
         <ul class="bugList">
@@ -162,11 +167,13 @@ var SCRUM = {
             </select>
             <button type="button" name="createSprint">Create Sprint</button>
             <br/>
-            Filter:<input name="contentFilter" />
+            <button type="button" name="reload">Reload</button>
+            Search:<input name="contentSearch" value="TBD"/>
         </div>
 
         <ul class="bugList">
         </ul>
+
         <div class="listFooter">
         </div>
     </div>

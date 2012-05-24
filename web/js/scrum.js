@@ -1,22 +1,3 @@
-var bugItem = function(id) {
-    var item = $('<li class="bugItem" id="bug_'+ id +'"/>');
-    var even = !(id % 2);
-    if (even) item.css("margin-left", "1em");
-    item.append('<a class="idLink" href="#"># ' + id + '</a>');
-    item.append('<span class="status">NEW</span>');
-    if (even) {
-        item.append('<span class="severity">task</span>');
-    } else {
-        item.append('<span class="severity">story</span>');
-    }
-    item.append('<span class="description">Description...</span>');
-    item.append('<span class="estimates" title="original/actual/remaining">1/0/1</span>');
-    item.append('<div class="details">Here be more detail of the bug...<br/>'+
-            'Maybe load the first comment (aka description)</div>');
-    item.click(function() {$(".details", this).slideToggle("fast")});
-    return item;
-}
-
 
 // Entry point, this should be moved on the template
 $(function() {
@@ -92,9 +73,20 @@ var ListContainer = Base.extend(
         this.createSprint.click($.proxy(this, "_openCreateSprint"));
         this.bugList = $("ul.bugList", this.element);
         this.footer = $("div.listFooter", this.element);
+        this.header = $("div.listHeader", this.element);
 
         this.onChangeContent = $.Callbacks();
         this._changeContent();
+        this._onWindowResize();
+        $(window).on("resize", $.proxy(this, "_onWindowResize"));
+    },
+
+    _onWindowResize: function()
+    {
+        var height = $(window).height();
+        height = height - this.header.outerHeight() - this.footer.outerHeight();
+        height = Math.max(height, 200);
+        this.bugList.css("height", height);
     },
 
     /**
@@ -105,6 +97,7 @@ var ListContainer = Base.extend(
         var id = this.contentSelector.val();
         var name = this.contentSelector.find(":selected").text();
         this.onChangeContent.fire(id, name);
+        this.bugList.buglist("destroy");
         if (/sprint/.test(name)) {
             this.openSprint(id);
         } else if (/backlog/.test(name)) {
@@ -175,7 +168,8 @@ var ListContainer = Base.extend(
     _getSprintDone: function(result)
     {
         this._updateSprintInfo(result);
-        // Load bug list
+        var rpc = callRpc("Agile.Pool", "get", {id: result.pool.id});
+        rpc.done($.proxy(this, "_onPoolGetDone"));
     },
     _updateSprintInfo: function(sprint)
     {
@@ -238,6 +232,8 @@ var ListContainer = Base.extend(
     openBacklog: function(id)
     {
         this.footer.empty();
+        var rpc = callRpc("Agile.Pool", "get", {id: id});
+        rpc.done($.proxy(this, "_onPoolGetDone"));
     },
 
     /**
@@ -248,7 +244,23 @@ var ListContainer = Base.extend(
         var filter = $("#resposibility_filter_template").clone().attr("id", null);
         filter.change($.proxy(this, "_filterUnprioritized"));
         this.footer.html(filter);
-    }
+        // TODO use filter;
+        var rpc = callRpc("Agile.Team", "unprioritized_items", {id: SCRUM.team_id});
+        rpc.done($.proxy(this, "_onUnprioritizedGetDone"));
+    },
+
+    _onPoolGetDone: function(result)
+    {
+        this.bugList.buglist();
+        this.bugList.buglist("addBugs", result.bugs);
+    },
+
+    _onUnprioritizedGetDone: function(result)
+    {
+        this.bugList.buglist();
+        this.bugList.buglist("addBugs", result.bugs);
+    },
+
 
 });
 

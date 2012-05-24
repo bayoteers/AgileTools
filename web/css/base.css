@@ -39,13 +39,17 @@ button.remove {
     margin-left: 1em;
 }
 
-.bugItem [title='times'] {
+.bugItem span.times {
     float: right;
 }
-.bugItem .details {
+.bugItem div.details {
     display: none;
 }
 
+.bugItem button.expand {
+    width: 1em;
+    height: 1em;
+}
 
 .center {
     margin-left: auto;

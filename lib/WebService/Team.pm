@@ -37,6 +37,8 @@ package Bugzilla::Extension::AgileTools::WebService::Team;
 use base qw(Bugzilla::WebService);
 
 use Bugzilla::Error;
+use Bugzilla::WebService::Bug;
+
 use Bugzilla::Extension::AgileTools::Team;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
@@ -201,11 +203,11 @@ sub add_responsibility {
 
 sub remove_responsibility {
     my ($self, $params) = @_;
-    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
+    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
             param => 'id'}) unless defined $params->{id};
-    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
+    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
             param => 'type'}) unless defined $params->{type};
-    throwcodeerror('param_required', {function => 'agile.team.remove_responsibility',
+    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
             param => 'item_id'}) unless defined $params->{item_id};
 
     my $team = get_team($params->{id}, 1);
@@ -226,12 +228,18 @@ sub remove_responsibility {
 
 sub unprioritized_items {
     my ($self, $params) = @_;
-    throwcodeerror('param_required', {function => 'Agile.Team.unprioritized_items',
+    ThrowCodeError('param_required', {function => 'Agile.Team.unprioritized_items',
             param => 'id'}) unless defined $params->{id};
 
     my $team = get_team($params->{id});
+    my @bugs;
+    foreach my $bug (@{$team->unprioritized_items($params->{include})}) {
+        my $bug_hash = Bugzilla::WebService::Bug::_bug_to_hash(
+            $self, $bug, $params);
+        push(@bugs, $bug_hash);
+    }
 
-    return {bugs => $team->unprioritized_items($params->{include})};
+    return {bugs => \@bugs};
 }
 
 1;
