@@ -36,6 +36,48 @@ var callRpc = function(namespace, method, params)
 };
 
 /**
+ * Helper to connect date picker fields
+ */
+var connectDateRange = function(from, to, extraOpts)
+{
+    var options = $.extend(
+        {
+            dateFormat: "yy-mm-dd",
+            showWeek: true,
+        }, extraOpts);
+    from.datepicker($.extend({}, options,
+        {
+            onSelect: function(selectedDate)
+            {
+                var date = $.datepicker.parseDate("yy-mm-dd", selectedDate, options);
+                to.datepicker("option", "minDate", date);
+            },
+        }
+        )
+    );
+    to.datepicker($.extend({}, options,
+        {
+            onSelect: function(selectedDate)
+            {
+                var date = $.datepicker.parseDate("yy-mm-dd", selectedDate, options);
+                from.datepicker("option", "maxDate", date);
+            },
+        }
+        )
+    );
+    from.datepicker("option", "maxDate", to.datepicker("getDate"));
+    to.datepicker("option", "minDate", from.datepicker("getDate"));
+};
+
+/**
+ * Helper to format date strings
+ */
+var formatDate = function(dateStr)
+{
+    return $.datepicker.formatDate("yy-mm-dd", new Date(dateStr));
+};
+
+/**
  * Class presenting the list container
  */
 var ListContainer = Base.extend(
@@ -91,9 +133,9 @@ var ListContainer = Base.extend(
     _openCreateSprint: function()
     {
         this._dialog = $("#sprint_editor_template").clone().attr("id", null);
-        $("[name='startDate'],[name='endDate']", this._dialog).datepicker({
-            dateFormat:"yy-mm-dd",
-        });
+        connectDateRange(this._dialog.find("[name='startDate']"),
+                this._dialog.find("[name='endDate']"));
+
         this._dialog.dialog({
             title: "Create sprint",
             modal: true,
@@ -138,8 +180,8 @@ var ListContainer = Base.extend(
     _updateSprintInfo: function(sprint)
     {
         var info = $("#sprint_info_template").clone().attr("id", null);
-        info.find(".startDate").text(sprint.start_date);
-        info.find(".endDate").text(sprint.end_date);
+        info.find(".startDate").text(formatDate(sprint.start_date));
+        info.find(".endDate").text(formatDate(sprint.end_date));
         info.find(".capacity").text(sprint.capacity);
         info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
         this.footer.html(info);
@@ -149,12 +191,13 @@ var ListContainer = Base.extend(
     {
         if (!this._sprint) return;
         this._dialog = $("#sprint_editor_template").clone().attr("id", null);
-        this._dialog.find("[name='startDate']").val(this._sprint.start_date);
-        this._dialog.find("[name='endDate']").val(this._sprint.end_date);
+        this._dialog.find("[name='startDate']").val(
+                formatDate(this._sprint.start_date));
+        this._dialog.find("[name='endDate']").val(
+                formatDate(this._sprint.end_date));
         this._dialog.find("[name='capacity']").val(this._sprint.capacity);
-        this._dialog.find("[name='startDate'],[name='endDate']").datepicker({
-            dateFormat:"yy-mm-dd",
-        });
+        connectDateRange(this._dialog.find("[name='startDate']"),
+                this._dialog.find("[name='endDate']"));
         this._dialog.dialog({
             title: "Edit sprint",
             modal: true,
