@@ -70,6 +70,11 @@ use constant UPDATE_COLUMNS => qw(
 use constant VALIDATORS => {
 };
 
+# Mutators
+##########
+
+sub set_name       { $_[0]->set('name', $_[1]); }
+
 =head1 METHODS
 
 =over

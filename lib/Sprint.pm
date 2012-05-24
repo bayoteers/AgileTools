@@ -172,7 +172,7 @@ sub _check_start_date {
     my $dbh = Bugzilla->dbh;
 
     my $overlaping = $dbh->selectrow_array(
-        "SELECT id 
+        "SELECT id
            FROM agile_sprint
           WHERE team_id = ?
                 AND end_date > ?
@@ -238,6 +238,42 @@ sub create {
     return $class->insert_create_data($clean_params);
 }
 
+sub update {
+    my $self = shift;
+
+    my($changes, $old) = $self->SUPER::update(@_);
+
+    # Update pool name if the weeks have changed
+    my $update_name = 0;
+    my $start = datetime_from($self->start_date);
+    my $end = datetime_from($self->end_date);
+
+    if ($changes->{start_date}) {
+        my $old = datetime_from($changes->{start_date}->[0]);
+        $update_name = ($old->week_number != $start->week_number
+                        || $old->year != $start->year);
+    }
+    if ($changes->{end_date}) {
+        my $old = datetime_from($changes->{end_date}->[0]);
+        $update_name = $update_name || (
+                        $old->week_number != $end->week_number
+                        || $old->year != $end->year);
+    }
+    if ($update_name) {
+        my $name = $self->team->name." sprint ";
+        $name .= $start->year."W".$start->week_number;
+        if ($start->week_number != $end->week_number) {
+            $name .= "-".$end->week_number;
+        }
+        $self->pool->set_all({name => $name});
+        $self->pool->update();
+    }
+
+    if (wantarray) {
+        return ($changes, $old);
+    }
+    return $changes;
+}
 sub TO_JSON {
     my $self = shift;
     # fetch the pool
