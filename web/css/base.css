@@ -31,19 +31,15 @@ button.remove {
 .bugList li {
     border: 1px solid;
     margin: 1px;
+    overflow-x: hidden;
+    white-space: nowrap;
 }
 
 .bugItem span {
     margin-left: 1em;
 }
 
-.bugItem .status {
-}
-.bugItem .severity {
-}
-.bugItem .description {
-}
-.bugItem .estimates {
+.bugItem [title='times'] {
     float: right;
 }
 .bugItem .details {
