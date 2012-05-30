@@ -20,33 +20,35 @@ button.remove {
 .listHeader {
 
 }
-.bugList {
-    border: 1px dotted;
-    list-style-type: none;
+ul.buglist {
     padding: 2px;
-    height: 100px;
+    list-style-type: none;
     overflow-y: auto;
     overflow-x: hidden;
 }
-.bugList li {
-    border: 1px solid;
-    margin: 1px;
-    overflow-x: hidden;
-    white-space: nowrap;
-}
-
-.bugItem span {
+ul.buglist .dependson {
     margin-left: 1em;
 }
 
-.bugItem span.times {
-    float: right;
+li.blitem {
+    border: 1px solid;
+    margin: 1px;
+    overflow-x: hidden;
+    margin-bottom: 5px;
 }
-.bugItem div.details {
+
+li.blitem span {
+}
+
+li.blitem span.times {
+    float: right;
+    height: 0px;
+}
+li.blitem div.details {
     display: none;
 }
 
-.bugItem button.expand {
+li.blitem button.expand {
     width: 1em;
     height: 1em;
 }

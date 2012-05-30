@@ -71,7 +71,7 @@ var ListContainer = Base.extend(
         this.contentFilter = $("input[name='contentFilter']", this.element);
         this.createSprint = $("button[name='createSprint']", this.element);
         this.createSprint.click($.proxy(this, "_openCreateSprint"));
-        this.bugList = $("ul.bugList", this.element);
+        this.bugList = $("ul.bugList", this.element).buglist();
         this.footer = $("div.listFooter", this.element);
         this.header = $("div.listHeader", this.element);
 
@@ -84,8 +84,7 @@ var ListContainer = Base.extend(
     _onWindowResize: function()
     {
         var height = $(window).height();
-        height = height - this.header.outerHeight() - this.footer.outerHeight();
-        height = Math.max(height, 200);
+        height = Math.max(height - 200, 200);
         this.bugList.css("height", height);
     },
 
@@ -97,7 +96,7 @@ var ListContainer = Base.extend(
         var id = this.contentSelector.val();
         var name = this.contentSelector.find(":selected").text();
         this.onChangeContent.fire(id, name);
-        this.bugList.buglist("destroy");
+        this.bugList.buglist("clear");
         if (/sprint/.test(name)) {
             this.openSprint(id);
         } else if (/backlog/.test(name)) {
@@ -251,16 +250,37 @@ var ListContainer = Base.extend(
 
     _onPoolGetDone: function(result)
     {
-        this.bugList.buglist();
-        this.bugList.buglist("addBugs", result.bugs);
+        this.bugList.buglist("option", {
+            order: "pool_order",
+            sortable: true,
+            receive: $.proxy(this, "_onPoolReceive"),
+        });
+        for (var i = 0; i < result.bugs.length; i++) {
+            this.bugList.buglist("addBug", result.bugs[i]);
+        }
     },
 
     _onUnprioritizedGetDone: function(result)
     {
-        this.bugList.buglist();
-        this.bugList.buglist("addBugs", result.bugs);
+        this.bugList.buglist("option", {
+            order: "id",
+            sortable: false,
+            receive: $.proxy(this, "_onUnprioritizedReceive"),
+        });
+        for (var i = 0; i < result.bugs.length; i++) {
+            this.bugList.buglist("addBug", result.bugs[i]);
+        }
     },
 
+    _onPoolReceive: function(ev, bug)
+    {
+        console.log("_onPoolReceive", bug);
+    },
+    
+    _onUnprioritizedReceive: function(ev, bug)
+    {
+        console.log("_onUnprioritizedReceive", bug);
+    },
 
 });
 
@@ -273,6 +293,8 @@ var PlaningPage = Base.extend(
     {
         this.left = new ListContainer(".listContainer.left");
         this.right = new ListContainer(".listContainer.right");
+        this.left.bugList.buglist("option", "connectWith", this.right.bugList);
+        this.right.bugList.buglist("option", "connectWith", this.left.bugList);
         this.left.onChangeContent.add($.proxy(this.right, "disableContentOption"));
         this.right.onChangeContent.add($.proxy(this.left, "disableContentOption"));
     },
