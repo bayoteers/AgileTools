@@ -58,8 +58,10 @@ var ListContainer = Base.extend(
         this.contentSelector = $("select[name='contentSelector']", this.element);
         this.contentSelector.change($.proxy(this, "_changeContent"));
         this.contentFilter = $("input[name='contentFilter']", this.element);
-        this.createSprint = $("button[name='createSprint']", this.element);
-        this.createSprint.click($.proxy(this, "_openCreateSprint"));
+        $("button[name='createSprint']", this.element).click(
+            $.proxy(this, "_openCreateSprint"));
+        $("button[name='reload']", this.element).click(
+            $.proxy(this, "_reload"));
         this.bugList = $("ul.bugList", this.element).buglist();
         this.footer = $("div.listFooter", this.element);
         this.header = $("div.listHeader", this.element);
@@ -77,6 +79,11 @@ var ListContainer = Base.extend(
         var height = $(window).height();
         height = Math.max(height - 200, 200);
         this.bugList.css("height", height);
+    },
+
+    _reload: function()
+    {
+        this._changeContent();
     },
 
     /**
@@ -142,7 +149,6 @@ var ListContainer = Base.extend(
     },
     _onCreateSprintDone: function(result)
     {
-        console.log(result);
         var option = $("<option>" + result.pool.name + "</option>");
         option.attr("value", result.pool.id);
         this.contentSelector.append(option);
@@ -244,7 +250,6 @@ var ListContainer = Base.extend(
         this._pool_id = result.id;
         this.bugList.buglist("option", {
             order: "pool_order",
-            sortable: true,
             receive: $.proxy(this, "_onPoolReceive"),
             move: $.proxy(this, "_onPoolReceive"),
         });
@@ -259,7 +264,6 @@ var ListContainer = Base.extend(
         this._pool_id = null;
         this.bugList.buglist("option", {
             order: "id",
-            sortable: false,
             receive: $.proxy(this, "_onUnprioritizedReceive"),
             move: null, 
         });
@@ -270,17 +274,16 @@ var ListContainer = Base.extend(
 
     _onPoolReceive: function(ev, data)
     {
-        console.log("_onPoolReceive", data);
+        data.bug.pool_order = data.index + 1;
         this.callRpc("Agile.Pool", "add_bug", {
             id: this._pool_id,
             bug_id: data.bug.id,
-            order: data.index + 1
+            order: data.bug.pool_order,
         });
     },
     
     _onUnprioritizedReceive: function(ev, data)
     {
-        console.log("_onUnprioritizedReceive", data);
         if (data.bug.pool_id) {
             this.callRpc("Agile.Pool", "remove_bug", {
                 id: data.bug.pool_id,
@@ -301,13 +304,11 @@ var ListContainer = Base.extend(
             self._rpcwait = false;
         });
         rpcObj.done(function() {
-            console.log("next rpc from the queue");
             self._rpcwait = false;
             self.element.dequeue("rpc");
         });
         self.element.queue("rpc", function() {
             self._rpcwait = true;
-            console.log("starting rpc", self.element.queue("rpc").length);
             rpcObj.start()
         });
         if (!this._rpcwait) this.element.dequeue("rpc");

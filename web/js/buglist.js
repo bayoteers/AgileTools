@@ -1,5 +1,3 @@
-var BLCOUNT = 0;
-
 // Add $().reverse()
 jQuery.fn.reverse = [].reverse;
 
@@ -22,8 +20,6 @@ $.widget("agile.buglist", {
      */
     _create: function()
     {
-        this._id = BLCOUNT++;
-        console.log("created BL", this._id);
         this._items = {};
         this.element.addClass("buglist");
 
@@ -42,7 +38,6 @@ $.widget("agile.buglist", {
      */
     destroy: function()
     {
-        BLCOUNT--;
         this.clear();
         this.element.removeClass("buglist");
         this.element.sortable("destroy");
@@ -124,9 +119,7 @@ $.widget("agile.buglist", {
 
     _onSortStop: function(ev, ui)
     {
-        console.log(this._id, "_onSortStop:", ev, ui);
         if (this.element.find(":agile-blitem").index(ui.item) == -1) {
-            console.log(this._id, "_onSortStop: item removed");
             // remove item if it was moved to other list
             delete this._items[ui.item.blitem("bug").id];
         }
@@ -138,15 +131,12 @@ $.widget("agile.buglist", {
         var trigger = "receive";
         var self = this;
 
-        if (ui.sender) {
-            console.log(this._id, "_onSortUpdate", trigger, ev, ui);
-        } else {
+        if (!ui.sender) {
             if (this.element.index(ui.item)) {
                 trigger = "move";
             } else {
                 trigger = "remove";
             }
-            console.log(this._id, "_onSortUpdate", trigger, ev, ui);
             /* TODO: This revese stuff is a bit hackish
              * When re-ordering the items inside single list, the backend
              * method Pool.add_bug() needs to be called in reverse order 
@@ -173,7 +163,6 @@ $.widget("agile.buglist", {
 
     _onSortReceive: function(ev, ui)
     {
-        console.log(this._id, "_onSortReceive", ev, ui);
         this._placeItemElement(ui.item);
         var item = ui.item.data("blitem");
         item._setOption("_buglist", this);
