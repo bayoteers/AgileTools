@@ -252,11 +252,13 @@ var ListContainer = Base.extend(
             order: "pool_order",
             receive: $.proxy(this, "_onPoolReceive"),
             move: $.proxy(this, "_onPoolReceive"),
+            remove:$.proxy(this, "_calculateWork"),
         });
         result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
             this.bugList.buglist("addBug", result.bugs[i]);
         }
+        this._calculateWork();
     },
 
     _onUnprioritizedGetDone: function(result)
@@ -265,7 +267,8 @@ var ListContainer = Base.extend(
         this.bugList.buglist("option", {
             order: "id",
             receive: $.proxy(this, "_onUnprioritizedReceive"),
-            move: null, 
+            move: null,
+            remove: null,
         });
         for (var i = 0; i < result.bugs.length; i++) {
             this.bugList.buglist("addBug", result.bugs[i]);
@@ -280,6 +283,7 @@ var ListContainer = Base.extend(
             bug_id: data.bug.id,
             order: data.bug.pool_order,
         });
+        this._calculateWork();
     },
     
     _onUnprioritizedReceive: function(ev, data)
@@ -289,6 +293,17 @@ var ListContainer = Base.extend(
                 id: data.bug.pool_id,
                 bug_id: data.bug.id});
         }
+    },
+
+    _calculateWork: function() {
+        var work = 0;
+        this.bugList.find(":agile-blitem").each(function() {
+            work += $(this).blitem("bug").remaining_time || 0;
+        });
+        this.footer.find(".estimatedWork").text(work);
+        var capacity = this.footer.find(".capacity").text();
+        var free = capacity - work;
+        this.footer.find(".freeCapacity").text(free);
     },
 
     /**
