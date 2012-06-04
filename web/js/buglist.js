@@ -1,5 +1,8 @@
 var BLCOUNT = 0;
 
+// Add $().reverse()
+jQuery.fn.reverse = [].reverse;
+
 /**
  * jQuery Buglist widget
  */
@@ -94,7 +97,22 @@ $.widget("agile.buglist", {
         if (blocked) {
             blocked.addDepends(element);
         } else if (this.element.find(":agile-blitem").index(element) == -1) {
-            this.element.append(element);
+            var place = null;
+            if (this.options.order) {
+                var order = this.options.order;
+                this.element.children(":agile-blitem").each(function() {
+                    var tmp = $(this).blitem("bug");
+                    if (tmp[order] > bug[order]) {
+                        place = $(this);
+                        return false;
+                    }
+                });
+            }
+            if (place) {
+                place.before(element);
+            } else {
+                this.element.append(element);
+            }
         }
         for (var i = 0; i < bug.depends_on.length; i++) {
             var depend = this._items[bug.depends_on[i]];
@@ -116,26 +134,49 @@ $.widget("agile.buglist", {
 
     _onSortUpdate: function(ev, ui)
     {
+        var reverse = false;
+        var trigger = "receive";
+        var self = this;
+
         if (ui.sender) {
-            console.log(this._id, "_onSortUpdate, target", ev, ui);
-            ui.item.blitem("option", "_buglist", this);
-            this._trigger("receive", ev, ui.item.blitem("bug"));
+            console.log(this._id, "_onSortUpdate", trigger, ev, ui);
         } else {
-            console.log(this._id, "_onSortUpdate, source", ev, ui);
+            if (this.element.index(ui.item)) {
+                trigger = "move";
+            } else {
+                trigger = "remove";
+            }
+            console.log(this._id, "_onSortUpdate", trigger, ev, ui);
+            /* TODO: This revese stuff is a bit hackish
+             * When re-ordering the items inside single list, the backend
+             * method Pool.add_bug() needs to be called in reverse order 
+             * starting from the lowest dependency included in the block.
+             * Otherwise the order is not updated correctly
+             */
+            reverse = ui.position.top > ui.originalPosition.top;
             // Bounce the item to indicate where it ended
             var origMargin = ui.item.css("margin-left");
             ui.item.animate({"margin-left": "+=20"}, {queue: true})
                 .animate({"margin-left": origMargin}, {queue: true});
         }
+        
+        var movedItems = ui.item.add(":agile-blitem", ui.item);
+        if (reverse) movedItems = movedItems.reverse();
+        movedItems.each(function() {
+            var index = self.element.find(":agile-blitem").index(this);
+            self._trigger(trigger, ev, {
+                bug: $(this).blitem("bug"),
+                index: index,
+            });
+        });
     },
 
     _onSortReceive: function(ev, ui)
     {
         console.log(this._id, "_onSortReceive", ev, ui);
         this._placeItemElement(ui.item);
-        var index = this.element.find(":agile-blitem").index(ui.item);
-        console.log("index", index);
         var item = ui.item.data("blitem");
+        item._setOption("_buglist", this);
         this._items[item.options.bug.id] = item;
     },
 });
@@ -231,7 +272,23 @@ $.widget("agile.blitem", {
 
     addDepends: function(element)
     {
-        this._dList.append(element);
+        var bug = element.blitem("bug");
+        var place = null;
+        var order = this.options._buglist.options.order;
+        if (order) {
+            this._dList.children(":agile-blitem").each(function() {
+                var tmp = $(this).blitem("bug");
+                if (tmp[order] > bug[order]) {
+                    place = $(this);
+                    return false;
+                }
+            });
+        }
+        if (place) {
+            place.before(element);
+        } else {
+            this._dList.append(element);
+        }
     },
 
     /**

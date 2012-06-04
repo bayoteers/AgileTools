@@ -5,18 +5,6 @@ $(function() {
 });
 
 /**
- * Helper to add the default error handler on rpc calls
- */
-var callRpc = function(namespace, method, params)
-{
-    var rpcObj = new Rpc(namespace, method, params);
-    rpcObj.fail(function(error) {
-        alert(namespace + "." + method + "() failed:" + error.message);
-    });
-    return rpcObj;
-};
-
-/**
  * Helper to connect date picker fields
  */
 var connectDateRange = function(from, to, extraOpts)
@@ -66,6 +54,7 @@ var ListContainer = Base.extend(
     constructor: function(selector)
     {
         this.element = $(selector);
+        self._rpcwait = false;
         this.contentSelector = $("select[name='contentSelector']", this.element);
         this.contentSelector.change($.proxy(this, "_changeContent"));
         this.contentFilter = $("input[name='contentFilter']", this.element);
@@ -79,6 +68,8 @@ var ListContainer = Base.extend(
         this._changeContent();
         this._onWindowResize();
         $(window).on("resize", $.proxy(this, "_onWindowResize"));
+
+        this._pool_id = null;
     },
 
     _onWindowResize: function()
@@ -145,7 +136,7 @@ var ListContainer = Base.extend(
         params["start_date"] = this._dialog.find("[name='startDate']").val();
         params["end_date"] = this._dialog.find("[name='endDate']").val();
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
-        var rpc = callRpc("Agile.Sprint", "create", params);
+        var rpc = this.callRpc("Agile.Sprint", "create", params);
         rpc.done($.proxy(this, "_onCreateSprintDone"));
         this._dialog.dialog("close");
     },
@@ -161,13 +152,13 @@ var ListContainer = Base.extend(
     },
     openSprint: function(id)
     {
-        var rpc = callRpc("Agile.Sprint", "get", {id:id});
+        var rpc = this.callRpc("Agile.Sprint", "get", {id:id});
         rpc.done($.proxy(this, "_getSprintDone"));
     },
     _getSprintDone: function(result)
     {
         this._updateSprintInfo(result);
-        var rpc = callRpc("Agile.Pool", "get", {id: result.pool.id});
+        var rpc = this.callRpc("Agile.Pool", "get", {id: result.pool.id});
         rpc.done($.proxy(this, "_onPoolGetDone"));
     },
     _updateSprintInfo: function(sprint)
@@ -212,7 +203,7 @@ var ListContainer = Base.extend(
         params["end_date"] = this._dialog.find("[name='endDate']").val() ||
             this._sprint.end_date;
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
-        var rpc = callRpc("Agile.Sprint", "update", params);
+        var rpc = this.callRpc("Agile.Sprint", "update", params);
         rpc.done($.proxy(this, "_onUpdateSprintDone"));
         this._dialog.dialog("close");
     },
@@ -231,7 +222,7 @@ var ListContainer = Base.extend(
     openBacklog: function(id)
     {
         this.footer.empty();
-        var rpc = callRpc("Agile.Pool", "get", {id: id});
+        var rpc = this.callRpc("Agile.Pool", "get", {id: id});
         rpc.done($.proxy(this, "_onPoolGetDone"));
     },
 
@@ -244,17 +235,20 @@ var ListContainer = Base.extend(
         filter.change($.proxy(this, "_filterUnprioritized"));
         this.footer.html(filter);
         // TODO use filter;
-        var rpc = callRpc("Agile.Team", "unprioritized_items", {id: SCRUM.team_id});
+        var rpc = this.callRpc("Agile.Team", "unprioritized_items", {id: SCRUM.team_id});
         rpc.done($.proxy(this, "_onUnprioritizedGetDone"));
     },
 
     _onPoolGetDone: function(result)
     {
+        this._pool_id = result.id;
         this.bugList.buglist("option", {
             order: "pool_order",
             sortable: true,
             receive: $.proxy(this, "_onPoolReceive"),
+            move: $.proxy(this, "_onPoolReceive"),
         });
+        result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
             this.bugList.buglist("addBug", result.bugs[i]);
         }
@@ -262,26 +256,63 @@ var ListContainer = Base.extend(
 
     _onUnprioritizedGetDone: function(result)
     {
+        this._pool_id = null;
         this.bugList.buglist("option", {
             order: "id",
             sortable: false,
             receive: $.proxy(this, "_onUnprioritizedReceive"),
+            move: null, 
         });
         for (var i = 0; i < result.bugs.length; i++) {
             this.bugList.buglist("addBug", result.bugs[i]);
         }
     },
 
-    _onPoolReceive: function(ev, bug)
+    _onPoolReceive: function(ev, data)
     {
-        console.log("_onPoolReceive", bug);
+        console.log("_onPoolReceive", data);
+        this.callRpc("Agile.Pool", "add_bug", {
+            id: this._pool_id,
+            bug_id: data.bug.id,
+            order: data.index + 1
+        });
     },
     
-    _onUnprioritizedReceive: function(ev, bug)
+    _onUnprioritizedReceive: function(ev, data)
     {
-        console.log("_onUnprioritizedReceive", bug);
+        console.log("_onUnprioritizedReceive", data);
+        if (data.bug.pool_id) {
+            this.callRpc("Agile.Pool", "remove_bug", {
+                id: data.bug.pool_id,
+                bug_id: data.bug.id});
+        }
     },
 
+    /**
+     * Helper to add the default error handler on rpc calls
+     */
+    callRpc: function(namespace, method, params)
+    {
+        var rpcObj = new Rpc(namespace, method, params, false);
+        var self = this;
+        rpcObj.fail(function(error) {
+            alert(namespace + "." + method + "() failed:" + error.message);
+            self.element.clearQueue("rpc");
+            self._rpcwait = false;
+        });
+        rpcObj.done(function() {
+            console.log("next rpc from the queue");
+            self._rpcwait = false;
+            self.element.dequeue("rpc");
+        });
+        self.element.queue("rpc", function() {
+            self._rpcwait = true;
+            console.log("starting rpc", self.element.queue("rpc").length);
+            rpcObj.start()
+        });
+        if (!this._rpcwait) this.element.dequeue("rpc");
+        return rpcObj;
+    },
 });
 
 /**
