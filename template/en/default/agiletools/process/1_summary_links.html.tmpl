@@ -1,4 +1,19 @@
 <h2>Scrum</h2>
 <ul>
-    <li><a href="page.cgi?id=agiletools/scrum/planing.html&amp;team_id=[% team.id %]">Plan</a></li>
+[% IF team.current_sprint %]
+    <li>
+        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.current_sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=bug_agile_pool.pool_order%2Cbug_status%2Cassigned_to%2Cshort_short_desc%2Cestimated_time%2Cactual_time%2Cremaining_time">Current Sprint</a>
+    </li>
+[% END %]
+[% IF team.previous_sprint %]
+    <li>
+        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.previous_sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=bug_agile_pool.pool_order%2Cbug_status%2Cassigned_to%2Cshort_short_desc%2Cestimated_time%2Cactual_time%2Cremaining_time">Previous Sprint</a>
+    </li>
+[% END %]
+    <li>
+        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.backlog_id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=bug_agile_pool.pool_order%2Cbug_status%2Cassigned_to%2Cshort_short_desc%2Cestimated_time%2Cactual_time%2Cremaining_time">Backlog</a>
+    </li>
+    <li>
+        <a href="page.cgi?id=agiletools/scrum/planing.html&amp;team_id=[% team.id %]">Planing</a>
+    </li>
 </ul>
