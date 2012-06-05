@@ -350,7 +350,7 @@ sub db_schema_abstract_schema {
             process_id => {
                 TYPE => 'INT1',
                 NOTNULL => 1,
-                DEFAULT => 0,
+                DEFAULT => 1,
             },
             backlog_id => {
                 TYPE => 'INT3',
