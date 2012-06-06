@@ -358,6 +358,7 @@ sub db_schema_abstract_schema {
                 REFERENCES => {
                     TABLE => 'agile_pool',
                     COLUMN => 'id',
+                    DELETE => 'SET NULL',
                 },
             },
         ],

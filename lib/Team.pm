@@ -627,8 +627,20 @@ sub create {
 
 sub remove_from_db {
     my $self = shift;
-    my $group = $self->group;
+
+    # Remove backlog if team has one
     my $backlog = $self->backlog;
+    $backlog->remove_from_db() if defined $backlog;
+
+    # Remove sprints
+    my $sprints = Bugzilla::Extension::AgileTools::Sprint->match(
+        {team_id => $self->id});
+    foreach my $sprint (@$sprints) {
+        $sprint->remove_from_db();
+    }
+
+    # Take group for later deletion
+    my $group = $self->group;
 
     $self->SUPER::remove_from_db(@_);
 
@@ -643,9 +655,6 @@ sub remove_from_db {
                WHERE id = ?", undef, $group->id);
     $group->{isbuggroup} = 1;
     $group->remove_from_db();
-
-    # Remove the backlog pool if it exists
-    $backlog->remove_from_db() if defined $backlog;
 }
 
 =back
