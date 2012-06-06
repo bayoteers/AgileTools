@@ -95,9 +95,7 @@ var ListContainer = Base.extend(
             // Initiate search on enter press
             ev.preventDefault();
             var text = $(ev.target).val();
-            if (text) {
-                this.bugList.buglist("search", text);
-            }
+            this.bugList.buglist("search", text);
         }
     },
 
@@ -255,8 +253,26 @@ var ListContainer = Base.extend(
         var filter = $("#resposibility_filter_template").clone().attr("id", null);
         filter.change($.proxy(this, "_filterUnprioritized"));
         this.footer.html(filter);
-        // TODO use filter;
-        var rpc = this.callRpc("Agile.Team", "unprioritized_items", {id: SCRUM.team_id});
+        this._filterUnprioritized();
+
+    },
+    _filterUnprioritized: function(ev)
+    {
+        var params = {id: SCRUM.team_id};
+        if (ev) {
+            this.bugList.buglist("clear");
+            var items = $(ev.target).val();
+            if (! $.isEmptyObject(items)) {
+                var include = {};
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i].split(':');
+                    if (!include[item[0]]) include[item[0]] = [];
+                    include[item[0]].push(item[1]);
+                }
+                params.include = include;
+            }
+        }
+        var rpc = this.callRpc("Agile.Team", "unprioritized_items", params);
         rpc.done($.proxy(this, "_onUnprioritizedGetDone"));
     },
 
