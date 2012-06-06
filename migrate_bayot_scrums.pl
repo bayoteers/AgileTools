@@ -110,16 +110,17 @@ foreach my $row (@$old_teams) {
 
     # Copy sprints
     my $sprints = $dbh->selectall_arrayref(
-        "SELECT id, start_date, end_date FROM scrums_sprints ".
+        "SELECT id, start_date, end_date, estimated_capacity FROM scrums_sprints ".
             "WHERE team_id = ? AND item_type = ? ORDER BY start_date",
             undef, ($old_id, 1));
     foreach my $sprint_info (@$sprints) {
-        my ($sprint_id, $start_date, $end_date) = @$sprint_info;
+        my ($sprint_id, $start_date, $end_date, $capacity) = @$sprint_info;
         print "\tCreating sprint ".$start_date." - ".$end_date."\n";
         my $sprint = Bugzilla::Extension::AgileTools::Sprint->create({
                 team_id => $team->id,
                 start_date => $start_date,
                 end_date => $end_date,
+                capacity => $capacity,
             });
         my $sprint_bugs = $dbh->selectcol_arrayref(
             "SELECT bm.bug_id FROM scrums_sprint_bug_map AS bm ".
