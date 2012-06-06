@@ -145,6 +145,8 @@ sub add_bug {
            FROM bug_agile_pool
           WHERE bug_id = ?",
           undef, $bug_id);
+    $old_pool |= 0;
+    $old_order |= 0;
 
     # If the bug is being moved inside this pool, the maximum order is the
     # number of bugs in the pool, otherwise + 1 (the bug being added)
@@ -154,7 +156,7 @@ sub add_bug {
 
     my $changed = ($old_pool != $self->id || $old_order != $order);
 
-    if (defined $old_pool && $changed) {
+    if ($old_pool && $changed) {
         # Delete old entry
         $dbh->do("DELETE FROM bug_agile_pool
                     WHERE pool_id = ? AND bug_id = ?",
