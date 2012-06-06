@@ -114,7 +114,7 @@ use constant _RESP_CLASS => {
 
 sub group_id   { return $_[0]->{group_id}; }
 sub process_id { return $_[0]->{process_id}; }
-sub backlog_id { return $_[0]->{process_id}; }
+sub backlog_id { return $_[0]->{backlog_id}; }
 
 sub group {
     my $self = shift;
