@@ -30,4 +30,9 @@
 [% ELSIF error == "agile_sprint_end_before_start" %]
     [% title = "Bad end date" %]
     The selected end date is before start date.
+[% ELSIF error == "agile_actual_time_required" %]
+    [% title = "Actual time required" %]
+    Bugs with severity [% Param('agile_check_time_severity').join(', ') %] and
+    resolution [% Param('agile_check_time_resolution').join(', ') %] require
+    that the actual working time is set when closing them.
 [% END %]

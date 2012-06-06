@@ -209,6 +209,35 @@ sub buglist_column_joins {
     };
 }
 
+sub bug_end_of_update {
+    my ($self, $args) = @_;
+
+    my ($bug, $changes) = @$args{qw(bug changes)};
+
+    if (my $status_change = $changes->{'bug_status'}) {
+        my $old_status = new Bugzilla::Status({ name => $status_change->[0] });
+        my $new_status = new Bugzilla::Status({ name => $status_change->[1] });
+        if (!$new_status->is_open && $old_status->is_open) {
+            # Bug is being closed
+
+            # Check that actual time is set if it is required for the severity and resolution
+            my $check_severity = grep {$bug->bug_severity eq $_}
+                    @{Bugzilla->params->{"agile_check_time_severity"}};
+            my $check_resolution = grep {$bug->resolution eq $_}
+                    @{Bugzilla->params->{"agile_check_time_resolution"}};
+            if ($check_severity && $check_resolution) {
+                ThrowUserError("agile_actual_time_required")
+                    if ($bug->actual_time == 0);
+            }
+
+            # Remove closed bug from any backlog
+            Bugzilla->dbh->do(
+                'DELETE bap FROM bug_agile_pool AS bap
+                    INNER JOIN agile_team at ON bap.pool_id = at.backlog_id
+                    WHERE  bap.bug_id = ?', undef, $bug->id);
+        }
+    }
+}
 
 
 sub install_update_db {
@@ -602,6 +631,12 @@ sub webservice {
         "Bugzilla::Extension::AgileTools::WebService::Sprint";
     $args->{dispatch}->{'Agile.Pool'} =
         "Bugzilla::Extension::AgileTools::WebService::Pool";
+}
+
+sub config_add_panels {
+    my ($self, $args) = @_;
+    my $modules = $args->{panel_modules};
+    $modules->{AgileTools} = "Bugzilla::Extension::AgileTools::Params";
 }
 
 __PACKAGE__->NAME;
