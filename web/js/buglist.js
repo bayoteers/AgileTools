@@ -26,6 +26,7 @@ $.widget("agile.buglist", {
         this.element.addClass("buglist");
 
         this.element.sortable({
+            placeholder: "blitem-placeholder",
             connectWith: this.options.connectWith,
             stop: $.proxy(this, "_onSortStop"),
             receive: $.proxy(this, "_onSortReceive"),
@@ -248,6 +249,7 @@ $.widget("agile.blitem", {
     _setBuglist: function(buglist)
     {
         this._dList.sortable("option", {
+            placeholder: "blitem-placeholder",
             connectWith: buglist.options.connectWith,
             stop: $.proxy(buglist, "_onSortStop"),
             receive: $.proxy(buglist, "_onSortReceive"),

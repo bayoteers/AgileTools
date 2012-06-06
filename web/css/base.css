@@ -58,6 +58,15 @@ li.blitem-hl {
     background-color: lightgray;
 }
 
+.blitem-placeholder {
+    background-color: gray;
+    height: 2em;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+}
+
 li.blitem span {
 }
 
