@@ -221,6 +221,7 @@ $.widget("agile.blitem", {
         this._dList.addClass("buglist");
         this._setBuglist(this.options._buglist);
         this._updateBug();
+        this._originalMargin = this.element.css("margin-left");
     },
     /**
      * Destroy the widget
@@ -332,9 +333,8 @@ $.widget("agile.blitem", {
 
     bounce: function()
     {
-        var origMargin = this.element.css("margin-left");
         this.element.animate({"margin-left": "+=20"}, {queue: true})
-                .animate({"margin-left": origMargin}, {queue: true});
+                .animate({"margin-left": this._originalMargin}, {queue: true});
     },
 
 });

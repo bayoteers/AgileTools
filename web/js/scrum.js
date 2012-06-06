@@ -67,7 +67,7 @@ var ListContainer = Base.extend(
         $("button[name='reload']", this.header).click(
             $.proxy(this, "_reload"));
 
-        $("input[name='contentSearch']", this.header).keypress(
+        $("input[name='contentSearch']", this.header).keyup(
             $.proxy(this, "_search"));
         this.onChangeContent = $.Callbacks();
         this._changeContent();
@@ -91,12 +91,8 @@ var ListContainer = Base.extend(
 
     _search: function(ev)
     {
-        if (ev.which == 13) {
-            // Initiate search on enter press
-            ev.preventDefault();
-            var text = $(ev.target).val();
-            this.bugList.buglist("search", text);
-        }
+        var text = $(ev.target).val();
+        this.bugList.buglist("search", text);
     },
 
     /**
