@@ -12,7 +12,10 @@ var connectDateRange = function(from, to, extraOpts)
     var options = $.extend(
         {
             dateFormat: "yy-mm-dd",
+            firstDay: 1,
             showWeek: true,
+            showOn: "button",
+            showButtonPanel: true,
         }, extraOpts);
     from.datepicker($.extend({}, options,
         {
@@ -134,6 +137,8 @@ var ListContainer = Base.extend(
         this._dialog = $("#sprint_editor_template").clone().attr("id", null);
         connectDateRange(this._dialog.find("[name='startDate']"),
                 this._dialog.find("[name='endDate']"));
+        this._dialog.find("[name='startDate']").datepicker("option", "defaultDate", "+1")
+        this._dialog.find("[name='endDate']").datepicker("option", "defaultDate", "+7")
 
         this._dialog.dialog({
             title: "Create sprint",
