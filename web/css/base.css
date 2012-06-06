@@ -2,6 +2,7 @@
     display: none;
 }
 
+/* Team management pages */
 .editor {
     display: none;
 }
@@ -14,18 +15,35 @@ button.remove {
     height: 1.5em;
 }
 
+
+/* Scrum planing page */
+.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+.left {
+    margin-left: 0px;
+    float: left;
+}
+.right {
+    margin-right: 0px;
+    float: right;
+}
 .listContainer {
     width: 50%;
 }
 .listHeader {
 
 }
+
+/* Buglist related */
 ul.buglist {
     padding: 2px;
     list-style-type: none;
     overflow-y: auto;
     overflow-x: hidden;
 }
+
 ul.buglist .dependson {
     margin-left: 1em;
 }
@@ -35,6 +53,9 @@ li.blitem {
     margin: 1px;
     overflow-x: hidden;
     margin-bottom: 5px;
+}
+li.blitem-hl {
+    background-color: lightgray;
 }
 
 li.blitem span {
@@ -52,17 +73,3 @@ li.blitem button.expand {
     width: 1em;
     height: 1em;
 }
-
-.center {
-    margin-left: auto;
-    margin-right: auto;
-}
-.left {
-    margin-left: 0px;
-    float: left;
-}
-.right {
-    margin-right: 0px;
-    float: right;
-}
-

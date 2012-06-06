@@ -21,6 +21,8 @@ $.widget("agile.buglist", {
     _create: function()
     {
         this._items = {};
+        this._lastSearch = null;
+        this._searchIndex = 0;
         this.element.addClass("buglist");
 
         this.element.sortable({
@@ -145,9 +147,7 @@ $.widget("agile.buglist", {
              */
             reverse = ui.position.top > ui.originalPosition.top;
             // Bounce the item to indicate where it ended
-            var origMargin = ui.item.css("margin-left");
-            ui.item.animate({"margin-left": "+=20"}, {queue: true})
-                .animate({"margin-left": origMargin}, {queue: true});
+            ui.item.blitem("bounce");
         }
         
         var movedItems = ui.item.add(":agile-blitem", ui.item);
@@ -167,6 +167,28 @@ $.widget("agile.buglist", {
         var item = ui.item.data("blitem");
         item._setOption("_buglist", this);
         this._items[item.options.bug.id] = item;
+    },
+    search: function(text)
+    {
+        this.element.find(":agile-blitem").blitem("highlight", false);
+        if (this._lastSearch == text) {
+            this._searchIndex++;
+        } else {
+            this._lastSearch = text;
+            this._searchIndex = 0;
+        }
+        if (!text) return;
+        var matches = this.element.find(":agile-blitem:contains("+text+")");
+        matches.blitem("highlight", true);
+        if (this._searchIndex >= matches.size()) this._searchIndex = 0;
+        var topItem = matches.eq(this._searchIndex);
+        if (topItem.size()) {
+            topItem.blitem("bounce");
+            var scrollTop = this.element.scrollTop();
+            var lOffset = this.element.offset().top;
+            var iOffset = topItem.offset().top;
+            this.element.animate({scrollTop: scrollTop + iOffset - lOffset,});
+        }
     },
 });
 
@@ -204,7 +226,7 @@ $.widget("agile.blitem", {
      */
     destroy: function()
     {
-        this.element.removeClass("blitem");
+        this.element.removeClass("blitem blitem-hl")
         this._dList.sortable("destroy");
         $.Widget.prototype.destroy.apply(this);
     },
@@ -257,6 +279,11 @@ $.widget("agile.blitem", {
                 }
             }
         });
+        if (bug.is_open) {
+            this.element.removeClass("bz_closed");
+        } else {
+            this.element.addClass("bz_closed");
+        }
     },
 
     addDepends: function(element)
@@ -290,6 +317,22 @@ $.widget("agile.blitem", {
         } else {
             return this.options.bug;
         }
+    },
+    highlight: function(on) {
+        if (on == null) {
+            this.element.toggleClass("blitem-hl");
+        } else if (on) {
+            this.element.addClass("blitem-hl");
+        } else {
+            this.element.removeClass("blitem-hl");
+        }
+    },
+
+    bounce: function()
+    {
+        var origMargin = this.element.css("margin-left");
+        this.element.animate({"margin-left": "+=20"}, {queue: true})
+                .animate({"margin-left": origMargin}, {queue: true});
     },
 
 });

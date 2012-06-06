@@ -58,14 +58,17 @@ var ListContainer = Base.extend(
         this.contentSelector = $("select[name='contentSelector']", this.element);
         this.contentSelector.change($.proxy(this, "_changeContent"));
         this.contentFilter = $("input[name='contentFilter']", this.element);
-        $("button[name='createSprint']", this.element).click(
-            $.proxy(this, "_openCreateSprint"));
-        $("button[name='reload']", this.element).click(
-            $.proxy(this, "_reload"));
         this.bugList = $("ul.bugList", this.element).buglist();
         this.footer = $("div.listFooter", this.element);
         this.header = $("div.listHeader", this.element);
 
+        $("button[name='createSprint']", this.header).click(
+            $.proxy(this, "_openCreateSprint"));
+        $("button[name='reload']", this.header).click(
+            $.proxy(this, "_reload"));
+
+        $("input[name='contentSearch']", this.header).keypress(
+            $.proxy(this, "_search"));
         this.onChangeContent = $.Callbacks();
         this._changeContent();
         this._onWindowResize();
@@ -84,6 +87,18 @@ var ListContainer = Base.extend(
     _reload: function()
     {
         this._changeContent();
+    },
+
+    _search: function(ev)
+    {
+        if (ev.which == 13) {
+            // Initiate search on enter press
+            ev.preventDefault();
+            var text = $(ev.target).val();
+            if (text) {
+                this.bugList.buglist("search", text);
+            }
+        }
     },
 
     /**
