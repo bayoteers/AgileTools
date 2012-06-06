@@ -97,7 +97,7 @@ use constant VALIDATORS => {
     start_date => \&_check_start_date,
     end_date => \&_check_end_date,
     team_id => \&_check_number,
-    capacity => \&_check_number,
+    capacity => \&Bugzilla::Object::check_time,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {

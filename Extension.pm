@@ -581,7 +581,7 @@ sub db_schema_abstract_schema {
                 },
             },
             capacity => {
-                TYPE => 'INT2',
+                TYPE => 'decimal(7,2)',
                 NOTNULL => 1,
                 DEFAULT => 0,
             },
