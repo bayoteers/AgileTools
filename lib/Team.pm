@@ -477,6 +477,9 @@ sub unprioritized_items {
     my ($self, $include) = @_;
 
     # Generate search params
+    # TODO: Move parameter generation in separate method
+    #       So that they can be used in other places, like generating query URL
+
     # Open bugs which are not in a pool
     my $params = {
         resolution => "---",
