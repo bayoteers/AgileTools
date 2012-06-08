@@ -32,8 +32,8 @@ button.remove {
 .listContainer {
     width: 50%;
 }
-.listHeader {
-
+.over-capacity {
+    background-color: pink;
 }
 
 /* Buglist related */

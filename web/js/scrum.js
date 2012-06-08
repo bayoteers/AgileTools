@@ -329,11 +329,16 @@ var ListContainer = Base.extend(
 
     _calculateWork: function() {
         var work = 0;
+        var capacity = this.footer.find(".capacity").text();
         this.bugList.find(":agile-blitem").each(function() {
             work += $(this).blitem("bug").remaining_time || 0;
+            if (work > capacity) {
+                $(this).addClass("over-capacity");
+            } else {
+                $(this).removeClass("over-capacity");
+            }
         });
         this.footer.find(".estimatedWork").text(work);
-        var capacity = this.footer.find(".capacity").text();
         var free = capacity - work;
         this.footer.find(".freeCapacity").text(free);
     },
