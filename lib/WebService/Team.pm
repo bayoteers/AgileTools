@@ -42,6 +42,16 @@ use Bugzilla::WebService::Bug;
 use Bugzilla::Extension::AgileTools::Team;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
+use Bugzilla::Extension::AgileTools::WebService::Util;
+
+# Webservice field type mapping
+use constant FIELD_TYPES => {
+    id => "int",
+    name => "string",
+    group_id => "int",
+    process_id => "int",
+    backlog_id => "int",
+};
 
 =head1 METHODS
 
@@ -66,7 +76,8 @@ sub update {
 
     my $team = get_team(delete $params->{id}, 1);
     $team->set_all($params);
-    return $team->update();
+    my $changes = $team->update();
+    return changes_to_hash($self, $changes, FIELD_TYPES);
 }
 
 =item C<add_member>
@@ -87,6 +98,7 @@ sub add_member {
 
     my $team = get_team($params->{id}, 1);
     $team->add_member($params->{user});
+    # TODO: WebService type the result
     return $team->members;
 }
 
@@ -108,6 +120,7 @@ sub remove_member {
 
     my $team = get_team($params->{id}, 1);
     $team->remove_member($params->{user});
+    # TODO: WebService type the result
     return $team->members;
 }
 
@@ -132,6 +145,7 @@ sub add_member_role {
     my $team = get_team($params->{id}, 1);
     my $role = get_role($params->{role});
     my $user = get_user($params->{user});
+    # TODO: WebService type the result
     if ($role->add_user_role($team, $user)) {
         return {userid => $user->id, role => $role};
     }
@@ -160,6 +174,7 @@ sub remove_member_role {
     my $team = get_team($params->{id}, 1);
     my $role = get_role($params->{role});
     my $user = get_user($params->{user});
+    # TODO: WebService type the result
     if ($role->remove_user_role($team, $user)) {
         return {userid => $user->id, role => $role};
     }
@@ -187,6 +202,7 @@ sub add_responsibility {
 
     my $team = get_team($params->{id}, 1);
     $team->add_responsibility($params->{type}, $params->{item_id});
+    # TODO: WebService type the result
     return {type => $params->{type},
         items => $team->responsibilities($params->{type})};
 }
@@ -212,6 +228,7 @@ sub remove_responsibility {
 
     my $team = get_team($params->{id}, 1);
     $team->remove_responsibility($params->{type}, $params->{item_id});
+    # TODO: WebService type the result
     return {type => $params->{type},
         items => $team->responsibilities($params->{type})};
 }

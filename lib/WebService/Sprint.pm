@@ -40,6 +40,16 @@ use Bugzilla::Error;
 use Bugzilla::Extension::AgileTools::Sprint;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
+use Bugzilla::Extension::AgileTools::WebService::Util;
+
+# Webservice field type mapping
+use constant FIELD_TYPES => {
+    "id" => "int",
+    "name" => "string",
+    "start_date" => "dateTime",
+    "end_date" => "dateTime",
+    "capacity" => "double",
+};
 
 =head1 METHODS
 
@@ -59,8 +69,11 @@ sub get {
             function => 'Agile.Sprint.update',
             param => 'id'})
         unless defined $params->{id};
-    return Bugzilla::Extension::AgileTools::Sprint->check({
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
             id => $params->{id}});
+    my $hash = object_to_hash($self, $sprint, FIELD_TYPES);
+    $hash->{pool} = object_to_hash($self, $sprint->pool, {id => "int", name => "string"});
+    return $hash;
 }
 
 
@@ -89,8 +102,10 @@ sub create {
             function => 'Agile.Sprint.create',
             param => 'end_date'})
         unless defined $params->{end_date};
-
-    return Bugzilla::Extension::AgileTools::Sprint->create($params);
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->create($params);
+    my $hash = object_to_hash($self, $sprint, FIELD_TYPES);
+    $hash->{pool} = object_to_hash($self, $sprint->pool, {id => "int", name => "string"});
+    return $hash;
 }
 
 =item C<update>
@@ -99,7 +114,7 @@ sub create {
     Params:      id - Sprint ID
                  start_date - (optional) Change start_date
                  end_date - (optional) Change end_date
-    Returns:     Hash with 'id' and 'changes' like from L<Bugzilla::Object::update> 
+    Returns:     Hash with 'id' and 'changes' like from L<Bugzilla::Object::update>
 
 =cut
 
@@ -115,7 +130,10 @@ sub update {
             id =>delete $params->{id} });
     $sprint->set_all($params);
     my $changes = $sprint->update();
-    return { id => $sprint->id, changes => $changes };
+    return {
+        sprint => $self->type("int", $sprint->id),
+        changes => changes_to_hash($self, $changes, FIELD_TYPES),
+    };
 }
 
 1;

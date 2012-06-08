@@ -42,6 +42,13 @@ use Bugzilla::WebService::Bug;
 use Bugzilla::Extension::AgileTools::Sprint;
 
 use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
+use Bugzilla::Extension::AgileTools::WebService::Util;
+
+# Webservice field type mapping
+use constant FIELD_TYPES => {
+    "id" => "int",
+    "name" => "string",
+};
 
 =head1 METHODS
 
@@ -71,8 +78,10 @@ sub get {
         $bug_hash->{pool_id} = $self->type("int", $bug->pool_id);
         push(@bugs, $bug_hash);
     }
+    my $hash = object_to_hash($self, $pool, FIELD_TYPES);
+    $hash->{bugs} = \@bugs;
 
-    return { name => $pool->name, id =>, $pool->id, bugs => \@bugs };
+    return $hash;
 }
 
 
