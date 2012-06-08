@@ -1,13 +1,30 @@
+/**
+ * The contents of this file are subject to the Mozilla Public
+ * License Version 1.1 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of
+ * the License at http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS
+ * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * rights and limitations under the License.
+ *
+ * The Original Code is the AgileTools Bugzilla Extension.
+ *
+ * The Initial Developer of the Original Code is Pami Ketolainen
+ * Portions created by the Initial Developer are Copyright (C) 2012 the
+ * Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Pami Ketolainen <pami.ketolainen@gmail.com>
+ *
+ */
 
-// Entry point, this should be moved on the template
-$(function() {
-    page = new PlaningPage();
-});
 
 /**
  * Helper to connect date picker fields
  */
-var connectDateRange = function(from, to, extraOpts)
+function scrumDateRange(from, to, extraOpts)
 {
     var options = $.extend(
         {
@@ -44,69 +61,84 @@ var connectDateRange = function(from, to, extraOpts)
 /**
  * Helper to format date strings
  */
-var formatDate = function(dateStr)
+function scrumFormatDate(dateStr)
 {
     return $.datepicker.formatDate("yy-mm-dd", new Date(dateStr));
 };
 
 /**
  * Class presenting the list container
+ *
+ * TODO: Split the sprint/backlog/unrpioritized controllers to separate classes
  */
 var ListContainer = Base.extend(
 {
     constructor: function(selector)
     {
-        this.element = $(selector);
+        this.element = $(selector).first();
+        if(!this.element.size()) throw("List container element '" + selector +
+                                       "' not found");
         self._rpcwait = false;
-        this.contentSelector = $("select[name='contentSelector']", this.element);
-        this.contentSelector.change($.proxy(this, "_changeContent"));
-        this.contentFilter = $("input[name='contentFilter']", this.element);
-        this.bugList = $("ul.bugList", this.element).buglist();
-        this.footer = $("div.listFooter", this.element);
-        this.header = $("div.listHeader", this.element);
+        this._pool_id = null;
+        this.onChangeContent = $.Callbacks();
 
-        $("button[name='createSprint']", this.header).click(
+        this.contentSelector = $("select[name='content_selector']", this.element)
+                .change($.proxy(this, "_changeContent"));
+        this.content = $(".list-content", this.element).buglist();
+        this.footer = $(".list-footer", this.element);
+        this.header = $(".list-header", this.element);
+
+        $("button[name='create_sprint']", this.header).click(
             $.proxy(this, "_openCreateSprint"));
         $("button[name='reload']", this.header).click(
             $.proxy(this, "_reload"));
 
-        $("input[name='contentSearch']", this.header).keyup(
+        $("input[name='content_search']", this.header).keyup(
             $.proxy(this, "_search"));
-        this.onChangeContent = $.Callbacks();
-        this._changeContent();
+
         this._onWindowResize();
         $(window).on("resize", $.proxy(this, "_onWindowResize"));
 
-        this._pool_id = null;
+        this._reload();
     },
 
+    /**
+     * Adjust the list height to changed window size
+     */
     _onWindowResize: function()
     {
         var height = $(window).height();
         height = Math.max(height - 200, 200);
-        this.bugList.css("height", height);
+        this.content.css("height", height);
     },
 
+    /**
+     * Reloads the list content
+     * Currently just calls _changeContent, but could me smarter
+     */
     _reload: function()
     {
         this._changeContent();
     },
 
+    /**
+     * Content search field key handler
+     */
     _search: function(ev)
     {
         var text = $(ev.target).val();
-        this.bugList.buglist("search", text);
+        this.content.buglist("search", text);
     },
 
     /**
-     * List content change related methods
+     * Content selector change handler.
      */
     _changeContent: function()
     {
         var id = this.contentSelector.val();
         var name = this.contentSelector.find(":selected").text();
         this.onChangeContent.fire(id, name);
-        this.bugList.buglist("clear");
+        this.content.buglist("clear");
         if (/sprint/.test(name)) {
             this.openSprint(id);
         } else if (/backlog/.test(name)) {
@@ -117,6 +149,11 @@ var ListContainer = Base.extend(
             alert("Sorry, don't know how to open '" + name + "'");
         }
     },
+
+    /**
+     * Callback for onChangeContent from other list to make the option in this
+     * list unselecteble
+     */
     disableContentOption: function(id, name)
     {
         this.contentSelector.find(":disabled").prop("disabled", false);
@@ -130,15 +167,16 @@ var ListContainer = Base.extend(
     },
 
     /**
-     * Sprint related methods
+     * Craete sprint button handler.
      */
     _openCreateSprint: function()
     {
         this._dialog = $("#sprint_editor_template").clone().attr("id", null);
-        connectDateRange(this._dialog.find("[name='startDate']"),
-                this._dialog.find("[name='endDate']"));
-        this._dialog.find("[name='startDate']").datepicker("option", "defaultDate", "+1")
-        this._dialog.find("[name='endDate']").datepicker("option", "defaultDate", "+7")
+        var start = this._dialog.find("[name='start_date']");
+        var end = this._dialog.find("[name='end_date']");
+        scrumDateRange(start, end);
+        start.datepicker("option", "defaultDate", "+1")
+        end.datepicker("option", "defaultDate", "+7")
 
         this._dialog.dialog({
             title: "Create sprint",
@@ -150,58 +188,81 @@ var ListContainer = Base.extend(
             close: function() { $(this).dialog("destroy") },
         });
     },
+
+    /**
+     * Create sprint dialog Create button handler
+     */
     _createSprint: function()
     {
         var params = {};
         params["team_id"] = SCRUM.team_id;
-        params["start_date"] = this._dialog.find("[name='startDate']").val();
-        params["end_date"] = this._dialog.find("[name='endDate']").val();
+        params["start_date"] = this._dialog.find("[name='start_date']").val();
+        params["end_date"] = this._dialog.find("[name='end_date']").val();
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
         var rpc = this.callRpc("Agile.Sprint", "create", params);
         rpc.done($.proxy(this, "_onCreateSprintDone"));
         this._dialog.dialog("close");
     },
+
+    /**
+     * Create sprint RPC done handler
+     */
     _onCreateSprintDone: function(result)
     {
-        var option = $("<option>" + result.pool.name + "</option>");
-        option.attr("value", result.pool.id);
-        this.contentSelector.append(option);
-        option.prop("selected", true);
-        this.onChangeContent.fire(result.pool.id, result.pool.name);
-        this._updateSprintInfo(result);
+        $("<option>" + result.pool.name + "</option>")
+            .attr("value", result.pool.id)
+            .appendTo(this.contentSelector)
+            .prop("selected", true);
+        this._changeContent();
     },
+
+    /**
+     * Loads sprint with specified id in this container
+     */
     openSprint: function(id)
     {
         var rpc = this.callRpc("Agile.Sprint", "get", {id:id});
         rpc.done($.proxy(this, "_getSprintDone"));
     },
+
+    /**
+     * Get sprint RPC done hnadler
+     */
     _getSprintDone: function(result)
     {
         this._updateSprintInfo(result);
         var rpc = this.callRpc("Agile.Pool", "get", {id: result.pool.id});
         rpc.done($.proxy(this, "_onPoolGetDone"));
     },
+
+    /**
+     * Updates the sprint info in list footer
+     */
     _updateSprintInfo: function(sprint)
     {
         var info = $("#sprint_info_template").clone().attr("id", null);
-        info.find(".startDate").text(formatDate(sprint.start_date));
-        info.find(".endDate").text(formatDate(sprint.end_date));
+        info.find(".start-date").text(scrumFormatDate(sprint.start_date));
+        info.find(".end-date").text(scrumFormatDate(sprint.end_date));
         info.find(".capacity").text(sprint.capacity);
         info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
         this.footer.html(info);
         this._sprint = sprint;
     },
+
+    /**
+     * Edit sprint button handler
+     */
     _openEditSprint: function()
     {
         if (!this._sprint) return;
         this._dialog = $("#sprint_editor_template").clone().attr("id", null);
-        this._dialog.find("[name='startDate']").val(
-                formatDate(this._sprint.start_date));
-        this._dialog.find("[name='endDate']").val(
-                formatDate(this._sprint.end_date));
+        var start = this._dialog.find("[name='start_date']");
+        var end = this._dialog.find("[name='end_date']");
+        start.val(scrumFormatDate(this._sprint.start_date));
+        end.val(scrumFormatDate(this._sprint.end_date));
+        scrumDateRange(start, end);
+
         this._dialog.find("[name='capacity']").val(this._sprint.capacity);
-        connectDateRange(this._dialog.find("[name='startDate']"),
-                this._dialog.find("[name='endDate']"));
         this._dialog.dialog({
             title: "Edit sprint",
             modal: true,
@@ -211,22 +272,29 @@ var ListContainer = Base.extend(
                 },
             close: function() { $(this).dialog("destroy") },
         });
-
     },
+
+    /**
+     * Edit sprint dialog save button handler
+     */
     _updateSprint: function()
     {
         if (!this._sprint) return;
         var params = {};
         params["id"] = this._sprint.id;
-        params["start_date"] = this._dialog.find("[name='startDate']").val() ||
+        params["start_date"] = this._dialog.find("[name='start_date']").val() ||
             this._sprint.start_date;
-        params["end_date"] = this._dialog.find("[name='endDate']").val() ||
+        params["end_date"] = this._dialog.find("[name='end_date']").val() ||
             this._sprint.end_date;
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
         var rpc = this.callRpc("Agile.Sprint", "update", params);
         rpc.done($.proxy(this, "_onUpdateSprintDone"));
         this._dialog.dialog("close");
     },
+
+    /**
+     * Sprint update RPC done handler
+     */
     _onUpdateSprintDone: function(result)
     {
         if (!this._sprint || this._sprint.id != result.id) return;
@@ -237,7 +305,7 @@ var ListContainer = Base.extend(
     },
 
     /**
-     * Backlog related methods
+     * Loads backlog
      */
     openBacklog: function(id)
     {
@@ -247,7 +315,7 @@ var ListContainer = Base.extend(
     },
 
     /**
-     * Unprioritized related methods
+     * Loads unrpioritized items
      */
     openUnprioritized: function()
     {
@@ -257,11 +325,12 @@ var ListContainer = Base.extend(
         this._filterUnprioritized();
 
     },
+
     _filterUnprioritized: function(ev)
     {
         var params = {id: SCRUM.team_id};
         if (ev) {
-            this.bugList.buglist("clear");
+            this.content.buglist("clear");
             var items = $(ev.target).val();
             if (! $.isEmptyObject(items)) {
                 var include = {};
@@ -277,10 +346,13 @@ var ListContainer = Base.extend(
         rpc.done($.proxy(this, "_onUnprioritizedGetDone"));
     },
 
+    /**
+     * Pool get RPC done handler
+     */
     _onPoolGetDone: function(result)
     {
         this._pool_id = result.id;
-        this.bugList.buglist("option", {
+        this.content.buglist("option", {
             order: "pool_order",
             receive: $.proxy(this, "_onPoolReceive"),
             move: $.proxy(this, "_onPoolReceive"),
@@ -288,25 +360,31 @@ var ListContainer = Base.extend(
         });
         result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
-            this.bugList.buglist("addBug", result.bugs[i]);
+            this.content.buglist("addBug", result.bugs[i]);
         }
         this._calculateWork();
     },
 
+    /**
+     * Team unprioritized_items RPC done handler
+     */
     _onUnprioritizedGetDone: function(result)
     {
         this._pool_id = null;
-        this.bugList.buglist("option", {
+        this.content.buglist("option", {
             order: "id",
             receive: $.proxy(this, "_onUnprioritizedReceive"),
             move: null,
             remove: null,
         });
         for (var i = 0; i < result.bugs.length; i++) {
-            this.bugList.buglist("addBug", result.bugs[i]);
+            this.content.buglist("addBug", result.bugs[i]);
         }
     },
 
+    /**
+     * buglist receive event handler for pool
+     */
     _onPoolReceive: function(ev, data)
     {
         data.bug.pool_order = data.index + 1;
@@ -318,6 +396,9 @@ var ListContainer = Base.extend(
         this._calculateWork();
     },
     
+    /**
+     * buglist receive event handler for unprioritized items
+     */
     _onUnprioritizedReceive: function(ev, data)
     {
         if (data.bug.pool_id) {
@@ -327,10 +408,17 @@ var ListContainer = Base.extend(
         }
     },
 
+    /**
+     * Calculate the estimated amount of work in sprint
+     */
     _calculateWork: function() {
+        if(!this._sprint) {
+            this.content.find(":agile-blitem").removeClass("over-capacity");
+            return;
+        }
         var work = 0;
         var capacity = this.footer.find(".capacity").text();
-        this.bugList.find(":agile-blitem").each(function() {
+        this.content.find(":agile-blitem").each(function() {
             work += $(this).blitem("bug").remaining_time || 0;
             if (work > capacity) {
                 $(this).addClass("over-capacity");
@@ -338,13 +426,13 @@ var ListContainer = Base.extend(
                 $(this).removeClass("over-capacity");
             }
         });
-        this.footer.find(".estimatedWork").text(work);
+        this.footer.find(".estimated-time").text(work);
         var free = capacity - work;
-        this.footer.find(".freeCapacity").text(free);
+        this.footer.find(".free-capacity").text(free);
     },
 
     /**
-     * Helper to add the default error handler on rpc calls
+     * Helper to queue RPC calls and add default error handler
      */
     callRpc: function(namespace, method, params)
     {
@@ -369,17 +457,14 @@ var ListContainer = Base.extend(
 });
 
 /**
- * Class presenting the common page functionality
+ * Page initialization function
  */
-var PlaningPage = Base.extend(
-{
-    constructor: function()
-    {
-        this.left = new ListContainer(".listContainer.left");
-        this.right = new ListContainer(".listContainer.right");
-        this.left.bugList.buglist("option", "connectWith", this.right.bugList);
-        this.right.bugList.buglist("option", "connectWith", this.left.bugList);
-        this.left.onChangeContent.add($.proxy(this.right, "disableContentOption"));
-        this.right.onChangeContent.add($.proxy(this.left, "disableContentOption"));
-    },
-});
+function scrumInitPage() {
+        var left = new ListContainer("#list_1");
+        var right = new ListContainer("#list_2");
+        left.content.buglist("option", "connectWith", right.content);
+        right.content.buglist("option", "connectWith", left.content);
+        left.onChangeContent.add($.proxy(right, "disableContentOption"));
+        right.onChangeContent.add($.proxy(left, "disableContentOption"));
+}
+

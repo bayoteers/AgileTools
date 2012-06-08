@@ -1,3 +1,4 @@
+#!/usr/bin/perl -w
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 #
 # The contents of this file are subject to the Mozilla Public
@@ -20,7 +21,15 @@
 #   Pami Ketolainen <pami.ketolainen@gmail.com>
 #
 #
-# Migration script to move team data from old bayot Scrums extension
+# Migration script to move team data from old BAYOT Scrums extension.
+#
+# Copies
+#  - all teams from old DB schema
+#  - members from old teams and sets product owner and scrum master roles
+#  - team resposibility components
+#  - bugs in team backlog for those teams which used backlog
+#  - team sprints and bugs in the sprints
+#
 
 use strict;
 use warnings;

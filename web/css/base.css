@@ -20,6 +20,7 @@ button.remove {
 .center {
     margin-left: auto;
     margin-right: auto;
+    overflow-y: hidden;
 }
 .left {
     margin-left: 0px;
@@ -29,32 +30,31 @@ button.remove {
     margin-right: 0px;
     float: right;
 }
-.listContainer {
+.list-container {
     width: 50%;
-}
-.over-capacity {
-    background-color: pink;
+    display: inline;
 }
 
 /* Buglist related */
-ul.buglist {
+.buglist {
     padding: 2px;
     list-style-type: none;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-ul.buglist .dependson {
+.blitem .dependson {
     margin-left: 1em;
 }
 
-li.blitem {
+.blitem {
     border: 1px solid;
     margin: 1px;
     overflow-x: hidden;
     margin-bottom: 5px;
 }
-li.blitem-hl {
+
+.blitem-hl {
     background-color: lightgray;
 }
 
@@ -67,18 +67,20 @@ li.blitem-hl {
     -khtml-border-radius: 4px;
 }
 
-li.blitem span {
+.over-capacity {
+    background-color: pink;
 }
 
-li.blitem span.times {
+.blitem span.times {
     float: right;
     height: 0px;
 }
-li.blitem div.details {
+
+.blitem div.details {
     display: none;
 }
 
-li.blitem button.expand {
+.blitem button.expand {
     width: 1em;
     height: 1em;
 }

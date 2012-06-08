@@ -20,8 +20,22 @@
   #
   #%]
 
+[% javascript = BLOCK %]
+
+/* Global scrum variables */
+var SCRUM = {
+    team_id: [% team.id %],
+};
+
+/* Initialize the page on ready */
+$(function() {
+    scrumInitPage();
+});
+
+[% END %]
+
 [% INCLUDE global/header.html.tmpl
-    title = "Scrum planing",
+    title = "Team " _ team.name _ " Scrum planing",
     style_urls = [
         "extensions/AgileTools/web/css/base.css",
         ],
@@ -31,22 +45,74 @@
         ],
 %]
 
-<script>
-var SCRUM = {
-    team_id: [% team.id %],
-};
-</script>
+<div class="center">
+    <div id="list_1" class="list-container left">
+        <div class="list-header">
+            <select name="content_selector">
+                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
+            [% FOREACH pool IN team.pools %]
+                [% disabled = team.backlog_id == pool.id ?
+                    'disabled="disabled"' : "" %]
+                [% selected = team.current_sprint.id == pool.id ?
+                    'selected="selected"' : "" %]
+                <option value="[% pool.id %]" [% disabled %] [% selected %]>
+                [% pool.name FILTER html %]</option>
+            [% END %]
+            </select>
+            <br/>
+            <button type="button" name="create_sprint">Create Sprint</button>
+            <button type="button" name="reload">Reload</button>
+            Search:<input name="content_search"/>
+        </div>
 
+        <ul class="list-content">
+        </ul>
+
+        <div class="list-footer">
+        </div>
+    </div>
+
+    <div id="list_2" class="list-container right">
+        <div class="list-header">
+            <select name="content_selector">
+                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
+            [% FOREACH pool IN team.pools %]
+                [% disabled = team.current_sprint.id == pool.id ?
+                    'disabled="disabled"' : "" %]
+                [% selected = team.backlog_id == pool.id ?
+                    'selected="selected"' : "" %]
+                <option value="[% pool.id %]" [% disabled %] [% selected %]>
+                [% pool.name FILTER html %]</option>
+            [% END %]
+            </select>
+            <br/>
+            <button type="button" name="create_sprint">Create Sprint</button>
+            <button type="button" name="reload">Reload</button>
+            Search:<input name="content_search"/>
+        </div>
+
+        <ul class="list-content">
+        </ul>
+
+        <div class="list-footer">
+        </div>
+    </div>
+</div>
+
+[<a href="page.cgi?id=agiletools/team.html&amp;team_id=[% team.id %]">Manage team</a>]
+
+
+<!-- Hidden templates start here -->
 <div id="templates">
     <form id="sprint_editor_template">
         <table>
             <tr>
                 <td>Start date:</td>
-                <td><input name="startDate"/></td>
+                <td><input name="start_date"/></td>
             </tr>
             <tr>
                 <td>End date:</td>
-                <td><input name="endDate"/></td>
+                <td><input name="end_date"/></td>
             </tr>
             <tr>
                 <td>Estimated capacity:</td>
@@ -58,11 +124,11 @@ var SCRUM = {
     <table id="sprint_info_template">
         <tr>
             <td>Start:</td>
-            <td class="startDate"></td>
+            <td class="start-date"></td>
         </tr>
         <tr>
             <td>End:</td>
-            <td class="endDate"></td>
+            <td class="end-date"></td>
         </tr>
         <tr>
             <td>Estimated capacity:</td>
@@ -70,11 +136,11 @@ var SCRUM = {
         </tr>
         <tr>
             <td>Estimated work:</td>
-            <td class="estimatedWork"></td>
+            <td class="estimated-time"></td>
         </tr>
         <tr>
             <td>Free capacity:</td>
-            <td class="freeCapacity"></td>
+            <td class="free-capacity"></td>
         </tr>
         <tr>
             <td></td>
@@ -84,7 +150,7 @@ var SCRUM = {
 
     <div id="resposibility_filter_template">
         Show responsibilities:<br/>
-        <select name="resposibilities" multiple="multiple">
+        <select name="responsibilities" multiple="multiple">
         [% FOREACH item IN team.responsibilities('component') %]
             <option value="component:[% item.id %]" selected="selected">
             component: [% item.name %]</option>
@@ -97,7 +163,7 @@ var SCRUM = {
     </div>
 
     <ul>
-        <li id="bug_item_template" class="bugItem ui-corner-all">
+        <li id="bug_item_template" class="ui-corner-all">
             <a href="#" target="_blank" title="id"></a>
             <span title="status"></span>
             <span title="summary"></span><br/>
@@ -108,71 +174,13 @@ var SCRUM = {
             </span>
             <div class="details">
                 Assigned to:<span title="assigned_to"></span><br/>
-                Severity:<span title="severity"></span><br/>
-                Depends on:<a  title="depends_on" href="#" target="_blank"></a><br/>
+                Depends on:<a title="depends_on" href="#" target="_blank"></a><br/>
                 Blocks:<a title="blocks" href="#" target="_blank"></a><br/>
-                <pre title="description"></pre>
             </div>
-            <ul class="bugList dependson"></ul>
+            <ul class="dependson"></ul>
         </li>
     <ul>
 
 </div>
-
-
-<div class="center">
-    <div class="listContainer left">
-        <div class="listHeader">
-            <select name="contentSelector">
-                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools %]
-                [% disabled = team.backlog_id == pool.id ?
-                    'disabled="disabled"' : "" %]
-                [% selected = team.current_sprint.id == pool.id ?
-                    'selected="selected"' : "" %]
-                <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name FILTER html %]</option>
-            [% END %]
-            </select>
-            <button type="button" name="createSprint">Create Sprint</button>
-            <br/>
-            <button type="button" name="reload">Reload</button>
-            Search:<input name="contentSearch"/>
-        </div>
-
-        <ul class="bugList">
-        </ul>
-
-        <div class="listFooter">
-        </div>
-    </div>
-
-    <div class="listContainer right">
-        <div class="listHeader">
-            <select name="contentSelector">
-                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools %]
-                [% disabled = team.current_sprint.id == pool.id ?
-                    'disabled="disabled"' : "" %]
-                [% selected = team.backlog_id == pool.id ?
-                    'selected="selected"' : "" %]
-                <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name FILTER html %]</option>
-            [% END %]
-            </select>
-            <button type="button" name="createSprint">Create Sprint</button>
-            <br/>
-            <button type="button" name="reload">Reload</button>
-            Search:<input name="contentSearch"/>
-        </div>
-
-        <ul class="bugList">
-        </ul>
-
-        <div class="listFooter">
-        </div>
-    </div>
-</div>
-
 
 [% INCLUDE global/footer.html.tmpl %]

@@ -43,20 +43,21 @@ our $VERSION = '0.01';
 my %template_handlers;
 my %page_handlers;
 
-# Add a handler for the given template.
+# Helper to add a handler for the given template.
 sub _add_template_handler {
     my ($name, $sub) = @_;
     push @{$template_handlers{$name} ||= []}, $sub;
 }
 
+# Helper to add a handler for the given page.
 sub _add_page_handler {
     my ($name, $sub) = @_;
     push @{$page_handlers{$name} ||= []}, $sub;
 }
 
-#################
-# Page handlers #
-#################
+###############
+# Page handlers
+###############
 
 _add_page_handler("agiletools/teams.html", sub {
     my ($vars) = @_;
@@ -132,9 +133,9 @@ _add_page_handler("agiletools/scrum/planing.html", sub {
     $vars->{team} = $team;
 });
 
-#########
-# Hooks #
-#########
+#######################################
+# Page and template processing handlers
+#######################################
 
 sub page_before_template {
     my ($self, $params) = @_;
@@ -160,6 +161,10 @@ sub template_before_process {
     }
 }
 
+#############################
+# BayotBase page header links
+#############################
+
 sub bb_common_links {
     my ($self, $args) = @_;
     return unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
@@ -171,6 +176,10 @@ sub bb_common_links {
         }
     ];
 }
+
+############################
+# Additional buglist columns
+############################
 
 sub buglist_columns {
     my ($self, $args) = @_;
@@ -185,6 +194,10 @@ sub buglist_columns {
         name => "COALESCE(bug_agile_pool.pool_id, -1)",
         title => "Pool ID" };
 }
+
+#################################################
+# Table joins required for the additional columns
+#################################################
 
 sub buglist_column_joins {
     my ($self, $args) = @_;
@@ -208,6 +221,10 @@ sub buglist_column_joins {
         as => "bug_agile_pool",
     };
 }
+
+###############################################
+# Additional opretions at the end of bug update
+###############################################
 
 sub bug_end_of_update {
     my ($self, $args) = @_;
@@ -239,6 +256,9 @@ sub bug_end_of_update {
     }
 }
 
+##########################################
+# Database updates performed in checksetup
+##########################################
 
 sub install_update_db {
     my ($self, $args) = @_;
@@ -269,7 +289,7 @@ sub install_update_db {
             }
         );
     }
-    # Create pool filed definitions
+    # Create pool field definitions
     if (!defined Bugzilla::Field->new({name=>"agile_pool.name"})) {
         Bugzilla::Field->create(
             {
@@ -301,6 +321,10 @@ sub install_update_db {
     }
 }
 
+################################################
+# Search operators for the additional bug fields
+################################################
+
 sub search_operator_field_override {
     my ($self, $args) = @_;
     my $operators = $args->{'operators'};
@@ -317,6 +341,7 @@ sub search_operator_field_override {
     };
 }
 
+# Table join required for Pool name
 sub _add_agile_pool_join {
     my $search = shift;
     my ($invocant, $args) = @_;
@@ -338,6 +363,7 @@ sub _add_agile_pool_join {
     $search->_do_operator_function($args);
 }
 
+# Table join required for Pool id and order
 sub _add_bug_agile_pool_join {
     my $search = shift;
     my ($invocant, $args) = @_;
@@ -352,6 +378,10 @@ sub _add_bug_agile_pool_join {
     $args->{full_field} = "COALESCE($args->{full_field}, -1)";
     $search->_do_operator_function($args);
 }
+
+#################
+# Database schema
+#################
 
 sub db_schema_abstract_schema {
     my ($self, $args) = @_;
@@ -621,6 +651,10 @@ sub db_schema_abstract_schema {
     };
 }
 
+#####################
+# Webservice bindings
+#####################
+
 sub webservice {
     my ($self, $args) = @_;
     $args->{dispatch}->{'Agile'} =
@@ -632,6 +666,10 @@ sub webservice {
     $args->{dispatch}->{'Agile.Pool'} =
         "Bugzilla::Extension::AgileTools::WebService::Pool";
 }
+
+########################
+# Admin interface panels
+########################
 
 sub config_add_panels {
     my ($self, $args) = @_;

@@ -20,6 +20,20 @@
   #
   #%]
 
+[% javascript = BLOCK %]
+
+/**
+ * Page script entry point
+ */
+$(function() {
+    $("button.editor-toggle").click(function(){
+        $(".editor").toggle();
+    });
+    var team = new Team([% team_json %]);
+});
+
+[% END %]
+
 [% INCLUDE global/header.html.tmpl
     title = "Team $team.name",
     style_urls = [
@@ -29,23 +43,10 @@
         "extensions/AgileTools/web/js/team.js",
         ],
 %]
-<script>
-/**
- * Page script entry point
- */
-var main = function() {
-    $("button.toggleEditor").click(function(){
-        $(".editor").toggle();
-    });
-    var team = new Team([% team_json %]);
-};
-
-$(main);
-</script>
 
 <div id="templates">
 <table>
-    <tr id="memberTemplate">
+    <tr id="member_template">
         <td class="name"></td>
         <td>
             <button class="editor remove" type="button">Remove member</button>
@@ -54,7 +55,7 @@ $(main);
             <table class="roles">
                 <tr class="editor">
                     <td>
-                        <select class="newRole">
+                        <select class="role-new">
                             <option value=""></option>
                         [% FOREACH role IN roles %]
                             <option value="[% role.id %]">[% role.name FILTER html %]</option>
@@ -67,14 +68,14 @@ $(main);
         </td>
     </tr>
     
-    <tr id="roleTemplate">
+    <tr id="role_template">
         <td class="name"></td>
         <td class="editor">
             <button class="remove" type="button">Remove role</button>
         </td>
     </tr>
 
-    <tr id="responsibilityTemplate">
+    <tr id="responsibility_template">
         <td class="name"></td>
         <td class="editor">
             <button type="button" class="remove">Remove</button>
@@ -86,10 +87,13 @@ $(main);
 
 <h1>Team [% team.name FILTER html %]</h1>
 
-[% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+[% TRY %]
+    [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+[% CATCH %]
+[% END %]
 
 <h2>Members</h2>
-<table id="teamMembers">
+<table id="team_members">
     <thead>
         <tr>
             <th>Name</th>
@@ -101,7 +105,7 @@ $(main);
     [% IF team.user_can_edit %]
         <tr class="editor">
             <td>
-                <input class="newMember">
+                <input class="member-new">
             </td>
             <td>
                 <button class="add" type="button">Add member</button>
@@ -113,7 +117,7 @@ $(main);
 </ul>
 
 <h2>Responsibilities</h2>
-<table id="teamComponents">
+<table id="team_components">
     <thead>
         <tr>
             <th>Components</th>
@@ -123,7 +127,7 @@ $(main);
         [% IF team.user_can_edit %]
         <tr class="editor">
             <td>
-                <select class="newComponent"/>
+                <select class="component-new"/>
                     <option value=""></option>
                 [% FOREACH component IN components %]
                     <option value="[% component.id %]">[% component.name FILTER html %]</option>
@@ -135,7 +139,7 @@ $(main);
         [% END %]
     </tbody>
 </table>
-<table id="teamKeywords">
+<table id="team_keywords">
     <thead>
         <tr>
             <th>Keywords</th>
@@ -145,7 +149,7 @@ $(main);
         [% IF team.user_can_edit %]
         <tr class="editor">
             <td>
-                <select class="newKeyword"/>
+                <select class="keyword-new"/>
                     <option value=""></option>
                 [% FOREACH keyword IN keywords %]
                     <option value="[% keyword.id %]">[% keyword.name FILTER html %]</option>
@@ -158,7 +162,7 @@ $(main);
     </tbody>
 </table>
 [% IF team.user_can_edit %]
-<button class="toggleEditor" type="button">Show/Hide Editing</button><br/>
+<button class="editor-toggle" type="button">Show/Hide Editing</button><br/>
 [% END %]
 
 <a href="page.cgi?id=agiletools/teams.html">Back to team list</a>

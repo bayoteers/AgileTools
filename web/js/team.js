@@ -1,8 +1,24 @@
-var cloneTemplate = function(selector) {
-    var $element = $(selector).clone();
-    $element.attr("id", null);
-    return $element;
-};
+/**
+ * The contents of this file are subject to the Mozilla Public
+ * License Version 1.1 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of
+ * the License at http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS
+ * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * rights and limitations under the License.
+ *
+ * The Original Code is the AgileTools Bugzilla Extension.
+ *
+ * The Initial Developer of the Original Code is Pami Ketolainen
+ * Portions created by the Initial Developer are Copyright (C) 2012 the
+ * Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Pami Ketolainen <pami.ketolainen@gmail.com>
+ *
+ */
 
 var Team = Base.extend({
     constructor: function(teamData) {
@@ -13,10 +29,10 @@ var Team = Base.extend({
         this.responsibilities = {component:{}, keyword:{}};
 
         // MEMBERS
-        this.memberTable = $("#teamMembers tbody");
+        this.memberTable = $("#team_members tbody");
         this.memberTable.find("button.add").click(
                 {
-                    input: this.memberTable.find("input.newMember"),
+                    input: this.memberTable.find("input.member-new"),
                 },
                 $.proxy(this, "_addMemberClick"));
 
@@ -33,10 +49,10 @@ var Team = Base.extend({
 
         this.respTables = {};
         // COMPONENTS
-        var $componentTable = $("#teamComponents tbody");
+        var $componentTable = $("#team_components tbody");
         $componentTable.find("button.add").click(
                 {
-                    input: $componentTable.find("select.newComponent"),
+                    input: $componentTable.find("select.component-new"),
                     type: "component",
                 },
                 $.proxy(this, "_addRespClick"));
@@ -47,10 +63,10 @@ var Team = Base.extend({
         }
 
         // KEYWORDS
-        var $keywordTable = $("#teamKeywords tbody");
+        var $keywordTable = $("#team_keywords tbody");
         $keywordTable.find("button.add").click(
                 {
-                    input: $keywordTable.find("select.newKeyword"),
+                    input: $keywordTable.find("select.keyword-new"),
                     type: "keyword",
                 },
                 $.proxy(this, "_addRespClick"));
@@ -60,7 +76,7 @@ var Team = Base.extend({
             this._insertResp("keyword", keyw);
         }
 
-        $("input.newMember").userautocomplete();
+        $("input.member-new").userautocomplete();
         $("table").not("#templates").find("button.add").button({
             icons:{primary:"ui-icon-circle-plus"},
             text: false,
@@ -72,7 +88,7 @@ var Team = Base.extend({
     {
         member.roles = {};
         this.members[member.userid] = member;
-        var $row = cloneTemplate("#memberTemplate");
+        var $row = $("#member_template").clone().attr("id", null);
         member.row = $row;
         $row.data("memberId", member.userid);
         $row.find(".name").text(member.realname);
@@ -91,7 +107,7 @@ var Team = Base.extend({
                 text: false,})
             .click({
                 memberId: member.userid,
-                input: $roles.find("select.newRole"),
+                input: $roles.find("select.role-new"),
                 }, $.proxy(this, "_addRoleClick"));
 
         this.memberTable.find("tr").last().before($row);
@@ -101,7 +117,7 @@ var Team = Base.extend({
     _insertRole: function(member, role)
     {
         member.roles[role.id] = role;
-        var $roleRow = cloneTemplate("#roleTemplate");
+        var $roleRow = $("#role_template").clone().attr("id", null);
         $roleRow.find(".name").text(role.name);
         $roleRow.data("roleId", role.id);
         $roleRow.find("button.remove")
@@ -119,7 +135,7 @@ var Team = Base.extend({
     _insertResp: function(type, item)
     {
         this.responsibilities[type][item.id] = item;
-        var $row = cloneTemplate("#responsibilityTemplate");
+        var $row = $("#responsibility_template").clone().attr("id", null);
         $row.data("itemId", item.id);
         $row.find(".name").text(item.name);
         $row.find("button.remove")
@@ -156,7 +172,7 @@ var Team = Base.extend({
                 this._insertMember(member);
             }
         }
-        this.memberTable.find("input.newMember").val("");
+        this.memberTable.find("input.member-new").val("");
     },
 
     _removeMemberClick: function(event)
