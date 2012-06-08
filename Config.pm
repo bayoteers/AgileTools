@@ -25,6 +25,16 @@ use strict;
 use constant NAME => 'AgileTools';
 
 use constant REQUIRED_MODULES => [
+    {
+        package => 'JSON-RPC',
+        module  => 'JSON::RPC',
+        version => 0,
+    },
+    {
+        package => 'Test-Taint',
+        module  => 'Test::Taint',
+        version => 0,
+    },
 ];
 
 use constant OPTIONAL_MODULES => [
