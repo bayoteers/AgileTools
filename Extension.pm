@@ -584,6 +584,7 @@ sub db_schema_abstract_schema {
             bug_id => {
                 TYPE => 'INT3',
                 NOTNULL => 1,
+                PRIMARYKEY => 1,
                 REFERENCES => {
                     TABLE => 'bugs',
                     COLUMN => 'bug_id',
@@ -605,10 +606,7 @@ sub db_schema_abstract_schema {
 
         ],
         INDEXES => [
-            agile_bug_pool_uniq_idx => {
-                FIELDS => ['pool_id', 'bug_id'],
-                TYPE => 'UNIQUE',
-            },
+            agile_bug_pool_pool_idx => ['pool_id'],
         ],
     };
 
