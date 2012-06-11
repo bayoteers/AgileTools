@@ -157,29 +157,31 @@ sub add_bug {
     my $changed = ($old_pool != $self->id || $old_order != $order);
 
     if ($old_pool && $changed) {
-        # Delete old entry
-        $dbh->do("DELETE FROM bug_agile_pool
-                    WHERE pool_id = ? AND bug_id = ?",
-            undef, ($old_pool, $bug_id));
-        # Shift bugs in old pool
+        # Update old entry
+        $dbh->do("UPDATE bug_agile_pool
+                    SET pool_id = ?, pool_order = ?
+                    WHERE bug_id = ?",
+            undef, ($self->id, $order, $bug_id));
+        # Shift other bugs up in old pool
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order - 1
-                  WHERE pool_id = ? AND pool_order > ?",
-            undef, ($old_pool, $old_order));
+                  WHERE pool_id = ? AND pool_order > ? AND bug_id != ?",
+            undef, ($old_pool, $old_order, $bug_id));
+    } elsif (!$old_pool) {
+        # Insert new entry
+        $dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
+                      VALUES (?, ?, ?)",
+            undef, ($bug_id, $self->id, $order));
     }
     # Note: If the bug is moved inside this pool, the other bugs will probably
     # get shifted back and forth, but the performance gain from more detailed
     # queries is probably not worth the introduced complexity...
     if ($changed) {
-        # Shift bugs in this pool
+        # Shift other bugs down in this pool
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order + 1
-                  WHERE pool_id = ? AND pool_order >= ?",
-            undef, ($self->id, $order));
-        # Insert new entry
-        $dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
-                      VALUES (?, ?, ?)",
-            undef, ($bug_id, $self->id, $order));
+                  WHERE pool_id = ? AND pool_order >= ? AND bug_id != ?",
+            undef, ($self->id, $order, $bug_id));
         delete $self->{bugs};
     }
     $dbh->bz_commit_transaction();
