@@ -199,6 +199,7 @@ var ListContainer = Base.extend(
         params["start_date"] = this._dialog.find("[name='start_date']").val();
         params["end_date"] = this._dialog.find("[name='end_date']").val();
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
+        params["move_open"] = this._dialog.find("[name='move_open']").val() ;
         var rpc = this.callRpc("Agile.Sprint", "create", params);
         rpc.done($.proxy(this, "_onCreateSprintDone"));
         this._dialog.dialog("close");

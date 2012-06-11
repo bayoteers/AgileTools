@@ -98,6 +98,7 @@ use constant VALIDATORS => {
     end_date => \&_check_end_date,
     team_id => \&_check_number,
     capacity => \&Bugzilla::Object::check_time,
+    move_open => \&Bugzilla::Object::check_boolean,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -106,6 +107,10 @@ use constant VALIDATOR_DEPENDENCIES => {
     # End date is checked against start date
     end_date => ['start_date'],
 };
+
+use constant EXTRA_REQUIRED_FIELDS => qw(
+    move_open
+);
 
 # Accessors
 ###########
@@ -212,7 +217,6 @@ sub _check_number {
     return $value;
 }
 
-
 sub create {
     my ($class, $params) = @_;
 
@@ -235,6 +239,20 @@ sub create {
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{id} = $pool->id;
 
+    if(delete $clean_params->{move_open}) {
+        my $previous = Bugzilla->dbh->selectrow_array(
+            "SELECT id FROM agile_sprint ".
+             "WHERE team_id = ? AND end_date <= ? ".
+             "ORDER BY start_date DESC", undef,
+             ($clean_params->{team_id}, $clean_params->{start_date}));
+         if (defined $previous) {
+             $previous = Bugzilla::Extension::AgileTools::Pool->new($previous);
+             foreach my $bug (@{$previous->bugs}) {
+                 next unless $bug->isopened;
+                 $pool->add_bug($bug->id);
+             }
+         }
+    }
     return $class->insert_create_data($clean_params);
 }
 
