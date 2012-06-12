@@ -1,0 +1,66 @@
+[%#
+  # The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+  #
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the AgileTools Bugzilla Extension.
+  #
+  # The Initial Developer of the Original Code is Pami Ketolainen
+  # Portions created by the Initial Developer are Copyright (C) 2012 the
+  # Initial Developer. All Rights Reserved.
+  #
+  # Contributor(s):
+  #   Pami Ketolainen <pami.ketolainen@gmail.com>
+  #
+  #%]
+
+[% INCLUDE global/header.html.tmpl
+    title = "Team " _ team.name _ " sprints",
+    style_urls = [
+        "extensions/AgileTools/web/css/base.css",
+        ],
+%]
+
+[% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
+
+<table style="width: 90%;">
+    <thead>
+        <tr>
+            <td>Sprint</td>
+            <td>Start date</td>
+            <td>End date</td>
+            <td>Capacity</td>
+            <td>Current</td>
+        </tr>
+    </thead>
+    <tbody>
+    [% FOREACH sprint = sprints %]
+        <tr>
+            <td>
+                <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]">
+                [% sprint.name FILTER html %]</a>
+            </td>
+            <td>[% sprint.start_date FILTER time("%Y-%m-%d") FILTER html %]</td>
+            <td>[% sprint.end_date FILTER time("%Y-%m-%d") FILTER html %]</td>
+            <td>[% sprint.capacity FILTER html %]</td>
+            <td>
+            [% IF team.current_sprint.id == sprint.id %]
+                [% IF user.in_group_id(team.group_id) %]
+                <a href="page.cgi?id=agiletools/scrum/planing.html&amp;team_id=[% team.id %]">Planing</a>
+                [% ELSE %]
+                X
+                [% END %]
+            [% END %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+
+
+[% INCLUDE global/footer.html.tmpl %]

@@ -123,14 +123,26 @@ _add_page_handler("agiletools/team/create.html", sub {
 
 _add_page_handler("agiletools/scrum/planing.html", sub {
     my ($vars) = @_;
-    my $cgi = Bugzilla->cgi;
-    my $id = $cgi->param("team_id");
+    my $id = Bugzilla->cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
             unless defined $id;
     my $team = get_team($id);
     $team->pools;
     $vars->{team} = $team;
+});
+
+_add_page_handler("agiletools/scrum/sprints.html", sub {
+    my ($vars) = @_;
+    my $id = Bugzilla->cgi->param("team_id");
+    ThrowUserError("invalid_parameter",
+        {name=>"team_id", err => "Not specified"})
+            unless defined $id;
+    my $team = get_team($id);
+    my @sprints = reverse @{Bugzilla::Extension::AgileTools::Sprint->match(
+            {team_id => $team->id})};
+    $vars->{team} = $team;
+    $vars->{sprints} = \@sprints;
 });
 
 _add_page_handler("agiletools/user_summary.html", sub {
