@@ -210,10 +210,17 @@ var ListContainer = Base.extend(
      */
     _onCreateSprintDone: function(result)
     {
-        $("<option>" + result.pool.name + "</option>")
+        var newOption = $("<option>" + result.pool.name + "</option>")
             .attr("value", result.pool.id)
             .appendTo(this.contentSelector)
             .prop("selected", true);
+        this.contentSelector.find("option").not(newOption).each(function() {
+            var element = $(this);
+            if (/sprint/.test(element.text()) && element.text() < result.pool.name) {
+                element.before(newOption);
+                return false;
+            }
+        });
         this._changeContent();
     },
 
