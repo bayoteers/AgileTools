@@ -90,6 +90,8 @@ $(function() {
 [% TRY %]
     [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
 [% CATCH %]
+        <b>Failed to display team summary!</b><br/>
+        [% error.type FILTER html %]: [% error.info FILTER html %]
 [% END %]
 
 <h2>Members</h2>

@@ -133,6 +133,12 @@ _add_page_handler("agiletools/scrum/planing.html", sub {
     $vars->{team} = $team;
 });
 
+_add_page_handler("agiletools/user_summary.html", sub {
+    my ($vars) = @_;
+    $vars->{processes} = AGILE_PROCESS_NAMES;
+    $vars->{agile_teams} = Bugzilla->user->agile_teams;
+});
+
 #######################################
 # Page and template processing handlers
 #######################################
@@ -168,10 +174,17 @@ sub template_before_process {
 sub bb_common_links {
     my ($self, $args) = @_;
     return unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
-    $args->{links}->{teams} = [
+    $args->{links}->{agile_teams} = [
         {
-            text => "Teams",
+            text => "All teams",
             href => "page.cgi?id=agiletools/team/list.html",
+            priority => 11
+        }
+    ];
+    $args->{links}->{agile_summary} = [
+        {
+            text => "My process",
+            href => "page.cgi?id=agiletools/user_summary.html",
             priority => 10
         }
     ];

@@ -1,0 +1,44 @@
+[%#
+  # The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+  #
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the AgileTools Bugzilla Extension.
+  #
+  # The Initial Developer of the Original Code is Pami Ketolainen
+  # Portions created by the Initial Developer are Copyright (C) 2012 the
+  # Initial Developer. All Rights Reserved.
+  #
+  # Contributor(s):
+  #   Pami Ketolainen <pami.ketolainen@gmail.com>
+  #
+  #%]
+
+[% INCLUDE global/header.html.tmpl
+    title = "My summary",
+    style_urls = [
+        "extensions/AgileTools/web/css/base.css",
+        ],
+%]
+
+[% FOREACH team IN agile_teams %]
+<h1>Team: [% team.name FILTER html %]</h1>
+    [% TRY %]
+        [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+    [% CATCH %]
+        <b>Failed to display team summary!</b><br/>
+        [% error.type FILTER html %]: [% error.info FILTER html %]
+    [% END %]
+
+<a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
+Team info</a>
+
+[% END %]
+
+[% INCLUDE global/footer.html.tmpl %]
