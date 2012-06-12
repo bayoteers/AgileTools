@@ -31,16 +31,6 @@ Bugzilla::Extension::AgileTools::Pool
 
 Pool object presents a ordered set of bugs
 
-=head1 FIELDS
-
-=over
-
-=item C<start_date> - Start date of the sprint
-
-=item C<end_date> - End date of the sprint
-
-=back
-
 =cut
 
 use strict;

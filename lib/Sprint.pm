@@ -36,15 +36,15 @@ team and start and end dates.
 
 =over
 
-=item C<start_date> - Start date of the sprint
+=item C<start_date> (mutable) - Start date of the sprint
 
-=item C<end_date> - End date of the sprint
+=item C<end_date> (mutable) - End date of the sprint
 
 =item C<pool_id> - ID of the pool related to this backlog
 
 =item C<team_id> - ID of the team owning this backlog
 
-=item C<capacity> - Estimated work capacity for the sprint
+=item C<capacity> (mutable) - Estimated work capacity for the sprint
 
 =back
 

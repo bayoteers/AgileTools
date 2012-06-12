@@ -73,16 +73,14 @@ $.widget("agile.buglist", {
         $.Widget.prototype.destroy.apply(this);
     },
 
+    /**
+     * Removes all items from this list
+     */
     clear: function()
     {
         this.element.children(":agile-blitem").blitem("destroy").remove();
         this._items = {};
         this.element.append(this._emptyIndicator);
-    },
-
-    _onParentReconnect: function(newConnection)
-    {
-        this._setOption("connectWith", newConnection);
     },
 
     /**
@@ -115,6 +113,10 @@ $.widget("agile.buglist", {
         return element;
     },
 
+    /**
+     * Find correct position for new blitem element in this list using
+     * the order option and bug dependencies.
+     */
     _placeItemElement: function(element)
     {
         var bug = element.blitem("bug");
@@ -148,6 +150,9 @@ $.widget("agile.buglist", {
         this._emptyIndicator.remove();
     },
 
+    /**
+     * sortable stop event handler
+     */
     _onSortStop: function(ev, ui)
     {
         if (this.element.find(":agile-blitem").index(ui.item) == -1) {
@@ -159,6 +164,9 @@ $.widget("agile.buglist", {
         }
     },
 
+    /**
+     * sortable update even handler
+     */
     _onSortUpdate: function(ev, ui)
     {
         var reverse = false;
@@ -193,13 +201,26 @@ $.widget("agile.buglist", {
         });
     },
 
+    /**
+     * sortable receive handler
+     */
     _onSortReceive: function(ev, ui)
     {
+        // Place the item correctly in this list and update options
         this._placeItemElement(ui.item);
         var item = ui.item.data("blitem");
         item._setOption("_buglist", this);
         this._items[item.options.bug.id] = item;
     },
+
+    /**
+     * Free text search to find and highlight items in this list
+     *
+     * @param text - Text to be searched
+     *
+     * If same text is searched several times the list will scroll to next
+     * matching matching item.
+     */
     search: function(text)
     {
         this.element.find(":agile-blitem").blitem("highlight", false);
@@ -224,6 +245,10 @@ $.widget("agile.buglist", {
     },
 });
 
+
+/**
+ * jQuery buglist item widget
+ */
 $.widget("agile.blitem", {
     /**
      * Default options
@@ -254,6 +279,7 @@ $.widget("agile.blitem", {
         this._updateBug();
         this._originalMargin = this.element.css("margin-left");
     },
+
     /**
      * Destroy the widget
      */
@@ -278,6 +304,9 @@ $.widget("agile.blitem", {
         }
     },
 
+    /**
+     * Change the buglist where this item is connected
+     */
     _setBuglist: function(buglist)
     {
         this._dList.sortable("option", {
@@ -290,6 +319,9 @@ $.widget("agile.blitem", {
         });
     },
 
+    /**
+     * Update the bug info
+     */
     _updateBug:function()
     {
         var bug = this.options.bug;
@@ -321,6 +353,9 @@ $.widget("agile.blitem", {
         }
     },
 
+    /**
+     * Add item that this item depends on to the sublist
+     */
     addDepends: function(element)
     {
         var bug = element.blitem("bug");
@@ -353,6 +388,10 @@ $.widget("agile.blitem", {
             return this.options.bug;
         }
     },
+
+    /**
+     * Toggle highlighting of this item
+     */
     highlight: function(on) {
         if (on == null) {
             this.element.toggleClass("blitem-hl");
@@ -362,7 +401,10 @@ $.widget("agile.blitem", {
             this.element.removeClass("blitem-hl");
         }
     },
-
+    
+    /**
+     * Animated bounce of this item to highlight it's position
+     */
     bounce: function()
     {
         this.element.animate({"margin-left": "+=20"}, {queue: true})

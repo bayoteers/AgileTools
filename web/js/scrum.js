@@ -334,6 +334,9 @@ var ListContainer = Base.extend(
 
     },
 
+    /**
+     * Apply the unrpioritized items filter selections
+     */
     _filterUnprioritized: function(ev)
     {
         var params = {id: SCRUM.team_id};

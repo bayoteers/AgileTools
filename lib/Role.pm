@@ -45,11 +45,11 @@ the user has regarding the team. Role is inherited from L<Bugzilla::Object>.
 
 =over
 
-=item C<name> - Role name
+=item C<name> (mutable) - Role name
 
 =item C<is_custom> - Is this a custom role or built-in
 
-=item C<can_edit_team> - IS the member with this role allowed to edit the team
+=item C<can_edit_team> (mutable) - Is the member with this role allowed to edit the team
 
 =back
 

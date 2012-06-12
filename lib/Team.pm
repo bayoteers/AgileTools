@@ -21,7 +21,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Team
+Bugzilla::Extension::AgileTools::Team - Bugzilla Object class presenting a team
 
 =head1 SYNOPSIS
 
@@ -53,8 +53,7 @@ Bugzilla::Extension::AgileTools::Team
 
 =head1 DESCRIPTION
 
-Team.pm presents a AgileTools Team object inherited from L<Bugzilla::Object>
-and has all the same methods, plus the ones described below.
+Object inherited from L<Bugzilla::Object>.
 
 =cut
 
@@ -78,6 +77,23 @@ use Scalar::Util qw(blessed);
 use List::Util qw(first);
 
 use constant DB_TABLE => 'agile_team';
+
+=head1 FIELDS
+
+=over
+
+=item C<name> (mutable) - Name of the team
+
+=item C<group_id> - ID of the group associated with the team
+
+=item C<process_id> (mutable) - ID of the development process the team uses.
+        See: L<extensions::AgileTools::lib::Constants/Process types>
+
+=itme C<backlog_id> - ID of the pool containing the team backlog
+
+=back
+
+=cut
 
 use constant DB_COLUMNS => qw(
     id
@@ -109,18 +125,33 @@ use constant _RESP_CLASS => {
     keyword => "Bugzilla::Keyword",
 };
 
-# Accessors
-###########
+=head1 METHODS
+
+=head2 Accessors
+
+For all L</FIELDS> there is $object->fieldname method
+
+Additionally there are accessors for
+
+=cut
 
 sub group_id   { return $_[0]->{group_id}; }
 sub process_id { return $_[0]->{process_id}; }
 sub backlog_id { return $_[0]->{backlog_id}; }
+
+=item C<group> - Get the L<Bugzilla::Group> object matching team->group_id
+
+=cut
 
 sub group {
     my $self = shift;
     $self->{group} ||= Bugzilla::Group->new($self->group_id);
     return $self->{group};
 }
+
+=item C<backlog> - Get the L<extensions::AgileTools::lib::Pool> object matching team->backlog_id
+
+=cut
 
 sub backlog {
     my $self = shift;
@@ -133,8 +164,13 @@ sub backlog {
     return $self->{backlog};
 }
 
-# Mutators
-##########
+=back
+
+=head2 Mutators
+
+For all mutable L</FIELDS> there is $object->set_fieldname($value) method
+
+=cut
 
 sub set_name       { $_[0]->set('name', $_[1]); }
 sub set_process_id { $_[0]->set('process_id', $_[1]); }
@@ -171,17 +207,11 @@ sub _check_process_id {
     return $id;
 }
 
-
-=head1 METHODS
-
 =head2 For managing team members
 
-=over
+=head3 members
 
-=item C<members>
-
-    Description: Gets the list of team members.
-    Returns:     Array ref of L<Bugzilla::User> objects.
+Returns array ref of L<Bugzilla::User> objects containing all team members.
 
 =cut
 
@@ -194,10 +224,17 @@ sub members {
     return $self->{members};
 }
 
-=item C<add_member($user)>
+=head3 add_member
 
-    Description: Adds a new member to the team.
-    Params:      $user - User object, name or id
+Adds a new member to the team.
+
+    add_memeber($user)
+
+=over
+
+=item C<$user> User object, name or id
+
+=back
 
 =cut
 
@@ -214,10 +251,18 @@ sub add_member {
         ($member->id, $self->group->id, 0, GRANT_DIRECT));
 }
 
-=item C<remove_member($user)>
 
-    Description: Removes a new member from the team.
-    Params:      $user - User object, name or id
+=head3 remove_member
+
+Removes a member from the team.
+
+    remove_member($user)
+
+=over
+
+=item C<$user> User object, name or id
+
+=back
 
 =cut
 
@@ -240,11 +285,11 @@ sub remove_member {
     }
 }
 
-=item C<roles>
 
-    Description: Get all team members roles
-    Returns:     Hash ref where keys are userids and values are array refs of
-                 L<Bugzilla::Extension::AgileTools::Role> objects
+=head3 roles
+
+Returns hash ref where keys are user IDs and values are array refs of
+L<Role|extensions::AgileTools::lib::Role> objects for all team members.
 
 =cut
 
@@ -259,18 +304,12 @@ sub roles {
     return $self->{roles};
 }
 
-=back
 
 =head2 For managing team responsibilities
 
-=over
+=head3 components
 
-=cut
-
-=item C<components>
-
-    Description: Shorthand for C<Team::responsibilities>
-    Returns:     Array ref of L<Bugzilla::Component> objects
+Shorthand of L</responsibilities> for components
 
 =cut
 
@@ -278,10 +317,10 @@ sub components {
     return $_[0]->responsibilities("component");
 }
 
-=item C<keywords>
 
-    Description: Shorthand for C<Team::responsibilities>
-    Returns:     Array ref of L<Bugzilla::Keyword> objects
+=head keywords
+
+Shorthand of L</responsibilities> for keywords
 
 =cut
 
@@ -289,11 +328,18 @@ sub keywords {
     return $_[0]->responsibilities("keyword");
 }
 
-=item C<responsibilities($type)>
+=head3 responsibilities
 
-    Description: Gets the list of responsibilities the team has
-    Params:      $type - Responsibility type, 'component' or 'keyword'
-    Returns:     Array ref of requested type responsibility objects
+Returns array ref of requested type responsibility objects that team has been
+assigned.
+
+    responsibilities($type)
+
+=over
+
+=item C<$type> Responsibility type, 'component' or 'keyword'
+
+=back
 
 =cut
 
@@ -318,13 +364,22 @@ sub responsibilities {
     return $self->{$cache};
 }
 
-=item C<add_responsibility($type, $item)>
 
-    Description: Adds new component into team responsibilities.
-    Params:      $type - 'component' or 'keyword'
-                 $item - Object or id to add.
-    Returns:     Number of Objecs added
-    Notes:       Throws an error if object with given id does not exist.
+=head3 add_responsibility
+
+Adds new item into team responsibilities.
+Returns boolean true if object was added.
+Throws an error if object with given id does not exist.
+
+    add_responsibility($type, $item)
+
+=over
+
+=item C<$type> 'component' or 'keyword'
+
+=item C<$item> Object or id to add.
+
+=back
 
 =cut
 
@@ -369,12 +424,21 @@ sub add_responsibility {
     return $rows;
 }
 
-=item C<remove_responsibility($type, $item)>
 
-    Description: Removes component from team responsibilities
-    Params:      $type - 'component' or 'keyword'
-                 $item - Object or id to remove.
-    Returns:     Number of objects removed.
+=head3 remove_responsibility
+
+Removes item from the team responsibilities.
+Returns boolean true if item was removed.
+
+    remove_responsibility($type, $item)
+
+=over
+
+=item C<$type> 'component' or 'keyword'
+
+=item C<$item> Object or id to remove.
+
+=back
 
 =cut
 
@@ -417,18 +481,20 @@ sub remove_responsibility {
     return $rows;
 }
 
-=back
-
 =head2 For user permissions
+
+=head3 user_can_edit
+
+Returns boolean true if user is allowed to edit the team.
+
+    user_can_edit($user)
 
 =over
 
-=item C<user_can_edit($user)>
+=item C<$user> (optional) L<Bugzilla::User> object.
+    Current logged in user is used if not given.
 
-    Description: Tests if user is allowed to edit the team.
-    Params:      $user - (optional) C<User> object. Current logged in user is used
-                         if not given.
-    Returns:     1 if user is allowed to edit the team, 0 otherwise.
+=back
 
 =cut
 
@@ -458,18 +524,22 @@ sub user_can_edit {
     return $self->{user_can_edit}->{$user->id};
 }
 
-=back
 
 =head2 For items
 
+=head3 unprioritized_items
+
+Returns array ref of L<Bugzilla::Bug> objects which are in teams
+responsibilities, but are not in any pool.
+
+    unprioritized_items($include)
+
 =over
 
-=item C<unprioritized_items()>
+=item C<$include> - (optional) Resposibilities to include
+        A has ref where key is responsibility type and value is array ref of IDs
 
-    Description: Get unprioritized bugs in teams responsibilites
-    Params:      include - (optional) Resposibilities to include
-                           { type: [ IDs ], }
-    Returns:     Array ref of Bug objects
+=back
 
 =cut
 
@@ -514,10 +584,10 @@ sub unprioritized_items {
     return Bugzilla::Bug->new_from_list($bug_ids);
 }
 
-=item C<pools()>
+=head3 pools
 
-    Description: Get pools
-    Returns:     Array ref of Pool objects
+Returns Array ref of L<Pool|extensions::AgileTools::lib::Pool> objects
+containing teams backlog and sprint pools.
 
 =cut
 
@@ -541,10 +611,10 @@ sub pools {
     return $self->{pools};
 }
 
-=item C<current_sprint()>
+=head3 current_sprint
 
-    Description: Get current Sprint
-    Returns:     Sprint object or undef
+Returns the curent L<Sprint|extensions::AgileTools::lib::Sprint> of the team
+or undef if there is no current sprint
 
 =cut
 
@@ -558,10 +628,10 @@ sub current_sprint {
     return $self->{current_sprint};
 }
 
-=item C<previous_sprint()>
+=head3 previous_sprint
 
-    Description: Get previous Sprint
-    Returns:     Sprint object or undef
+Returns the previous L<Sprint|extensions::AgileTools::lib::Sprint> of the team
+or undef if there isn't previous sprint
 
 =cut
 
@@ -671,12 +741,11 @@ where particular user is a member.
 
     my $teams = Bugzilla->user->agile_teams;
 
-=over
 
-=item C<Bugzilla::User::agile_teams>
+=head3 agile_teams
 
-    Description: Returns the list of teams the user is member in.
-    Returns:     Array ref of C<Bugzilla::Extension::AgileTools::Team> objects.
+Returns the list of teams the user is member in as array ref of
+C<Team|extensions::AgileTools::lib::Team> objects.
 
 =cut
 
@@ -698,8 +767,6 @@ BEGIN {
 1;
 
 __END__
-
-=back
 
 =head1 NOTES
 

@@ -47,6 +47,8 @@ use base qw(Exporter);
 
 =head1 CONSTANTS
 
+=head2 General
+
 =over
 
 =item AGILE_USERS_GROUP - Name of the user group allowed to use AgileTools
@@ -54,6 +56,12 @@ use base qw(Exporter);
 =cut
 
 use constant AGILE_USERS_GROUP => "AgileTools users";
+
+=back
+
+=head2 Process types
+
+=over
 
 =item AGILE_PROCESS_SCRUM - Process type for Scrum
 
