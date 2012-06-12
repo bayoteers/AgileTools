@@ -45,6 +45,15 @@ sub get_param_list {
             choices => get_legal_field_values('resolution'),
             default => [],
         },
+        {
+            name => 'agile_scrum_buglist_columns',
+            desc => 'List of columns to show in scrum buglist queries',
+            type    => 't',
+            default => "bug_agile_pool.pool_order bug_status assigned_to ".
+                    "short_short_desc estimated_time actual_time remaining_time",
+            # TODO: add checker to make sure entered columns are valid
+        },
+
     );
     return @param_list;
 }
