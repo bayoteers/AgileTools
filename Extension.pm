@@ -59,7 +59,7 @@ sub _add_page_handler {
 # Page handlers
 ###############
 
-_add_page_handler("agiletools/teams.html", sub {
+_add_page_handler("agiletools/team/list.html", sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
     if ($cgi->param("action") eq "remove") {
@@ -75,7 +75,7 @@ _add_page_handler("agiletools/teams.html", sub {
     $vars->{can_manage_teams} = user_can_manage_teams();
 });
 
-_add_page_handler("agiletools/team.html", sub {
+_add_page_handler("agiletools/team/show.html", sub {
     my ($vars) = @_;
 
     my $cgi = Bugzilla->cgi;
@@ -116,7 +116,7 @@ _add_page_handler("agiletools/team.html", sub {
     $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
 });
 
-_add_page_handler("agiletools/create_team.html", sub {
+_add_page_handler("agiletools/team/create.html", sub {
     my ($vars) = @_;
     $vars->{processes} = AGILE_PROCESS_NAMES;
 });
@@ -171,7 +171,7 @@ sub bb_common_links {
     $args->{links}->{teams} = [
         {
             text => "Teams",
-            href => "page.cgi?id=agiletools/teams.html",
+            href => "page.cgi?id=agiletools/team/list.html",
             priority => 10
         }
     ];

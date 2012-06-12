@@ -20,20 +20,27 @@
   #
   #%]
 
-[% INCLUDE global/header.html.tmpl title = "Create Team" %]
+[% INCLUDE global/header.html.tmpl title = "AgileTools" %]
 
-<h1>Create Team</h1>
-<form action="page.cgi">
-    <input type="hidden" name="id" value="agiletools/team.html"/>
-    <input type="hidden" name="action" value="create"/>
-    Name for the new team: <input name="name"/>
-    <button type="submit">Create</button><br/>
-    Uses: <select name="process_id">
-        [% FOREACH p IN processes %]
-        <option value="[% p.key %]">[% p.value %]</option>
-        [% END %]
-    </select>
-</form>
-
+<h1>Teams</h1>
+<table>
+    [% FOREACH team IN agile_teams %]
+    <tr>
+        <td>
+            <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
+            [% team.name FILTER html %]</a>
+        </td><td>
+            [% IF can_manage_teams %]
+            <a href="page.cgi?id=agiletools/team/list.html&amp;team_id=[% team.id %]&amp;action=remove"
+               onclick="return confirm('Are you sure you want to delete team [% team.name %]?');">
+            [Remove]</a>
+            [% END %]
+        </td>
+    </tr>
+    [% END %]
+</table>
+[% IF can_manage_teams %]
+<a href="page.cgi?id=agiletools/team/create.html">
+Create new team</a>
+[% END %]
 [% INCLUDE global/footer.html.tmpl %]
-
