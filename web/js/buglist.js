@@ -46,8 +46,12 @@ $.widget("agile.buglist", {
         this._lastSearch = null;
         this._searchIndex = 0;
         this.element.addClass("buglist");
+        this._emptyIndicator = $("<li>No items</li>")
+            .addClass("ui-corner-all blitem")
+            .appendTo(this.element);
 
         this.element.sortable({
+            items: "> :agile-blitem",
             placeholder: "blitem-placeholder",
             connectWith: this.options.connectWith,
             stop: $.proxy(this, "_onSortStop"),
@@ -73,6 +77,7 @@ $.widget("agile.buglist", {
     {
         this.element.children(":agile-blitem").blitem("destroy").remove();
         this._items = {};
+        this.element.append(this._emptyIndicator);
     },
 
     _onParentReconnect: function(newConnection)
@@ -140,6 +145,7 @@ $.widget("agile.buglist", {
                 element.blitem("addDepends", depend.element);
             }
         }
+        this._emptyIndicator.remove();
     },
 
     _onSortStop: function(ev, ui)
@@ -147,6 +153,9 @@ $.widget("agile.buglist", {
         if (this.element.find(":agile-blitem").index(ui.item) == -1) {
             // remove item if it was moved to other list
             delete this._items[ui.item.blitem("bug").id];
+            if ($.isEmptyObject(this._items)) {
+                this.element.append(this._emptyIndicator);
+            }
         }
     },
 
@@ -272,6 +281,7 @@ $.widget("agile.blitem", {
     _setBuglist: function(buglist)
     {
         this._dList.sortable("option", {
+            items: "> :agile-blitem",
             placeholder: "blitem-placeholder",
             connectWith: buglist.options.connectWith,
             stop: $.proxy(buglist, "_onSortStop"),
