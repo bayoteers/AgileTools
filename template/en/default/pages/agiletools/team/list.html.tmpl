@@ -20,27 +20,37 @@
   #
   #%]
 
-[% INCLUDE global/header.html.tmpl title = "AgileTools" %]
+[% INCLUDE global/header.html.tmpl
+    title = "Teams",
+    style_urls = [
+        "extensions/AgileTools/web/css/base.css",
+        ],
+%]
 
-<h1>Teams</h1>
-<table>
-    [% FOREACH team IN agile_teams %]
-    <tr>
-        <td>
-            <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
-            [% team.name FILTER html %]</a>
-        </td><td>
-            [% IF can_manage_teams %]
-            <a href="page.cgi?id=agiletools/team/list.html&amp;team_id=[% team.id %]&amp;action=remove"
-               onclick="return confirm('Are you sure you want to delete team [% team.name %]?');">
-            [Remove]</a>
-            [% END %]
-        </td>
-    </tr>
+[% FOREACH team IN agile_teams %]
+<div class="team-block">
+    <h2>Team:
+        <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
+        [% team.name FILTER html %]</a>
+        [% IF can_manage_teams %]
+        [<a href="page.cgi?id=agiletools/team/list.html&amp;team_id=[% team.id %]&amp;action=remove"
+           onclick="return confirm('Are you sure you want to delete team [% team.name %]?');"
+           >Remove</a>]
+        [% END %]
+    </h2>
+
+    [% TRY %]
+        [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+    [% CATCH %]
+        <b>Failed to display team summary!</b><br/>
+        [% error.type FILTER html %]: [% error.info FILTER html %]
     [% END %]
-</table>
+</div>
+[% END %]
+
+<hr/>
 [% IF can_manage_teams %]
-<a href="page.cgi?id=agiletools/team/create.html">
-Create new team</a>
+[<a href="page.cgi?id=agiletools/team/create.html">
+Create new team</a>]
 [% END %]
 [% INCLUDE global/footer.html.tmpl %]

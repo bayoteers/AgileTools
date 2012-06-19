@@ -21,23 +21,24 @@
   #%]
 
 [% INCLUDE global/header.html.tmpl
-    title = "My summary",
+    title = "My teams",
     style_urls = [
         "extensions/AgileTools/web/css/base.css",
         ],
 %]
 
 [% FOREACH team IN agile_teams %]
-<h1>Team: [% team.name FILTER html %]</h1>
-    [% TRY %]
-        [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
-    [% CATCH %]
-        <b>Failed to display team summary!</b><br/>
-        [% error.type FILTER html %]: [% error.info FILTER html %]
-    [% END %]
-
-<a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
-Team info</a>
+<div class="team-block">
+    <h1>Team:
+        <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">[% team.name FILTER html %]</a>
+    </h1>
+        [% TRY %]
+            [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
+        [% CATCH %]
+            <b>Failed to display team summary!</b><br/>
+            [% error.type FILTER html %]: [% error.info FILTER html %]
+        [% END %]
+</div>
 
 [% END %]
 

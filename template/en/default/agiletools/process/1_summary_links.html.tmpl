@@ -62,6 +62,9 @@
     </li>
 [% END %]
     <li>
+        <a href="page.cgi?id=agiletools/scrum/sprints.html&amp;team_id=[% team.id %]">All sprints</a>
+    </li>
+    <li>
         <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.backlog_id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]">Backlog</a>
     </li>
     <li>
@@ -70,9 +73,6 @@
     [% IF user.in_group_id(team.group_id) %]
     <li>
         <a href="page.cgi?id=agiletools/scrum/planing.html&amp;team_id=[% team.id %]">Planing</a>
-    </li>
-    <li>
-        <a href="page.cgi?id=agiletools/scrum/sprints.html&amp;team_id=[% team.id %]">All sprints</a>
     </li>
     [% END %]
 </ul>

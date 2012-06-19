@@ -15,6 +15,26 @@ button.remove {
     height: 1.5em;
 }
 
+.grid-block {
+    display: inline-block;
+    float: left;
+    padding: 1em;
+}
+
+.team-block {
+    display: inline-block;
+    padding-left: 1em;
+    margin-bottom: 1ex;
+    vertical-align: text-top;
+    width: 30em;
+    min-height: 24em;
+    border: 1px dotted;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+}
+
 
 /* Scrum planing page */
 .center {
