@@ -247,9 +247,9 @@ sub buglist_column_joins {
     };
 }
 
-###############################################
-# Additional opretions at the end of bug update
-###############################################
+#########################################
+# Additional opretions when updating bugs
+#########################################
 
 sub bug_end_of_update {
     my ($self, $args) = @_;
@@ -280,6 +280,29 @@ sub bug_end_of_update {
         }
     }
 }
+
+sub object_end_of_update {
+    my ($self, $args) = @_;
+    my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
+
+    if ($obj->isa("Bugzilla::Bug")) {
+        # Update remaining time if estimated time is changed
+        if (defined $changes->{estimated_time} &&
+            ! defined $changes->{remaining_time})
+        {
+            my ($old, $new) = @{$changes->{estimated_time}};
+            if ($obj->{remaining_time} != $new)
+            {
+                Bugzilla->dbh->do("UPDATE bugs ".
+                                     "SET remaining_time = ? ".
+                                   "WHERE bug_id = ?",
+                        undef, $new, $obj->id);
+                $changes->{remaining_time} = [$old_obj->{remaining_time}, $new];
+            }
+        }
+    }
+}
+
 
 ##########################################
 # Database updates performed in checksetup
