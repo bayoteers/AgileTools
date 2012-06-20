@@ -32,6 +32,13 @@ sub get_param_list {
 
     my @param_list = (
         {
+            name    => 'agile_use_points',
+            desc    => 'Display estimated, remaining and actual time as points '.
+                        'instead of hours',
+            type    => 'b',
+            default => 1
+        },
+        {
             name => 'agile_check_time_severity',
             desc => 'Bug severities for which time worked is checked when resolving',
             type    => 'm',
