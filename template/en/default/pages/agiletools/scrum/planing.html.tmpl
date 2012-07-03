@@ -56,7 +56,7 @@ $(function() {
                 [% selected = team.current_sprint.id == pool.id ?
                     'selected="selected"' : "" %]
                 <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name FILTER html %]</option>
+                [% pool.name _ ' (Pool ID ' _ pool.id _ ')' FILTER html %]</option>
             [% END %]
             </select>
             <br/>
@@ -82,7 +82,7 @@ $(function() {
                 [% selected = team.backlog_id == pool.id ?
                     'selected="selected"' : "" %]
                 <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name FILTER html %]</option>
+                [% pool.name _ ' (Pool ID ' _ pool.id _ ')' FILTER html %]</option>
             [% END %]
             </select>
             <br/>
