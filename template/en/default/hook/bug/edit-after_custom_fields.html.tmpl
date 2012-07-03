@@ -1,0 +1,17 @@
+[% IF bug.pool %]
+[% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
+<tr>
+    <th class="field_label">Pool:</th>
+    <td>
+        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% bug.pool_id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]&amp;query_based_on=[% bug.pool.name FILTER uri %]">[% bug.pool.name FILTER html %]</a>
+    </td>
+</tr>
+<tr>
+    <th class="field_label">Pool ID:</th>
+    <td>[% bug.pool_id %]</td>
+</tr>
+<tr>
+    <th class="field_label">Pool Order:</th>
+    <td>[% bug.pool_order %]</td>
+</tr>
+[% END %]

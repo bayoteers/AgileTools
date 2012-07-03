@@ -268,6 +268,25 @@ BEGIN {
     }
     return $self->{pool_id};
 };
+
+=item C<Bugzilla::Bug::pool>
+
+    Description: Returns the Pool object of the bug or undef if bug is not in
+                 a pool
+
+=cut
+
+*Bugzilla::Bug::pool = sub {
+    my $self = shift;
+    if (!exists $self->{pool}) {
+        if ($self->pool_id) {
+            $self->{pool} = new Bugzilla::Extension::AgileTools::Pool($self->pool_id);
+        } else {
+            $self->{pool} = undef;
+        }
+    }
+    return $self->{pool};
+};
 } # END BEGIN
 
 1;
