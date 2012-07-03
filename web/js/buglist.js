@@ -197,6 +197,7 @@ $.widget("agile.buglist", {
             self._trigger(trigger, ev, {
                 bug: $(this).blitem("bug"),
                 index: index,
+                element: $(this),
             });
         });
     },
@@ -272,6 +273,11 @@ $.widget("agile.blitem", {
                 "ui-icon-circle-triangle-s ui-icon-circle-triangle-n");
             $(this).siblings(".details").slideToggle();
         });
+        // estimate button
+        this.element.find("button.estimate").button({
+            icons: {primary: "ui-icon-pencil"},
+            text: false,
+        }).click($.proxy(this, "_openEstimate"));
 
         this._dList = this.element.find("ul.dependson").sortable();
         this._dList.addClass("buglist");
@@ -409,6 +415,44 @@ $.widget("agile.blitem", {
     {
         this.element.animate({"margin-left": "+=20"}, {queue: true})
                 .animate({"margin-left": this._originalMargin}, {queue: true});
+    },
+
+    _openEstimate: function()
+    {
+        var form = $("#bug_estimate_editor_template").clone().attr("id", null);
+        var bug = this.bug();
+        form.data("bug_id", bug.id);
+        form.find("span.summary").text(bug.summary);
+        form.find("input").each(function() {
+            $(this).val(bug[$(this).attr("name")])
+        });
+        var bugitem = this;
+        form.dialog({
+            title: "Estimate for item " + bug.id,
+            modal: true,
+            buttons: {
+                "Update": function() {
+                    var form = $(this);
+                    var params = {ids: form.data("bug_id")};
+                    $(this).find("input").each(function() {
+                        params[$(this).attr("name")] = $(this).val();
+                    });
+                    var rpc = new Rpc("Bug", "update", params);
+                    rpc.fail(function(error) { alert(error.message); });
+                    rpc.done(function(result) {
+                        var changes = result.bugs[0].changes;
+                        for (var field in changes) {
+                            bug[field] = changes[field].added;
+                        }
+                        bugitem.bug(bug);
+                        form.dialog("close");
+                        bugitem._trigger("update");
+                    });
+                },
+                "Cancel": function() { $(this).dialog("close"); },
+                },
+            close: function() { $(this).dialog("destroy") },
+        });
     },
 
 });

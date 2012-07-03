@@ -175,6 +175,7 @@ $(function() {
             <span class="times">
                 <span title="estimated_time">0</span>/
                 <span title="remaining_time">0</span>
+                <button type="button" class="estimate">Estimate</button>
             </span>
             <div class="details">
                 Assigned to:<span title="assigned_to"></span><br/>
@@ -184,6 +185,19 @@ $(function() {
             <ul class="dependson"></ul>
         </li>
     <ul>
+
+    <form id="bug_estimate_editor_template">
+    <table>
+        <tr>
+            <td><label for="estimated_time">Original estimate:</label></td>
+            <td><input name="estimated_time"/></td>
+        </tr>
+        <tr>
+            <td><label for="remaining_time">Remaining estimate:</label></td>
+            <td><input name="remaining_time"/></td>
+        </tr>
+    </table>
+    </form>
 
 </div>
 

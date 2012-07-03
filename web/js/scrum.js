@@ -253,7 +253,7 @@ var ListContainer = Base.extend(
         info.find(".end-date").text(scrumFormatDate(sprint.end_date));
         info.find(".capacity").text(sprint.capacity);
         info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
-        this.footer.html(info);
+        this.footer.empty().append(info);
         this._sprint = sprint;
     },
 
@@ -271,6 +271,7 @@ var ListContainer = Base.extend(
         scrumDateRange(start, end);
 
         this._dialog.find("[name='capacity']").val(this._sprint.capacity);
+        this._dialog.find("[name='move_open']").parents("tr").first().hide();
         this._dialog.dialog({
             title: "Edit sprint",
             modal: true,
@@ -305,11 +306,12 @@ var ListContainer = Base.extend(
      */
     _onUpdateSprintDone: function(result)
     {
-        if (!this._sprint || this._sprint.id != result.id) return;
+        if (!this._sprint || this._sprint.id != result.sprint) return;
         for (var key in result.changes) {
             this._sprint[key] = result.changes[key][1];
         }
         this._updateSprintInfo(this._sprint);
+        this._calculateWork();
     },
 
     /**
@@ -371,7 +373,8 @@ var ListContainer = Base.extend(
         });
         result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
-            this.content.buglist("addBug", result.bugs[i]);
+            var element = this.content.buglist("addBug", result.bugs[i]);
+            element.blitem("option", "update", $.proxy(this, "_calculateWork"));
         }
         this._calculateWork();
     },
@@ -404,6 +407,7 @@ var ListContainer = Base.extend(
             bug_id: data.bug.id,
             order: data.bug.pool_order,
         });
+        data.element.blitem("option", "update", $.proxy(this, "_calculateWork"));
         this._calculateWork();
     },
     
@@ -428,9 +432,9 @@ var ListContainer = Base.extend(
             return;
         }
         var work = 0;
-        var capacity = this.footer.find(".capacity").text();
+        var capacity = Number(this.footer.find(".capacity").text() || 0);
         this.content.find(":agile-blitem").each(function() {
-            work += $(this).blitem("bug").remaining_time || 0;
+            work += Number($(this).blitem("bug").remaining_time || 0);
             if (work > capacity) {
                 $(this).addClass("over-capacity");
             } else {

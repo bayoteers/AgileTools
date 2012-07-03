@@ -100,7 +100,8 @@ button.remove {
     display: none;
 }
 
-.blitem button.expand {
+.blitem button.expand,
+.blitem button.estimate {
     width: 1em;
     height: 1em;
 }
