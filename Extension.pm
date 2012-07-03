@@ -121,7 +121,7 @@ _add_page_handler("agiletools/team/create.html", sub {
     $vars->{processes} = AGILE_PROCESS_NAMES;
 });
 
-_add_page_handler("agiletools/scrum/planing.html", sub {
+_add_page_handler("agiletools/scrum/planning.html", sub {
     my ($vars) = @_;
     my $id = Bugzilla->cgi->param("team_id");
     ThrowUserError("invalid_parameter",
