@@ -172,9 +172,10 @@ $.widget("agile.buglist", {
         var reverse = false;
         var trigger = "receive";
         var self = this;
+        var items = this.element.find(":agile-blitem");
 
         if (!ui.sender) {
-            if (this.element.index(ui.item)) {
+            if (items.index(ui.item) >= 0) {
                 trigger = "move";
             } else {
                 trigger = "remove";
@@ -193,7 +194,7 @@ $.widget("agile.buglist", {
         var movedItems = ui.item.add(":agile-blitem", ui.item);
         if (reverse) movedItems = movedItems.reverse();
         movedItems.each(function() {
-            var index = self.element.find(":agile-blitem").index(this);
+            var index = items.index(this);
             self._trigger(trigger, ev, {
                 bug: $(this).blitem("bug"),
                 index: index,
