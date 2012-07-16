@@ -29,14 +29,15 @@
 
 [% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
 
-<table style="width: 90%;">
+<table style="width: 90%; text-align: left;">
     <thead>
         <tr>
-            <td>Sprint</td>
-            <td>Start date</td>
-            <td>End date</td>
-            <td>Capacity</td>
-            <td>Current</td>
+            <th>Sprint</th>
+            <th>Pool ID</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Capacity</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -46,15 +47,15 @@
                 <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]">
                 [% sprint.name FILTER html %]</a>
             </td>
+            <td>[% sprint.id FILTER html %]</td>
             <td>[% sprint.start_date FILTER time("%Y-%m-%d") FILTER html %]</td>
             <td>[% sprint.end_date FILTER time("%Y-%m-%d") FILTER html %]</td>
             <td>[% sprint.capacity FILTER html %]</td>
             <td>
             [% IF team.current_sprint.id == sprint.id %]
+                Yes
                 [% IF user.in_group_id(team.group_id) %]
-                <a href="page.cgi?id=agiletools/scrum/planning.html&amp;team_id=[% team.id %]">Planning</a>
-                [% ELSE %]
-                X
+                [<a href="page.cgi?id=agiletools/scrum/planning.html&amp;team_id=[% team.id %]">Planning</a>]
                 [% END %]
             [% END %]</td>
         </tr>
