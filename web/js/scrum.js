@@ -373,8 +373,24 @@ var ListContainer = Base.extend(
         });
         result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
-            var element = this.content.buglist("addBug", result.bugs[i]);
+            var bug = result.bugs[i];
+            var element = this.content.buglist("addBug", bug);
             element.blitem("option", "update", $.proxy(this, "_calculateWork"));
+            var addBugButton = $('<button class="add-child" type="button">Add child</button>');
+            element.find('button.expand').first().after(addBugButton);
+            addBugButton.button({
+                icons: {primary: "ui-icon-circle-plus"},
+                text: false,
+            });
+            addBugButton.bugentry({
+                fields: ['summary','product', 'component', 'severity', 'estimated_time', 'blocked', 'description'],
+                defaults:{
+                    product: bug.product,
+                    component: bug.component,
+                    blocked: bug.id,
+                },
+                success: $.proxy(this, "_poolBugCreated"),
+            });
         }
         this._calculateWork();
     },
@@ -421,6 +437,23 @@ var ListContainer = Base.extend(
                 id: data.bug.pool_id,
                 bug_id: data.bug.id});
         }
+    },
+
+    _poolBugCreated: function(ev, data)
+    {
+        console.log(ev, data);
+        var params = {
+            id: this._pool_id,
+            bug_id: data.bug_id,
+        };
+        var parentItem = $(ev.target).parents(":agile-blitem");
+        if (parentItem.size()) {
+            var order = this.content.find(":agile-blitem").index(parentItem);
+            if (order != -1) params.order = order + 2;
+        }
+        this.callRpc("Agile.Pool", "add_bug", params);
+        this.callRpc("Bug", "get", {ids: [data.bug_id]}).done(
+                $.proxy(this, "_onPoolGetDone"));
     },
 
     /**

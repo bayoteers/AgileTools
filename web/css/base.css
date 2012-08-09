@@ -101,7 +101,9 @@ button.remove {
 }
 
 .blitem button.expand,
+.blitem button.add-child,
 .blitem button.estimate {
     width: 1em;
     height: 1em;
+    vertical-align: text-bottom;
 }
