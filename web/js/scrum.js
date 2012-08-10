@@ -67,6 +67,17 @@ function scrumFormatDate(dateStr)
 };
 
 /**
+ * Severity hierarchy used when adding new items
+ * TODO: Move this to admin options
+ */
+var scrumItemSeverity = {
+    goal: "story",
+    story: "task",
+    task: "task",
+    defect: "task",
+};
+
+/**
  * Class presenting the list container
  *
  * TODO: Split the sprint/backlog/unrpioritized controllers to separate classes
@@ -388,6 +399,7 @@ var ListContainer = Base.extend(
                     product: bug.product,
                     component: bug.component,
                     blocked: bug.id,
+                    severity: scrumItemSeverity[bug.severity],
                 },
                 success: $.proxy(this, "_poolBugCreated"),
             });
