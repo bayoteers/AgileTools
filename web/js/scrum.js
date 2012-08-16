@@ -453,7 +453,6 @@ var ListContainer = Base.extend(
 
     _poolBugCreated: function(ev, data)
     {
-        console.log(ev, data);
         var params = {
             id: this._pool_id,
             bug_id: data.bug_id,
