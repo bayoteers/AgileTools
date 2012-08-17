@@ -398,11 +398,11 @@ var ListContainer = Base.extend(
                 text: false,
             });
             addBugButton.bugentry({
-                fields: ['summary','product', 'component', 'severity', 'estimated_time', 'blocked', 'description'],
+                fields: ['summary','product', 'component', 'severity', 'estimated_time', 'blocks', 'comment'],
                 defaults:{
                     product: bug.product,
                     component: bug.component,
-                    blocked: bug.id,
+                    blocks: bug.id,
                     severity: scrumItemSeverity[bug.severity],
                 },
                 success: $.proxy(this, "_poolBugCreated"),
