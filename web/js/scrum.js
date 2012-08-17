@@ -382,6 +382,10 @@ var ListContainer = Base.extend(
             move: $.proxy(this, "_onPoolReceive"),
             remove:$.proxy(this, "_calculateWork"),
         });
+        this._addBugs(result);
+    },
+    _addBugs: function(result)
+    {
         result.bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         for (var i = 0; i < result.bugs.length; i++) {
             var bug = result.bugs[i];
@@ -464,7 +468,7 @@ var ListContainer = Base.extend(
         }
         this.callRpc("Agile.Pool", "add_bug", params);
         this.callRpc("Bug", "get", {ids: [data.bug_id]}).done(
-                $.proxy(this, "_onPoolGetDone"));
+                $.proxy(this, "_addBugs"));
     },
 
     /**
