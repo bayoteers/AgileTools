@@ -38,6 +38,7 @@ package Bugzilla::Extension::AgileTools::Pool;
 
 use Bugzilla::Error;
 use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Bug qw(LogActivityEntry);
 
 use base qw(Bugzilla::Object);
 
@@ -174,6 +175,11 @@ sub add_bug {
             undef, ($self->id, $order, $bug_id));
         delete $self->{bugs};
     }
+    if ($old_pool != $self->id) {
+        my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+        LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $old_pool, $self->id,
+                Bugzilla->user->id, $delta_ts);
+    }
     $dbh->bz_commit_transaction();
     return $changed;
 }
@@ -214,6 +220,9 @@ sub remove_bug {
                   WHERE pool_id = ? AND pool_order > ?",
             undef, ($self->id, $order));
         delete $self->{bugs};
+        my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+        LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $self->id, 0,
+                Bugzilla->user->id, $delta_ts);
     }
     $dbh->bz_commit_transaction();
     return defined $order;
