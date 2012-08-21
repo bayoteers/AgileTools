@@ -273,10 +273,14 @@ sub bug_end_of_update {
             }
 
             # Remove closed bug from any backlog
-            Bugzilla->dbh->do(
-                'DELETE bap FROM bug_agile_pool AS bap
-                    INNER JOIN agile_team at ON bap.pool_id = at.backlog_id
-                    WHERE  bap.bug_id = ?', undef, $bug->id);
+            my $blids = Bugzilla->dbh->selectcol_arrayref(
+                'SELECT backlog_id FROM agile_team');
+            if (grep ($bug->pool->id == $_, @$blids)){
+                $bug->pool->remove_bug($bug->id);
+                delete $bug->{pool};
+                delete $bug->{pool_id};
+            }
+
         }
     }
 }
@@ -695,6 +699,100 @@ sub db_schema_abstract_schema {
         INDEXES => [
         ],
     };
+}
+
+sub _get_bad_pools {
+    my $dbh = Bugzilla->dbh;
+
+    my $pool_ids = $dbh->selectcol_arrayref(
+        'SELECT id FROM agile_pool');
+
+    my $sth = $dbh->prepare(
+        'SELECT pool_order FROM bug_agile_pool WHERE pool_id = ? '.
+        'ORDER BY pool_order ASC');
+
+    my %bad_pools ;
+    for my $pool_id (@$pool_ids) {
+        $sth->execute($pool_id);
+        my $expected = 1;
+        my @gaps;
+        while (my ($real) = $sth->fetchrow_array) {
+            if ($real != $expected) {
+                push(@gaps, {start=> $expected, end=> $real});
+                $expected = $real + 1;
+            } else {
+                $expected += 1;
+            }
+        }
+        if (@gaps) {
+            $bad_pools{$pool_id} = \@gaps;
+        }
+    }
+    return \%bad_pools;
+}
+
+sub sanitycheck_repair {
+    my ($self, $args) = @_;
+
+    my $cgi = Bugzilla->cgi;
+    my $dbh = Bugzilla->dbh;
+    my $status = $args->{'status'};
+    if ($cgi->param('agiletools_repair_pool_order')) {
+        $status->('agiletools_repair_pool_order_start');
+
+        my $fix_gap = $dbh->prepare(
+            'UPDATE bug_agile_pool '.
+            'SET pool_order = pool_order - ? '.
+            'WHERE pool_id = ? AND pool_order > ?');
+        my $get_dupes = $dbh->prepare(
+            'SELECT bug_id FROM bug_agile_pool '.
+            'WHERE pool_id = ? AND pool_order = ?');
+        my $make_room = $dbh->prepare(
+            'UPDATE bug_agile_pool '.
+            'SET pool_order = pool_order + ? '.
+            'WHERE pool_id = ? AND pool_order > ?');
+        my $fix_dupe = $dbh->prepare(
+            'UPDATE bug_agile_pool '.
+            'SET pool_order = pool_order + ? '.
+            'WHERE pool_id = ? AND bug_id = ?');
+
+        my $bad_pools = _get_bad_pools();
+        for my $pool_id (keys %$bad_pools){
+            for my $gap (reverse @{$bad_pools->{$pool_id}}) {
+                my $change = $gap->{end} - $gap->{start};
+                if ($change > 0) {
+                    $fix_gap->execute($change, $pool_id, $gap->{start});
+                } elsif ($change = -1) {
+                    # Duplicate values
+                    $get_dupes->execute($pool_id, $gap->{end});
+                    my @dupes = map {$_->[0]} @{$get_dupes->fetchall_arrayref};
+                    shift @dupes;
+                    $make_room->execute(scalar @dupes, $pool_id, $gap->{end});
+                    $change = 1;
+                    for my $bug_id (@dupes) {
+                        $fix_dupe->execute($change, $pool_id, $bug_id);
+                    }
+                } else {
+                    $status->('agiletools_repair_pool_order_weird_alert',
+                        {pool => $pool_id, gap=> $gap}, 'alert');
+                }
+            }
+        }
+        $status->('agiletools_repair_pool_order_end');
+    }
+}
+
+sub sanitycheck_check {
+    my ($self, $args) = @_;
+    my $status = $args->{'status'};
+
+    $status->('agiletools_check_pool_order');
+    my $bad_pools = _get_bad_pools();
+    if (%$bad_pools) {
+        $status->('agiletools_check_pool_order_alert',
+            {pools => $bad_pools}, 'alert');
+        $status->('agiletools_chek_pool_order_prompt');
+    }
 }
 
 #####################

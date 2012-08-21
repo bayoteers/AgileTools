@@ -1,0 +1,29 @@
+[% IF san_tag == "agiletools_check_pool_order" %]
+    Checking for AgileTools Pool order consistensies.
+
+[% ELSIF san_tag == "agiletools_check_pool_order_alert" %]
+    Order inconsistensies in pools:
+    [% FOREACH pool IN pools -%]
+        [% pool.key %]: [
+        [%- FOREACH gap = pool.value -%]
+        [% gap.start _ "-" _ gap.end %][% ", " UNLESS loop.last %]
+        [%- END %]]
+    [%- END %]
+
+[% ELSIF san_tag == "agiletools_chek_pool_order_prompt" %]
+    <a href="sanitycheck.cgi?agiletools_repair_pool_order=1&amp;token=
+           [%- issue_hash_token(['sanitycheck']) FILTER uri %]">
+           Click here to fix the inconsistensies</a>
+
+[% ELSIF san_tag == "agiletools_repair_pool_order_start" %]
+    Repairing AgileTools Pool orders...
+
+[% ELSIF san_tag == "agiletools_repair_pool_order_end" %]
+    Done
+
+[% ELSIF san_tag == "agiletools_repair_pool_order_weird_alert" %]
+    There is some weird inconsistency in pool [% pool %]
+    (around orders [% gap.start %], [% gap.end %]).
+    You need to fix it manually.
+
+[% END %]
