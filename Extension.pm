@@ -62,7 +62,8 @@ sub _add_page_handler {
 _add_page_handler("agiletools/team/list.html", sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
-    if ($cgi->param("action") eq "remove") {
+    my $action = $cgi->param("action") || "";
+    if ($action eq "remove") {
         ThrowUserError("agile_team_manage_denied")
             unless user_can_manage_teams;
         my $team = Bugzilla::Extension::AgileTools::Team->check({
@@ -80,7 +81,8 @@ _add_page_handler("agiletools/team/show.html", sub {
 
     my $cgi = Bugzilla->cgi;
     my $team;
-    if ($cgi->param("action") eq "create") {
+    my $action = $cgi->param("action") || "";
+    if ($action eq "create") {
         ThrowUserError("agile_team_manage_denied")
             unless user_can_manage_teams;
         $team = Bugzilla::Extension::AgileTools::Team->create({
@@ -162,11 +164,10 @@ sub page_before_template {
         ThrowUserError("agile_access_denied")
             unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
     }
-    my $vars = $params->{vars};
 
     my $subs = $page_handlers{$page_id};
     for my $sub (@{$subs || []}) {
-        $sub->($vars);
+        $sub->($params->{vars});
     }
 }
 
@@ -175,7 +176,7 @@ sub template_before_process {
 
     my $subs = $template_handlers{$params->{file}};
     for my $sub (@{$subs || []}) {
-        $sub->($params);
+        $sub->($params->{vars});
     }
 }
 
