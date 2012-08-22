@@ -1,0 +1,45 @@
+<div id="burnchart" style="width: 700px; height: 400px; display: inline-block;"></div>
+
+<script type="text/javascript" src="extensions/AgileTools/web/js/jquery.flot.min.js"></script>
+<script type="text/javascript">
+var BURN = [% burn_json or "{}" %];
+
+var options = {
+    series: {
+        lines: { show: true },
+        points: { show: true },
+    },
+    xaxis: {
+        mode: "time",
+        min: BURN.start,
+        max: BURN.end,
+    },
+    grid: {
+        markings: [
+        ],
+    },
+    yaxes: [ { }, { position: "right"} ]
+};
+
+
+$.plot("#burnchart", [
+        {
+            label: "Remaining",
+            data: BURN.remaining,
+        },
+        {
+            label: "Work done",
+            data: BURN.actual,
+        },
+        {
+            label: "Open items",
+            data: BURN.open_items,
+            yaxis: 2,
+        },
+    ], options);
+
+</script>
+<!-- pre style="text-align: left;">
+[% USE dumper(indent=2) %]
+[% dumper.dump(remaining) %]
+</pre -->

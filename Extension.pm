@@ -33,6 +33,7 @@ use Bugzilla::Extension::AgileTools::Pool;
 use Bugzilla::Extension::AgileTools::Role;
 use Bugzilla::Extension::AgileTools::Team;
 use Bugzilla::Extension::AgileTools::Util;
+use Bugzilla::Extension::AgileTools::Burn;
 
 use JSON;
 
@@ -151,6 +152,16 @@ _add_page_handler("agiletools/user_summary.html", sub {
     my ($vars) = @_;
     $vars->{processes} = AGILE_PROCESS_NAMES;
     $vars->{agile_teams} = Bugzilla->user->agile_teams;
+});
+
+_add_template_handler('list/burnchart.html.tmpl', sub {
+    my ($vars) = @_;
+    my $cgi = Bugzilla->cgi;
+    my @bug_ids = map {$_->{bug_id}} @{$vars->{bugs}};
+    my $start = $cgi->param("burn_start");
+    my $end = $cgi->param("burn_end");
+    my $data = get_burndata(\@bug_ids, $start, $end);
+    $vars->{burn_json} = JSON->new->utf8->encode($data);
 });
 
 #######################################
