@@ -81,16 +81,12 @@
 [% END %]
 </ul>
 
-
-<hr>
-
 [%############################################################################%]
 [%# Preceding Status Line                                                    #%]
 [%############################################################################%]
 
-[% IF bugs.size > 9 %]
-  [% PROCESS num_results %]
-[% END %]
+[% PROCESS num_results %]
+<hr>
 
 <div>
 [% PROCESS 'list/burnchart.html.tmpl' %]

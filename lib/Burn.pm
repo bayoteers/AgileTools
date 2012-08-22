@@ -179,6 +179,8 @@ sub get_burndata {
     return {
         start => $from || $first_ts,
         end => $to,
+        start_rem => $start_rem,
+        end_rem => $end_rem,
         remaining => \@remaining,
         actual => \@actual,
         open_items => \@items,

@@ -18,28 +18,31 @@ var options = {
         markings: [
         ],
     },
-    yaxes: [ { }, { position: "right"} ]
+    yaxes: [ { }, { position: "right"} ],
+    colors: ['#EDC240', '#4DA74D', '#AFD8F8', '#CB4B4B'],
 };
 
 
 $.plot("#burnchart", [
         {
-            label: "Remaining",
-            data: BURN.remaining,
+            data: [[BURN.start, BURN.start_rem], [BURN.end, 0]],
+            lines: {fill: true, lineWidth: 0},
+            points: {show: false},
+        },
+        {
+            label: "Open items",
+            data: BURN.open_items,
+            yaxis: 2,
+            points: {show: false},
         },
         {
             label: "Work done",
             data: BURN.actual,
         },
         {
-            label: "Open items",
-            data: BURN.open_items,
-            yaxis: 2,
+            label: "Remaining",
+            data: BURN.remaining,
         },
     ], options);
 
 </script>
-<!-- pre style="text-align: left;">
-[% USE dumper(indent=2) %]
-[% dumper.dump(remaining) %]
-</pre -->
