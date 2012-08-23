@@ -69,13 +69,14 @@ our @EXPORT = qw(
 
 sub get_burndata {
     my ($bugs, $from, $to) = @_;
+
     my $dbh = Bugzilla->dbh;
 
     my @remaining;
     my @actual;
 
-    $from = defined $from ? 1000 * str2time($from) : 0;
-    $to = defined $to ? 1000 * str2time($to) : 1000 * time();
+    $from = defined $from ? 1000 * str2time($from."T00:00:00") : 0;
+    $to = defined $to ? 1000 * str2time($to."T23:59:59") : 1000 * time();
     my $first_ts;
     my $last_ts;
 
@@ -184,6 +185,7 @@ sub get_burndata {
         remaining => \@remaining,
         actual => \@actual,
         open_items => \@items,
+        start_open => $start_items,
     };
 }
 
