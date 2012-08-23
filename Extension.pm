@@ -158,8 +158,17 @@ _add_template_handler('list/burnchart.html.tmpl', sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
     my @bug_ids = map {$_->{bug_id}} @{$vars->{bugs}};
+
     my $start = $cgi->param("burn_start");
+    ThrowUserError("invalid_parameter",
+        {name=>"burn_start", err => "Date format should be YYYY-MM-DD"})
+        if (defined $start && ! $start =~ /^\d\d\d\d-\d\d-\d\d$/);
+
     my $end = $cgi->param("burn_end");
+    ThrowUserError("invalid_parameter",
+        {name=>"burn_end", err => "Date format should be YYYY-MM-DD"})
+        if (defined $end && ! $end =~ /^\d\d\d\d-\d\d-\d\d$/);
+
     my $data = get_burndata(\@bug_ids, $start, $end);
     $vars->{burn_json} = JSON->new->utf8->encode($data);
 });
