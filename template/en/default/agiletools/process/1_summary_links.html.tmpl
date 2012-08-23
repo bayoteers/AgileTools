@@ -51,7 +51,10 @@
                 <a href="report.cgi?x_axis_field=bug_status&amp;z_axis_field=agile_pool.name&amp;action=wrap&amp;format=bar&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.current_sprint.id %]">
                 Status overview</a>
             </li>
-
+            <li>
+                <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% team.current_sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]&amp;query_based_on=[% team.current_sprint.name FILTER uri %]&amp;format=burn&amp;burn_start=[% team.current_sprint.start_date FILTER time('%Y-%m-%d') %]&amp;burn_end=[% team.current_sprint.end_date FILTER time('%Y-%m-%d') %]&amp;burn_type=work">
+            Burndown</a>
+            </li>
         </ul>
     </li>
 [% END %]
