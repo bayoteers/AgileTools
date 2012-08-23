@@ -1,98 +1,41 @@
-<div id="burnchart" style="width: 700px; height: 400px; display: inline-block;"></div>
-<br/>
-<label for="burn_start">From:</label>
-<input name="burn_start" value="[% cgi.param('burn_start') %]"></input>
-<label for="burn_end">To:</label>
-<input name="burn_end" value="[% cgi.param('burn_end') %]"></input>
+[%
+burn_start = cgi.param('burn_start')
+burn_end = cgi.param('burn_end')
+burn_type = cgi.param('burn_type') or 'items'
+%]
+<table>
+    <tr>
+        <td>
+            <div id="burnchart"
+                style="width: 700px; height: 400px; display: inline-block; float: left;">
+            </div>
+        </td>
+        <td style="vertical-align: top;">
+            <input id="burn_type" type="radio" name="burn_type" value="items"
+            [% IF burn_type == 'items' %]checked="checked"[% END %]>Open items</input>
+            <br/>
+            <input type="radio" name="burn_type" value="work"
+            [% IF burn_type == 'work' %]checked="checked"[% END %]>Work done/remaining</input>
+            <br/>
+        </td>
+    </tr>
+</table>
+
+<label for="burn_start">From</label>
+<input name="burn_start" value="[% burn_start %]"></input>
+<label for="burn_end">To</label>
+<input name="burn_end" value="[% burn_end %]"></input>
 <button type="button" id="changeDates">Go</button>
 
-<script type="text/javascript" src="extensions/AgileTools/web/js/jquery.flot.min.js"></script>
+
+<script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/jquery.flot.min.js" FILTER mtime %]"></script>
+<script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/burn.js" FILTER mtime %]"></script>
 <script type="text/javascript">
 var BURN = [% burn_json or "{}" %];
-
-
-var changeDates = function()
-{
-    var start = $("[name=burn_start]").val();
-    var end = $("[name=burn_end]").val();
-    if (start == "[% cgi.param('burn_start') %]" &&
-            end == "[% cgi.param('burn_end') %]") return;
-
-    var params = getQueryParams(window.location.search);
-    params.burn_start = start;
-    params.burn_end = end;
-    var query = getQueryString(params);
-    window.location.href = window.location.pathname + query;
-};
-
-var initBurn = function()
-{
-    var dateOptions = {
-        dateFormat:"yy-mm-dd",
-        firstDay: 1,
-        showWeek: true,
-    };
-    var startInput = $("[name=burn_start]");
-    var endInput = $("[name=burn_end]");
-
-    startInput.datepicker($.extend({}, dateOptions,
-            {
-            maxDate: endInput.val(),
-            onSelect: function(dateText) {
-                endInput.datepicker("option", "minDate", dateText)},
-            })
-        );
-    endInput.datepicker($.extend({}, dateOptions,
-            {
-            minDate: startInput.val(),
-            onSelect: function(dateText) {
-                startInput.datepicker("option", "maxDate", dateText)},
-            }));
-    $("#changeDates").click(changeDates);
-
-
-    var chartOptions = {
-        series: {
-            lines: { show: true },
-            points: { show: true },
-        },
-        xaxis: {
-            mode: "time",
-            min: BURN.start,
-            max: BURN.end,
-        },
-        grid: {
-            markings: [
-            ],
-        },
-        yaxes: [ { }, { position: "right"} ],
-        colors: ['#EDC240', '#4DA74D', '#AFD8F8', '#CB4B4B'],
-    };
-
-    $.plot("#burnchart", [
-            {
-                data: [[BURN.start, BURN.start_rem], [BURN.end, 0]],
-                lines: {fill: true, lineWidth: 0},
-                points: {show: false},
-            },
-            {
-                label: "Open items",
-                data: BURN.open_items,
-                yaxis: 2,
-                points: {show: false},
-            },
-            {
-                label: "Work done",
-                data: BURN.actual,
-            },
-            {
-                label: "Remaining",
-                data: BURN.remaining,
-            },
-        ], chartOptions);
-
-};
-
+BURN.start_date = "[% burn_start %]";
+BURN.end_date = "[% burn_end %]";
+BURN.type = "[% burn_type %]";
 $(initBurn);
-
 </script>
