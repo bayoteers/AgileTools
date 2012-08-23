@@ -1,48 +1,98 @@
 <div id="burnchart" style="width: 700px; height: 400px; display: inline-block;"></div>
+<br/>
+<label for="burn_start">From:</label>
+<input name="burn_start" value="[% cgi.param('burn_start') %]"></input>
+<label for="burn_end">To:</label>
+<input name="burn_end" value="[% cgi.param('burn_end') %]"></input>
+<button type="button" id="changeDates">Go</button>
 
 <script type="text/javascript" src="extensions/AgileTools/web/js/jquery.flot.min.js"></script>
 <script type="text/javascript">
 var BURN = [% burn_json or "{}" %];
 
-var options = {
-    series: {
-        lines: { show: true },
-        points: { show: true },
-    },
-    xaxis: {
-        mode: "time",
-        min: BURN.start,
-        max: BURN.end,
-    },
-    grid: {
-        markings: [
-        ],
-    },
-    yaxes: [ { }, { position: "right"} ],
-    colors: ['#EDC240', '#4DA74D', '#AFD8F8', '#CB4B4B'],
+
+var changeDates = function()
+{
+    var start = $("[name=burn_start]").val();
+    var end = $("[name=burn_end]").val();
+    if (start == "[% cgi.param('burn_start') %]" &&
+            end == "[% cgi.param('burn_end') %]") return;
+
+    var params = getQueryParams(window.location.search);
+    params.burn_start = start;
+    params.burn_end = end;
+    var query = getQueryString(params);
+    window.location.href = window.location.pathname + query;
 };
 
+var initBurn = function()
+{
+    var dateOptions = {
+        dateFormat:"yy-mm-dd",
+        firstDay: 1,
+        showWeek: true,
+    };
+    var startInput = $("[name=burn_start]");
+    var endInput = $("[name=burn_end]");
 
-$.plot("#burnchart", [
-        {
-            data: [[BURN.start, BURN.start_rem], [BURN.end, 0]],
-            lines: {fill: true, lineWidth: 0},
-            points: {show: false},
+    startInput.datepicker($.extend({}, dateOptions,
+            {
+            maxDate: endInput.val(),
+            onSelect: function(dateText) {
+                endInput.datepicker("option", "minDate", dateText)},
+            })
+        );
+    endInput.datepicker($.extend({}, dateOptions,
+            {
+            minDate: startInput.val(),
+            onSelect: function(dateText) {
+                startInput.datepicker("option", "maxDate", dateText)},
+            }));
+    $("#changeDates").click(changeDates);
+
+
+    var chartOptions = {
+        series: {
+            lines: { show: true },
+            points: { show: true },
         },
-        {
-            label: "Open items",
-            data: BURN.open_items,
-            yaxis: 2,
-            points: {show: false},
+        xaxis: {
+            mode: "time",
+            min: BURN.start,
+            max: BURN.end,
         },
-        {
-            label: "Work done",
-            data: BURN.actual,
+        grid: {
+            markings: [
+            ],
         },
-        {
-            label: "Remaining",
-            data: BURN.remaining,
-        },
-    ], options);
+        yaxes: [ { }, { position: "right"} ],
+        colors: ['#EDC240', '#4DA74D', '#AFD8F8', '#CB4B4B'],
+    };
+
+    $.plot("#burnchart", [
+            {
+                data: [[BURN.start, BURN.start_rem], [BURN.end, 0]],
+                lines: {fill: true, lineWidth: 0},
+                points: {show: false},
+            },
+            {
+                label: "Open items",
+                data: BURN.open_items,
+                yaxis: 2,
+                points: {show: false},
+            },
+            {
+                label: "Work done",
+                data: BURN.actual,
+            },
+            {
+                label: "Remaining",
+                data: BURN.remaining,
+            },
+        ], chartOptions);
+
+};
+
+$(initBurn);
 
 </script>
