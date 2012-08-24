@@ -67,6 +67,21 @@ function scrumFormatDate(dateStr)
 };
 
 /**
+ * Helper to get number of weekdays in date range
+ */
+function countDays(from, to, skip)
+{
+    if (skip == undefined) skip = [];
+    var counter = new Date(from);
+    count = 0;
+    while (counter < to) {
+        if (skip.indexOf(counter.getDay()) == -1) count++;
+        counter.setDate(counter.getDate()+1);
+    }
+    return count;
+};
+
+/**
  * Severity hierarchy used when adding new items
  * TODO: Move this to admin options
  */
@@ -262,7 +277,7 @@ var ListContainer = Base.extend(
         var info = $("#sprint_info_template").clone().attr("id", null);
         info.find(".start-date").text(scrumFormatDate(sprint.start_date));
         info.find(".end-date").text(scrumFormatDate(sprint.end_date));
-        info.find(".capacity").text(sprint.capacity);
+        info.find(".estimated-cap").text(sprint.capacity);
         info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
         this.footer.empty().append(info);
         this._sprint = sprint;
@@ -480,18 +495,32 @@ var ListContainer = Base.extend(
             return;
         }
         var work = 0;
-        var capacity = Number(this.footer.find(".capacity").text() || 0);
+        var capacity = Number(this._sprint.capacity || 0);
+        var start = new Date(this._sprint.start_date);
+        var end = new Date(this._sprint.end_date);
+        var now = new Date();
+        // 86400000 = milliseconds in a day
+        var days = countDays(start, end, [0,6]);
+        var daysLeft = days;
+        if (now > end) {
+            daysLeft = 0;
+        } else if (now > start) {
+            daysLeft = countDays(now, end, [0,6]);
+        }
+        var remainingCap = Math.round(daysLeft / days * capacity * 100) / 100;
+
         this.content.find(":agile-blitem").each(function() {
             work += Number($(this).blitem("bug").remaining_time || 0);
-            if (work > capacity) {
+            if (work > remainingCap) {
                 $(this).addClass("over-capacity");
             } else {
                 $(this).removeClass("over-capacity");
             }
         });
-        this.footer.find(".estimated-time").text(work);
-        var free = capacity - work;
-        this.footer.find(".free-capacity").text(free);
+        var free = remainingCap - work;
+        this.footer.find(".remaining-work").text(work);
+        this.footer.find(".remaining-cap").text(remainingCap);
+        this.footer.find(".free-cap").text(free);
     },
 
     /**
