@@ -93,11 +93,14 @@ sub get_burndata {
         'WHERE '.$dbh->sql_in('ac.bug_id', $bugs).' AND fd.name = ? '.
         'ORDER BY ac.bug_when DESC');
 
-    ##############################
-    # Get remaining time history #
-    ##############################
+    ############################
+    # Get remaining time history
+    # This is done by trversing the remaining_time changes in reverse
+    # chronological order and adding the change to current remaining.
+
     my $start_rem;
     my $end_rem;
+    my $previous;
 
     $sth->execute('remaining_time');
     while (my @row  = $sth->fetchrow_array) {
@@ -108,16 +111,24 @@ sub get_burndata {
             push @remaining, [$ts, $current];
             $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
             $last_ts = defined $last_ts ? max($ts, $last_ts) : $ts;
-            $start_rem = $current;
             $end_rem = $current unless defined $end_rem;
         }
+        # Start of remaining is the value before first change in range
+        if ($previous && $from <= $previous) {
+            $start_rem = $current;
+        }
         $current += $change;
+        $previous = $ts;
     }
+    $start_rem ||= $current;
     push @remaining, [$from, $start_rem];
 
-    ########################
-    # Get actual work time #
-    ########################
+    ######################
+    # Get actual work time
+    # work_time changes present the time added, so this can be simply summed
+    # up. But as we use the same query, which is in descending chronological
+    # order, We need to first get the data and reverse it.
+
     my @work_time;
     $sth->execute('work_time');
     while (my @row  = $sth->fetchrow_array) {
@@ -138,17 +149,21 @@ sub get_burndata {
         push @actual, [$ts, $sum];
     }
 
-    #########################
-    # Get open item history #
-    #########################
+    #######################
+    # Get open item history
+    # Fetch changes in bug_status and filter them to just changes from open
+    # to closed statuses or vice versa.
+
     my @items;
     my $start_items;
+    # Get count of currently open bugs
     $current = $dbh->selectrow_array(
         'SELECT COUNT(*) FROM bugs '.
         'LEFT JOIN bug_status st ON bugs.bug_status = st.value '.
         'WHERE '.$dbh->sql_in('bug_id', $bugs).
         ' AND st.is_open = 1;');
 
+    # Get the open/closed statuses
     my %is_open = map {$_->[0] => $_->[1]} @{$dbh->selectall_arrayref(
         'SELECT value, is_open FROM bug_status')};
 
@@ -156,6 +171,8 @@ sub get_burndata {
     my $first_close = 1;
     while (my @row  = $sth->fetchrow_array) {
         my ($bug_id, $when, $rem, $add) = @row;
+
+        # Check if status changes from open to closed or from closed to open
         my $closed = $is_open{$rem} && !$is_open{$add};
         my $opened = $is_open{$add} && !$is_open{$rem};
         next unless $opened || $closed;
@@ -174,6 +191,7 @@ sub get_burndata {
             $current += 1;
         }
     }
+    # Set start point to +-1 based on type of first change in the range
     $start_items += $first_close ? 1 : -1;
     push @items, [$from, $start_items];
 

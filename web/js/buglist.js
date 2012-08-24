@@ -418,6 +418,7 @@ $.widget("agile.blitem", {
                 .animate({"margin-left": this._originalMargin}, {queue: true});
     },
 
+    // TODO: Move this out of here
     _openEstimate: function()
     {
         var form = $("#bug_estimate_editor_template").clone().attr("id", null);
