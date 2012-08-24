@@ -294,14 +294,16 @@ sub bug_end_of_update {
             }
 
             # Remove closed bug from any backlog
-            my $blids = Bugzilla->dbh->selectcol_arrayref(
-                'SELECT backlog_id FROM agile_team');
-            if (grep ($bug->pool->id == $_, @$blids)){
-                $bug->pool->remove_bug($bug->id);
-                delete $bug->{pool};
-                delete $bug->{pool_id};
+            if ($bug->pool_id) {
+                if (Bugzilla->dbh->selectrow_array(
+                        'SELECT COUNT(*) FROM agile_team '.
+                        'WHERE backlog_id = ?',
+                        undef, $bug->pool_id)) {
+                    $bug->pool->remove_bug($bug->id);
+                    delete $bug->{pool};
+                    delete $bug->{pool_id};
+                }
             }
-
         }
     }
 }
