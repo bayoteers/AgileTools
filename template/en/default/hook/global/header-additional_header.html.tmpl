@@ -1,0 +1,27 @@
+<!-- [% template.name %] -->
+
+[% IF template.name == 'bug/show.html.tmpl' or
+        template.name == 'bug/process/results.html.tmpl' %]
+    [% IF Param('agile_start_working_button') %]
+    <script type="text/javascript">
+    $(function() {
+        var defaultComment = "[% Param('agile_start_working_comment') FILTER js %]";
+        var assigneeInput = $("input[name=assigned_to]");
+        var bugStatusSelect = $("select[name=bug_status]");
+        if (assigneeInput.val() == BB_CONFIG.user.login
+                && bugStatusSelect.val() == 'ASSIGNED')
+            return false;
+        var commentInput = $("textarea[name=comment]");
+        $("div.knob-buttons").prepend('<input type="submit" class="start_working" value="Start Working"/>');
+        $("div.knob-buttons input.start_working").click(function() {
+            assigneeInput.val(BB_CONFIG.user.login);
+            bugStatusSelect.val("ASSIGNED");
+            var comment = commentInput.val();
+            if (!comment && defaultComment) {
+                commentInput.val(defaultComment);
+            }
+        });
+    });
+    </script>
+    [% END %]
+[% END %]

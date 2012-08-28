@@ -60,6 +60,19 @@ sub get_param_list {
                     "short_short_desc estimated_time actual_time remaining_time",
             # TODO: add checker to make sure entered columns are valid
         },
+        {
+            name => 'agile_start_working_button',
+            desc => 'Show "Start Working"-button on bug view',
+            type    => 'b',
+            default => 1,
+        },
+        {
+            name => 'agile_start_working_comment',
+            desc => 'Default comment to add when "start working"-button is used. '.
+                    'If empty, then no comment is added.',
+            type    => 't',
+            default => "Started working on this",
+        },
 
     );
     return @param_list;
