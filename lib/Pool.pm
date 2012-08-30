@@ -37,6 +37,7 @@ use strict;
 package Bugzilla::Extension::AgileTools::Pool;
 
 use Bugzilla::Error;
+use Bugzilla::Hook;
 use Bugzilla::Util qw(detaint_natural);
 use Bugzilla::Bug qw(LogActivityEntry);
 
@@ -119,7 +120,7 @@ sub add_bug {
     ThrowUserError("invalid_parameter", {name=>'order', err=>'Not a number'})
         unless (!defined $order || detaint_natural($order));
 
-    Bugzilla::Bug->check({id => $bug_id});
+    my $bug = Bugzilla::Bug->check({id => $bug_id});
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -179,6 +180,11 @@ sub add_bug {
         my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
         LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $old_pool, $self->id,
                 Bugzilla->user->id, $delta_ts);
+        Bugzilla::Hook::process("agile_pool_change", {
+            bug => $bug,
+            new_pool => $self,
+            old_pool => Bugzilla::Extension::AgileTools::Pool->new($old_pool),
+        });
     }
     $dbh->bz_commit_transaction();
     return $changed;
@@ -197,7 +203,7 @@ sub remove_bug {
     ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
         unless detaint_natural($bug_id);
 
-    Bugzilla::Bug->check({id => $bug_id});
+    my $bug = Bugzilla::Bug->check({id => $bug_id});
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -223,6 +229,11 @@ sub remove_bug {
         my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
         LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $self->id, 0,
                 Bugzilla->user->id, $delta_ts);
+        Bugzilla::Hook::process("agile_pool_change", {
+            bug => $bug,
+            new_pool => undef,
+            old_pool => $self,
+        });
     }
     $dbh->bz_commit_transaction();
     return defined $order;
@@ -301,6 +312,23 @@ BEGIN {
 1;
 
 __END__
+
+=back
+
+=head1 HOOKS
+
+=over
+
+=item C<agile_pool_change>
+
+    Executed on Pool->add_bug() and Pool->remove_bug() when the pool of the bug
+    changes.
+
+    Params:
+        bug      => Bug object which pool was changed
+        old_pool => bugs new Pool object, or undef if bug wasn't in a pool
+                    before
+        new_pool => Bugs new Pool object, or undef if bug was removed from pool
 
 =back
 
