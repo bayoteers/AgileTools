@@ -39,7 +39,7 @@ use JSON;
 
 use Data::Dumper;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my %template_handlers;
 my %page_handlers;
@@ -394,6 +394,15 @@ sub install_update_db {
             }
         );
     }
+
+    # TODO Refactor schema setup so that it's in one place
+    # Add new columns or update changed
+    my $dbh = Bugzilla->dbh;
+    # VERSION 0.02
+    $dbh->bz_add_column('agile_team', 'current_sprint_id', {
+        TYPE => 'INT3',
+        NOTNULL => 0,
+    });
 }
 
 ################################################
@@ -491,6 +500,15 @@ sub db_schema_abstract_schema {
                 NOTNULL => 0,
                 REFERENCES => {
                     TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                    DELETE => 'SET NULL',
+                },
+            },
+            current_sprint_id => {
+                TYPE => 'INT3',
+                NOTNULL => 0,
+                REFERENCES => {
+                    TABLE => 'agile_sprint',
                     COLUMN => 'id',
                     DELETE => 'SET NULL',
                 },
@@ -693,7 +711,7 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 PRIMARYKEY => 1,
                 REFERENCES => {
-                    TABLE => 'agile_pool',
+                    TABLE => 'agile_sprint',
                     COLUMN => 'id',
                 },
             },

@@ -91,6 +91,9 @@ use constant DB_TABLE => 'agile_team';
 
 =itme C<backlog_id> - ID of the pool containing the team backlog
 
+=itme C<current_sprint_id> - ID of the sprint/pool containing the teams current
+        sprint.
+
 =back
 
 =cut
@@ -101,17 +104,20 @@ use constant DB_COLUMNS => qw(
     group_id
     process_id
     backlog_id
+    current_sprint_id
 );
 
 use constant NUMERIC_COLUMNS => qw(
     group_id
     process_id
     backlog_id
+    current_sprint_id
 );
 
 use constant UPDATE_COLUMNS => qw(
     name
     process_id
+    current_sprint_id
 );
 
 use constant VALIDATORS => {
@@ -138,6 +144,7 @@ Additionally there are accessors for
 sub group_id   { return $_[0]->{group_id}; }
 sub process_id { return $_[0]->{process_id}; }
 sub backlog_id { return $_[0]->{backlog_id}; }
+sub current_sprint_id { return $_[0]->{current_sprint_id}; }
 
 =item C<group> - Get the L<Bugzilla::Group> object matching team->group_id
 
@@ -174,6 +181,7 @@ For all mutable L</FIELDS> there is $object->set_fieldname($value) method
 
 sub set_name       { $_[0]->set('name', $_[1]); }
 sub set_process_id { $_[0]->set('process_id', $_[1]); }
+sub set_current_sprint_id { $_[0]->set('current_sprint_id', $_[1]); }
 
 # Validators
 ############
@@ -621,28 +629,10 @@ or undef if there is no current sprint
 sub current_sprint {
     my $self = shift;
     return undef if ($self->process_id != AGILE_PROCESS_SCRUM);
-    if (!defined $self->{current_sprint}) {
-        $self->{current_sprint} =
-            Bugzilla::Extension::AgileTools::Sprint->current_sprint($self->id);
-    }
+    return undef if (! $self->{current_sprint_id});
+    $self->{current_sprint} ||=
+        Bugzilla::Extension::AgileTools::Sprint->new($self->current_sprint_id);
     return $self->{current_sprint};
-}
-
-=head3 previous_sprint
-
-Returns the previous L<Sprint|extensions::AgileTools::lib::Sprint> of the team
-or undef if there isn't previous sprint
-
-=cut
-
-sub previous_sprint {
-    my $self = shift;
-    return undef if ($self->process_id != AGILE_PROCESS_SCRUM);
-    if (!defined $self->{pevious_sprint}) {
-        $self->{previous_sprint} =
-            Bugzilla::Extension::AgileTools::Sprint->previous_sprint($self->id);
-    }
-    return $self->{previous_sprint};
 }
 
 
