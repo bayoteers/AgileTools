@@ -37,7 +37,7 @@
             <th>Start date</th>
             <th>End date</th>
             <th>Capacity</th>
-            <th></th>
+            <th>Is current</th>
         </tr>
     </thead>
     <tbody>
@@ -52,7 +52,7 @@
             <td>[% sprint.end_date FILTER time("%Y-%m-%d") FILTER html %]</td>
             <td>[% sprint.capacity FILTER html %]</td>
             <td>
-            [% IF team.current_sprint.id == sprint.id %]
+            [% IF team.current_sprint_id == sprint.id %]
                 Yes
                 [% IF user.in_group_id(team.group_id) %]
                 [<a href="page.cgi?id=agiletools/scrum/planning.html&amp;team_id=[% team.id %]">Planning</a>]
