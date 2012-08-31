@@ -226,13 +226,10 @@ sub create {
     # Create pool for this sprint
     my $start = datetime_from($clean_params->{start_date});
     my $end = datetime_from($clean_params->{end_date});
-    my $name = Bugzilla->dbh->selectrow_array("
-        SELECT name FROM agile_team
-            WHERE id = ?", undef, $clean_params->{team_id});
-    $name || ThrowUserError('object_does_not_exist', {
-            id => $clean_params->{team_id}, class => 'AgileTools::Team' });
+    my $team = Bugzilla::Extension::AgileTools::Team->check(
+        {id => $clean_params->{team_id}});
 
-    $name .= " sprint ".$start->year."W".$start->week_number;
+    my $name = $team->name . " sprint ".$start->year."W".$start->week_number;
     if ($start->week_number != $end->week_number) {
         $name .= "-".$end->week_number;
     }
@@ -253,7 +250,13 @@ sub create {
              }
          }
     }
-    return $class->insert_create_data($clean_params);
+    my $sprint = $class->insert_create_data($clean_params);
+    # Set this as teams current sprint, if it doesn't have one yet
+    if (! defined $team->current_sprint_id) {
+        $team->set_current_sprint_id($sprint->id);
+        $team->update();
+    }
+    return $sprint;
 }
 
 sub update {
