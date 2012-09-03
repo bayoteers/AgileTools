@@ -58,7 +58,7 @@ var initBurn = function()
             max: BURN.end,
         },
         grid: {
-            markings: getBurnWeekends(),
+            markings: getBurnMarkers(),
         },
         colors: ['#EDC240', '#CB4B4B', '#AFD8F8',],
     };
@@ -100,7 +100,12 @@ var plotBurn = function(type) {
     $.plot("#burnchart", series, BURN.chartOptions);
 };
 
-var getBurnWeekends = function() {
+var getBurnMarkers = function() {
     // TODO
-    return [];
+    var now = new Date();
+    now = now.getTime();
+    return [
+        // Today markerd
+        { color: 'red', xaxis: {from: now, to: now} },
+    ];
 };
