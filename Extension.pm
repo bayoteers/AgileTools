@@ -403,6 +403,11 @@ sub install_update_db {
         TYPE => 'INT3',
         NOTNULL => 0,
     });
+    $dbh->bz_add_column('agile_pool', 'is_active', {
+        TYPE => 'BOOLEAN',
+        NOTNULL => 1,
+        DEFAULT => 1,
+    });
 }
 
 ################################################
@@ -667,6 +672,11 @@ sub db_schema_abstract_schema {
             name => {
                 TYPE => 'varchar(64)',
                 NOTNULL => 1,
+            },
+            is_active => {
+                TYPE => 'BOOLEAN',
+                NOTNULL => 1,
+                DEFAULT => 1,
             },
         ],
     };

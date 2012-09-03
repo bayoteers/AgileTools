@@ -49,14 +49,17 @@ use constant DB_TABLE => 'agile_pool';
 use constant DB_COLUMNS => qw(
     id
     name
+    is_active
 );
 
 use constant NUMERIC_COLUMNS => qw(
     id
+    is_active
 );
 
 use constant UPDATE_COLUMNS => qw(
     name
+    is_active
 );
 
 use constant VALIDATORS => {
@@ -66,6 +69,12 @@ use constant VALIDATORS => {
 ##########
 
 sub set_name       { $_[0]->set('name', $_[1]); }
+sub set_is_active     { $_[0]->set('is_active', $_[1]); }
+
+# Accessors
+###########
+
+sub is_active { return $_[0]->{is_active}; }
 
 =head1 METHODS
 

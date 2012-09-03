@@ -20,8 +20,10 @@
 # Contributor(s):
 #   Pami Ketolainen <pami.ketolainen@jollamobile.com.com>
 #
-#
 # Migration script to set the team current sprint.
+#
+# Sets the latest sprint as teams current sprint and sets all sprints before
+# that as inactive.
 #
 
 use strict;
@@ -49,7 +51,13 @@ for my $team (@$teams) {
     my $sprint_id = $dbh->selectrow_array('SELECT id FROM agile_sprint '.
         'WHERE team_id = ? AND start_date <= ? '.
         'ORDER BY start_date DESC', undef, $team->id, $now);
-    print $team->name." current sprint: ".$sprint_id."\n";
+
+    next unless $sprint_id;
     $team->set_current_sprint_id($sprint_id) if ($sprint_id);
     $team->update();
+    print "Set ".$team->name." current sprint to ".$sprint_id."\n";
+    my $count = $dbh->do('UPDATE agile_pool AS P JOIN agile_sprint S ON P.id = S.id '.
+            'SET is_active = 0 WHERE S.team_id = ? AND S.end_date < ?',
+            undef, $team->id, $team->current_sprint->end_date);
+    print "Deactivated ".$team->name."'s ".$count." older sprints\n";
 }
