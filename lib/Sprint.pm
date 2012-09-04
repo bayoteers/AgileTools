@@ -98,7 +98,6 @@ use constant VALIDATORS => {
     end_date => \&_check_end_date,
     team_id => \&_check_number,
     capacity => \&Bugzilla::Object::check_time,
-    move_open => \&Bugzilla::Object::check_boolean,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -109,7 +108,6 @@ use constant VALIDATOR_DEPENDENCIES => {
 };
 
 use constant EXTRA_REQUIRED_FIELDS => qw(
-    move_open
 );
 
 # Accessors
@@ -166,24 +164,6 @@ sub _check_start_date {
             field => "start_date", value => $date});
     $start_date->set({hour=>0, minute=>0, second=>0});
     $start_date = $start_date->datetime;
-
-    my $team_id;
-    if (ref $invocant) {
-        $team_id = $invocant->team_id;
-    } else {
-        $team_id = $params->{team_id};
-    }
-
-    my $dbh = Bugzilla->dbh;
-
-    my $overlaping = $dbh->selectrow_array(
-        "SELECT id
-           FROM agile_sprint
-          WHERE team_id = ?
-                AND end_date > ?
-                AND start_date < ?",
-        undef, ($team_id, $start_date, $start_date ));
-    ThrowUserError("agile_overlaping_sprint") if ($overlaping);
     return $start_date;
 }
 
@@ -197,14 +177,26 @@ sub _check_end_date {
             field => "end_date", value => $date});
     $end_date->set({hour=>23, minute=>59, second=>59});
 
-    my $start_date;
-    if (ref $invocant) {
-        $start_date = datetime_from($invocant->start_date);
-    } else {
-        $start_date = datetime_from($params->{start_date});
-    }
+    my $start_date = ref $invocant ?
+            datetime_from($invocant->start_date) :
+            datetime_from($params->{start_date});
+
     ThrowUserError("agile_sprint_end_before_start") if ($end_date < $start_date);
-    return $end_date->datetime;
+
+    my $team_id = ref $invocant ? $invocant->team_id : $params->{team_id};
+    $start_date = $start_date->datetime;
+    $end_date = $end_date->datetime;
+
+    my $dbh = Bugzilla->dbh;
+    my $overlaping = $dbh->selectrow_array(
+        'SELECT id '.
+          'FROM agile_sprint '.
+         'WHERE team_id = ? AND ('.
+               '(start_date > ? AND start_date < ?) OR '.
+               '(end_date > ? AND end_date < ?))',
+        undef, ($team_id, $start_date, $end_date, $start_date, $end_date ));
+    ThrowUserError("agile_overlaping_sprint") if ($overlaping);
+    return $end_date;
 }
 
 # TODO Move overlaping check to separate validator and check both start and
@@ -236,20 +228,6 @@ sub create {
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{id} = $pool->id;
 
-    if(delete $clean_params->{move_open}) {
-        my $previous = Bugzilla->dbh->selectrow_array(
-            "SELECT id FROM agile_sprint ".
-             "WHERE team_id = ? AND end_date <= ? ".
-             "ORDER BY start_date DESC", undef,
-             ($clean_params->{team_id}, $clean_params->{start_date}));
-         if (defined $previous) {
-             $previous = Bugzilla::Extension::AgileTools::Pool->new($previous);
-             foreach my $bug (@{$previous->bugs}) {
-                 next unless $bug->isopened;
-                 $pool->add_bug($bug->id);
-             }
-         }
-    }
     my $sprint = $class->insert_create_data($clean_params);
     # Set this as teams current sprint, if it doesn't have one yet
     if (! defined $team->current_sprint_id) {
@@ -295,11 +273,100 @@ sub update {
     }
     return $changes;
 }
+
 sub TO_JSON {
     my $self = shift;
     # fetch the pool
     $self->pool;
+    # Determine current status
+    $self->is_current;
     return { %{$self} };
+}
+
+=head1 METHODS
+
+=over
+
+=item C<is_current>
+
+    Description: Returns true if sprint is teams current sprint
+
+=cut
+
+sub is_current {
+    my $self = shift;
+    $self->{is_current} ||= $self->id == $self->team->current_sprint_id;
+    return $self->{is_current};
+}
+
+=item C<is_active>
+
+    Description: Returns true if sprint is active
+
+=cut
+
+sub is_active {
+    my $self = shift;
+    return $self->pool->is_active;
+}
+
+=item C<close($params)>
+
+    Description: Closes the sprint if it is teams current one
+
+=cut
+
+sub close {
+    my ($self, $params) = @_;
+
+    ThrowCodeError('param_required', {
+            function => 'AgileTools::Sprint->close',
+            params => ['next_id', 'start_date and end_date']})
+        unless ($params->{next_id} ||
+            ($params->{start_date} && $params->{end_date}));
+
+    ThrowUserError('agile_cant_close_not_current', {
+            sprint => $self})
+        unless $self->is_current;
+
+    my $start_date = $params->{start_date};
+    my $end_date = $params->{end_date};
+    my $archive_start = $self->start_date;
+    my $archive_end = $self->end_date;
+    my @archive_bugs;
+    for my $bug (sort {$a->pool_order - $b->pool_order} @{$self->pool->bugs}) {
+        next if $bug->isopened;
+        push(@archive_bugs, $bug);
+    }
+
+    # If existing sprint is given, take bugs and date rage from that and
+    # delete it.
+    if ($params->{next_id}) {
+        my $next_sprint = Bugzilla::Extension::AgileTools::Sprint->check(
+            $params->{next_id});
+        ThrowCodeError('agile_cant_change_to_inactive_sprint')
+            unless $next_sprint->pool->active;
+        for my $bug (sort {$a->pool_order - $b->pool_order} @{$next_sprint->pool->bugs}) {
+            $self->pool->add_bug($bug);
+        }
+        $start_date = $next_sprint->start_date;
+        $end_date = $next_sprint->end_date;
+        $next_sprint->remove_from_db;
+    }
+    $self->set_all({start_date => $start_date, end_date => $end_date});
+    $self->update();
+
+    my $archive_sprint = Bugzilla::Extension::AgileTools::Sprint->create({
+            team_id => $self->team_id,
+            start_date => $archive_start,
+            end_date => $archive_end,
+        });
+    for my $bug (@archive_bugs) {
+        $archive_sprint->pool->add_bug($bug);
+    }
+    $archive_sprint->pool->set_is_active(0);
+    $archive_sprint->pool->update;
+    return $archive_sprint;
 }
 
 1;

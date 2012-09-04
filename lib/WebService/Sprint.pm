@@ -49,6 +49,8 @@ use constant FIELD_TYPES => {
     "start_date" => "dateTime",
     "end_date" => "dateTime",
     "capacity" => "double",
+    "is_current" => "boolean",
+    "is_active" => "boolean",
 };
 
 =head1 METHODS
@@ -71,9 +73,7 @@ sub get {
         unless defined $params->{id};
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
             id => $params->{id}});
-    my $hash = object_to_hash($self, $sprint, FIELD_TYPES);
-    $hash->{pool} = object_to_hash($self, $sprint->pool, {id => "int", name => "string"});
-    return $hash;
+    return object_to_hash($self, $sprint, FIELD_TYPES);
 }
 
 
@@ -103,9 +103,7 @@ sub create {
             param => 'end_date'})
         unless defined $params->{end_date};
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->create($params);
-    my $hash = object_to_hash($self, $sprint, FIELD_TYPES);
-    $hash->{pool} = object_to_hash($self, $sprint->pool, {id => "int", name => "string"});
-    return $hash;
+    return object_to_hash($self, $sprint, FIELD_TYPES);
 }
 
 =item C<update>
@@ -134,6 +132,44 @@ sub update {
         sprint => $self->type("int", $sprint->id),
         changes => changes_to_hash($self, $changes, FIELD_TYPES),
     };
+}
+
+=item C<close>
+
+    Description: Closes the current sprint
+    Params:      id - Sprint ID
+                 next_id - ID of the sprint to use as base for new current sprint
+                 start_date - Start date of the new current sprint
+                 end_date - End date of the new current sprint
+    Returns:     Archived sprint info
+
+Resolved items from current sprint are moved to new archive sprint, which will
+have start and end date of current sprint.
+
+If C<next_id> is given, items from that sprint are moved to current sprint and
+start and end dates are copied from that sprint.
+
+If C<start_date> and C<end_date> are given, current sprint dates are updated to
+those.
+
+=cut
+
+sub close {
+    my ($self, $params) = @_;
+
+    ThrowCodeError('param_required', {
+            function => 'Agile.Sprint.close',
+            param => 'id'})
+        unless defined $params->{id};
+
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
+            id => delete $params->{id} });
+
+    ThrowUserError('agile_cant_close_not_current', {
+            sprint => $sprint})
+        unless $sprint->is_current;
+    my $archived = $sprint->close($params);
+    return object_to_hash($self, $archived, FIELD_TYPES);
 }
 
 1;

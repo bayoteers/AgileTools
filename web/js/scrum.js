@@ -225,7 +225,6 @@ var ListContainer = Base.extend(
         params["start_date"] = this._dialog.find("[name='start_date']").val();
         params["end_date"] = this._dialog.find("[name='end_date']").val();
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
-        params["move_open"] = this._dialog.find("[name='move_open']").prop("checked");
         var rpc = this.callRpc("Agile.Sprint", "create", params);
         rpc.done($.proxy(this, "_onCreateSprintDone"));
         this._dialog.dialog("close");
@@ -236,13 +235,13 @@ var ListContainer = Base.extend(
      */
     _onCreateSprintDone: function(result)
     {
-        var newOption = $("<option>" + result.pool.name + "</option>")
-            .attr("value", result.pool.id)
+        var newOption = $("<option>" + result.name + "</option>")
+            .attr("value", result.id)
             .appendTo(this.contentSelector)
             .prop("selected", true);
         this.contentSelector.find("option").not(newOption).each(function() {
             var element = $(this);
-            if (/sprint/.test(element.text()) && element.text() < result.pool.name) {
+            if (/sprint/.test(element.text()) && element.text() < result.name) {
                 element.before(newOption);
                 return false;
             }
@@ -265,7 +264,7 @@ var ListContainer = Base.extend(
     _getSprintDone: function(result)
     {
         this._updateSprintInfo(result);
-        var rpc = this.callRpc("Agile.Pool", "get", {id: result.pool.id});
+        var rpc = this.callRpc("Agile.Pool", "get", {id: result.id});
         rpc.done($.proxy(this, "_onPoolGetDone"));
     },
 
@@ -278,7 +277,13 @@ var ListContainer = Base.extend(
         info.find(".start-date").text(scrumFormatDate(sprint.start_date));
         info.find(".end-date").text(scrumFormatDate(sprint.end_date));
         info.find(".estimated-cap").text(sprint.capacity);
-        info.find("[name='edit']").click($.proxy(this, "_openEditSprint"));
+        info.find("button[name=edit]").click($.proxy(this, "_openEditSprint"));
+        if (sprint.is_current) {
+            info.find("button[name=close]").click(
+                    $.proxy(this, "_openCloseSprint"));
+        } else {
+            info.find("button[name=close]").hide();
+        }
         this.footer.empty().append(info);
         this._sprint = sprint;
     },
@@ -297,7 +302,6 @@ var ListContainer = Base.extend(
         scrumDateRange(start, end);
 
         this._dialog.find("[name='capacity']").val(this._sprint.capacity);
-        this._dialog.find("[name='move_open']").parents("tr").first().hide();
         this._dialog.dialog({
             title: "Edit sprint",
             modal: true,
@@ -324,6 +328,49 @@ var ListContainer = Base.extend(
         params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
         var rpc = this.callRpc("Agile.Sprint", "update", params);
         rpc.done($.proxy(this, "_onUpdateSprintDone"));
+        this._dialog.dialog("close");
+    },
+
+    /**
+     * Close sprint button handler
+     */
+    _openCloseSprint: function()
+    {
+        if (!this._sprint) return;
+        this._dialog = $("#sprint_editor_template").clone().attr("id", null);
+        var start = this._dialog.find("[name='start_date']");
+        var end = this._dialog.find("[name='end_date']");
+        var startDate = new Date(this._sprint.end_date);
+        startDate.setDate(startDate.getDate() + 1);
+        start.val(scrumFormatDate(startDate));
+        scrumDateRange(start, end);
+
+        this._dialog.find("[name='capacity']").hide();
+        this._dialog.dialog({
+            title: "Close sprint",
+            modal: true,
+            buttons: {
+                "Close": $.proxy(this, "_closeSprint"),
+                "Cancel": function() { $(this).dialog("close") },
+                },
+            close: function() { $(this).dialog("destroy") },
+        });
+    },
+
+    /**
+     * Close sprint dialog save button handler
+     */
+    _closeSprint: function()
+    {
+        if (!this._sprint) return;
+        var params = {};
+        params["id"] = this._sprint.id;
+        params["start_date"] = this._dialog.find("[name='start_date']").val() ||
+            this._sprint.start_date;
+        params["end_date"] = this._dialog.find("[name='end_date']").val() ||
+            this._sprint.end_date;
+        var rpc = this.callRpc("Agile.Sprint", "close", params);
+        rpc.done($.proxy(this, "_reload"));
         this._dialog.dialog("close");
     },
 
@@ -457,7 +504,7 @@ var ListContainer = Base.extend(
         data.element.blitem("option", "update", $.proxy(this, "_calculateWork"));
         this._calculateWork();
     },
-    
+
     /**
      * buglist receive event handler for unprioritized items
      */
