@@ -131,8 +131,11 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
         {name=>"team_id", err => "Not specified"})
             unless defined $id;
     my $team = get_team($id);
-    $team->pools;
     $vars->{team} = $team;
+    my @roles = map {$_->name}
+            @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
+                    $team, Bugzilla->user)};
+    $vars->{user_roles} = \@roles;
 });
 
 _add_page_handler("agiletools/scrum/sprints.html", sub {

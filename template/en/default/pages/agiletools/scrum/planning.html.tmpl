@@ -97,8 +97,9 @@ $(function() {
     </div>
 </div>
 
+[% IF team.user_can_edit %]
 [<a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">Manage team</a>]
-
+[% END %]
 
 <!-- Hidden templates start here -->
 <div id="templates">
@@ -144,6 +145,7 @@ $(function() {
             <td>Free capacity:</td>
             <td class="free-cap"></td>
         </tr>
+        [% IF user_roles.defined('Scrum Master') %]
         <tr>
             <td></td>
             <td>
@@ -151,6 +153,7 @@ $(function() {
                 <button type="button" name="close">Close</button>
             </td>
         </tr>
+        [% END %]
     </table>
 
     <div id="resposibility_filter_template">
