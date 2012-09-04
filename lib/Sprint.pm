@@ -183,6 +183,7 @@ sub _check_end_date {
 
     ThrowUserError("agile_sprint_end_before_start") if ($end_date < $start_date);
 
+    my $id = ref $invocant ? $invocant->id : 0;
     my $team_id = ref $invocant ? $invocant->team_id : $params->{team_id};
     $start_date = $start_date->datetime;
     $end_date = $end_date->datetime;
@@ -191,11 +192,13 @@ sub _check_end_date {
     my $overlaping = $dbh->selectrow_array(
         'SELECT id '.
           'FROM agile_sprint '.
-         'WHERE team_id = ? AND ('.
+         'WHERE team_id = ? AND id != ? AND ('.
                '(start_date > ? AND start_date < ?) OR '.
                '(end_date > ? AND end_date < ?))',
-        undef, ($team_id, $start_date, $end_date, $start_date, $end_date ));
-    ThrowUserError("agile_overlaping_sprint") if ($overlaping);
+        undef, ($team_id, $id, $start_date, $end_date, $start_date, $end_date ));
+    ThrowUserError("agile_overlaping_sprint",
+            {sprint => Bugzilla::Extension::AgileTools::Sprint->new($overlaping)})
+        if ($overlaping);
     return $end_date;
 }
 
@@ -353,7 +356,11 @@ sub close {
         $end_date = $next_sprint->end_date;
         $next_sprint->remove_from_db;
     }
-    $self->set_all({start_date => $start_date, end_date => $end_date});
+    $self->set_all({
+            start_date => $start_date,
+            end_date => $end_date,
+            capacity => $params->{capacity} || 0,
+        });
     $self->update();
 
     my $archive_sprint = Bugzilla::Extension::AgileTools::Sprint->create({

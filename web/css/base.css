@@ -41,18 +41,14 @@ button.remove {
     margin-left: auto;
     margin-right: auto;
     overflow-y: hidden;
-}
-.left {
-    margin-left: 0px;
-    float: left;
-}
-.right {
-    margin-right: 0px;
-    float: right;
+    width: 100%;
 }
 .list-container {
     width: 50%;
-    display: inline;
+    vertical-align:top;
+}
+.content-selector {
+    width: 100%;
 }
 
 /* Buglist related */

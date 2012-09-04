@@ -126,7 +126,8 @@ _add_page_handler("agiletools/team/create.html", sub {
 
 _add_page_handler("agiletools/scrum/planning.html", sub {
     my ($vars) = @_;
-    my $id = Bugzilla->cgi->param("team_id");
+    my $cgi = Bugzilla->cgi;
+    my $id = $cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
             unless defined $id;
@@ -136,6 +137,14 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
             @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
                     $team, Bugzilla->user)};
     $vars->{user_roles} = \@roles;
+    my @pools;
+    push(@pools, [-1, "Unprioritized items"]);
+    for my $pool (@{$team->pools(1)}) {
+        push(@pools, [$pool->id, $pool->name]);
+    }
+    $vars->{pools_json} = JSON->new->utf8->encode(\@pools);
+    $vars->{left_id} = $cgi->param("left") || $team->current_sprint_id;
+    $vars->{right_id} = $cgi->param("right") || $team->backlog_id;
 });
 
 _add_page_handler("agiletools/scrum/sprints.html", sub {

@@ -25,11 +25,12 @@
 /* Global scrum variables */
 var SCRUM = {
     team_id: [% team.id %],
+    pools: [% pools_json %],
 };
 
 /* Initialize the page on ready */
 $(function() {
-    scrumInitPage();
+    new ScrumPlaningView([% left_id FILTER js %], [% right_id FILTER js %]);
 });
 
 [% END %]
@@ -45,61 +46,35 @@ $(function() {
         ],
 %]
 
-<div class="center">
-    <div id="list_1" class="list-container left">
-        <div class="list-header">
-            <select name="content_selector">
-                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools(1) %]
-                [% disabled = team.backlog_id == pool.id ?
-                    'disabled="disabled"' : "" %]
-                [% selected = team.current_sprint_id == pool.id ?
-                    'selected="selected"' : "" %]
-                <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name _ ' (Pool ID ' _ pool.id _ ')' FILTER html %]</option>
-            [% END %]
-            </select>
-            <br/>
-            <button type="button" name="reload">Reload</button>
-            Search:<input name="content_search"/>
-        </div>
+<table class="center">
+    <tr>
+        <td id="list_1" class="list-container">
+            <select class="content-selector"></select>
+            <div class="list-header"></div>
 
-        <ul class="list-content">
-        </ul>
+            <ul class="list-content"></ul>
 
-        <div class="list-footer">
-        </div>
-    </div>
+            <div class="list-footer"></div>
+        </td>
 
-    <div id="list_2" class="list-container right">
-        <div class="list-header">
-            <select name="content_selector">
-                <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools(1) %]
-                [% disabled = team.current_sprint_id == pool.id ?
-                    'disabled="disabled"' : "" %]
-                [% selected = team.backlog_id == pool.id ?
-                    'selected="selected"' : "" %]
-                <option value="[% pool.id %]" [% disabled %] [% selected %]>
-                [% pool.name _ ' (Pool ID ' _ pool.id _ ')' FILTER html %]</option>
-            [% END %]
-            </select>
-            <br/>
-            <button type="button" name="reload">Reload</button>
-            Search:<input name="content_search"/>
-        </div>
+        <td id="list_2" class="list-container">
 
-        <ul class="list-content">
-        </ul>
+            <select class="content-selector"></select>
+            <div class="list-header"></div>
 
-        <div class="list-footer">
-        </div>
-    </div>
-</div>
+            <ul class="list-content"></ul>
 
+            <div class="list-footer"></div>
+        </td>
+    </tr>
+</table>
+
+<hr/>
 [% IF team.user_can_edit %]
 [<a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">Manage team</a>]
 [% END %]
+
+
 
 <!-- Hidden templates start here -->
 <div id="templates">
@@ -145,7 +120,7 @@ $(function() {
             <td>Free capacity:</td>
             <td class="free-cap"></td>
         </tr>
-        [% IF user_roles.defined('Scrum Master') %]
+        [% IF user_roles.grep('Scrum Master') %]
         <tr>
             <td></td>
             <td>

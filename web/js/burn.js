@@ -43,7 +43,6 @@ var initBurn = function()
     $("#changeDates").click(changeDates);
 
     $("[name=burn_type]").change(function() {
-        console.log("change");
         plotBurn($("[name=burn_type]:checked").val());
     });
 
