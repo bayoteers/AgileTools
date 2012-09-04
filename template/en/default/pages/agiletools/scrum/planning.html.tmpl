@@ -50,7 +50,7 @@ $(function() {
         <div class="list-header">
             <select name="content_selector">
                 <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools %]
+            [% FOREACH pool IN team.pools(1) %]
                 [% disabled = team.backlog_id == pool.id ?
                     'disabled="disabled"' : "" %]
                 [% selected = team.current_sprint_id == pool.id ?
@@ -76,7 +76,7 @@ $(function() {
         <div class="list-header">
             <select name="content_selector">
                 <option value="-1">[% team.name FILTER html %] unprioritized items</option>
-            [% FOREACH pool IN team.pools %]
+            [% FOREACH pool IN team.pools(1) %]
                 [% disabled = team.current_sprint_id == pool.id ?
                     'disabled="disabled"' : "" %]
                 [% selected = team.backlog_id == pool.id ?

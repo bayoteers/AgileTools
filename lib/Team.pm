@@ -600,22 +600,29 @@ containing teams backlog and sprint pools.
 =cut
 
 sub pools {
-    my $self = shift;
-    return $self->{pools} if defined $self->{pools};
+    my ($self, $active) = @_;
+    unless (defined $self->{pools}) {
+        my @pools;
+        push(@pools, $self->backlog) if (defined $self->backlog);
 
-    my @pools;
-    push(@pools, $self->backlog) if (defined $self->backlog);
+        if($self->process_id == AGILE_PROCESS_SCRUM) {
+            my @sprints = sort { $b->start_date cmp $a->start_date } @{
+                Bugzilla::Extension::AgileTools::Sprint->match(
+                    {team_id => $self->id}) };
 
-    if($self->process_id == AGILE_PROCESS_SCRUM) {
-        my @sprints = sort { $b->start_date cmp $a->start_date } @{
-            Bugzilla::Extension::AgileTools::Sprint->match(
-                {team_id => $self->id}) };
-
-        foreach (@sprints) {
-            push(@pools, $_->pool);
+            foreach (@sprints) {
+                push(@pools, $_->pool);
+            }
+        }
+        $self->{pools} = \@pools;
+    }
+    if (defined $active) {
+        if ($active) {
+            return [grep {$_->is_active} @{$self->{pools}}];
+        } else {
+            return [grep {!$_->is_active} @{$self->{pools}}];
         }
     }
-    $self->{pools} = \@pools;
     return $self->{pools};
 }
 
