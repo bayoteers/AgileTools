@@ -41,6 +41,8 @@ use Bugzilla::Hook;
 use Bugzilla::Util qw(detaint_natural);
 use Bugzilla::Bug qw(LogActivityEntry);
 
+use Scalar::Util qw(blessed);
+
 use base qw(Bugzilla::Object);
 
 
@@ -108,10 +110,10 @@ sub bugs {
     return $self->{bugs};
 }
 
-=item C<add_bug($bug_id, $order)>
+=item C<add_bug($bug, $order)>
 
     Description: Inserts new bug into the pool
-    Params:      $bug_id - Bug ID
+    Params:      $bug - Bug ID or object to be added
                  $order - (optional) Order of the new bug in this pool,
                           goes last if not given
     Returns:     Boolean value telling if pool was changed
@@ -122,14 +124,17 @@ sub bugs {
 
 sub add_bug {
     my $self = shift;
-    my ($bug_id, $order) = @_;
+    my ($bug, $order) = @_;
 
-    ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
-        unless detaint_natural($bug_id);
-    ThrowUserError("invalid_parameter", {name=>'order', err=>'Not a number'})
+    my $class = blessed($bug) || "";
+
+    ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
+        unless ($class eq "Bugzilla::Bug" || detaint_natural($bug));
+    ThrowUserError("param_must_be_numeric", { param => 'order', function => 'Pool->add_bug'})
         unless (!defined $order || detaint_natural($order));
 
-    my $bug = Bugzilla::Bug->check({id => $bug_id});
+    $bug = Bugzilla::Bug->check({id => $bug})
+        unless $class eq "Bugzilla::Bug";
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -145,7 +150,7 @@ sub add_bug {
         "SELECT pool_id, pool_order
            FROM bug_agile_pool
           WHERE bug_id = ?",
-          undef, $bug_id);
+          undef, $bug->id);
     $old_pool |= 0;
     $old_order |= 0;
 
@@ -162,17 +167,17 @@ sub add_bug {
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_id = ?, pool_order = ?
                     WHERE bug_id = ?",
-            undef, ($self->id, $order, $bug_id));
+            undef, ($self->id, $order, $bug->id));
         # Shift other bugs up in old pool
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order - 1
                   WHERE pool_id = ? AND pool_order > ? AND bug_id != ?",
-            undef, ($old_pool, $old_order, $bug_id));
+            undef, ($old_pool, $old_order, $bug->id));
     } elsif (!$old_pool) {
         # Insert new entry
         $dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
                       VALUES (?, ?, ?)",
-            undef, ($bug_id, $self->id, $order));
+            undef, ($bug->id, $self->id, $order));
     }
     # Note: If the bug is moved inside this pool, the other bugs will probably
     # get shifted back and forth, but the performance gain from more detailed
@@ -182,12 +187,12 @@ sub add_bug {
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order + 1
                   WHERE pool_id = ? AND pool_order >= ? AND bug_id != ?",
-            undef, ($self->id, $order, $bug_id));
+            undef, ($self->id, $order, $bug->id));
         delete $self->{bugs};
     }
     if ($old_pool != $self->id) {
         my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-        LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $old_pool, $self->id,
+        LogActivityEntry($bug->id, 'bug_agile_pool.pool_id', $old_pool, $self->id,
                 Bugzilla->user->id, $delta_ts);
         Bugzilla::Hook::process("agile_pool_change", {
             bug => $bug,
@@ -199,20 +204,23 @@ sub add_bug {
     return $changed;
 }
 
-=item C<remove_bug($bug_id)>
+=item C<remove_bug($bug)>
 
     Description: Remove bug from pool
-    Params:      $bug_id - ID of the bug to be removed
+    Params:      $bug - Bug ID or object to be removed
     Returns:     Boolean value telling if pool was changed
 
 =cut
 
 sub remove_bug {
-    my ($self, $bug_id) = @_;
-    ThrowUserError("invalid_parameter", {name=>'bug_id', err=>'Not a number'})
-        unless detaint_natural($bug_id);
+    my ($self, $bug) = @_;
+    my $class = blessed($bug) || "";
 
-    my $bug = Bugzilla::Bug->check({id => $bug_id});
+    ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
+        unless ($class eq "Bugzilla::Bug" || detaint_natural($bug));
+
+    $bug = Bugzilla::Bug->check({id => $bug})
+        unless $class eq "Bugzilla::Bug";
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -222,13 +230,13 @@ sub remove_bug {
         "SELECT pool_order
            FROM bug_agile_pool
           WHERE pool_id = ? AND bug_id = ?",
-          undef, ($self->id, $bug_id));
+          undef, ($self->id, $bug->id));
 
     if (defined $order) {
         # Delete old entry
         $dbh->do("DELETE FROM bug_agile_pool
                     WHERE pool_id = ? AND bug_id = ?",
-            undef, ($self->id, $bug_id));
+            undef, ($self->id, $bug->id));
         # Shift bugs in old pool
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_order = pool_order - 1
@@ -236,7 +244,7 @@ sub remove_bug {
             undef, ($self->id, $order));
         delete $self->{bugs};
         my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-        LogActivityEntry($bug_id, 'bug_agile_pool.pool_id', $self->id, 0,
+        LogActivityEntry($bug->id, 'bug_agile_pool.pool_id', $self->id, 0,
                 Bugzilla->user->id, $delta_ts);
         Bugzilla::Hook::process("agile_pool_change", {
             bug => $bug,
