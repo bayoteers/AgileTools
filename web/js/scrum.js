@@ -114,8 +114,6 @@ var ListContainer = Base.extend(
         this.footer = $(".list-footer", this.element);
         this.header = $(".list-header", this.element);
 
-        $("button[name='create_sprint']", this.header).click(
-            $.proxy(this, "_openCreateSprint"));
         $("button[name='reload']", this.header).click(
             $.proxy(this, "_reload"));
 
@@ -190,63 +188,6 @@ var ListContainer = Base.extend(
             option.prop("disabled", true);
             this.contentSelector.append(option);
         }
-    },
-
-    /**
-     * Craete sprint button handler.
-     */
-    _openCreateSprint: function()
-    {
-        this._dialog = $("#sprint_editor_template").clone().attr("id", null);
-        var start = this._dialog.find("[name='start_date']");
-        var end = this._dialog.find("[name='end_date']");
-        scrumDateRange(start, end);
-        start.datepicker("option", "defaultDate", "+1")
-        end.datepicker("option", "defaultDate", "+7")
-
-        this._dialog.dialog({
-            title: "Create sprint",
-            modal: true,
-            buttons: {
-                "Create": $.proxy(this, "_createSprint"),
-                "Cancel": function() { $(this).dialog("close") },
-                },
-            close: function() { $(this).dialog("destroy") },
-        });
-    },
-
-    /**
-     * Create sprint dialog Create button handler
-     */
-    _createSprint: function()
-    {
-        var params = {};
-        params["team_id"] = SCRUM.team_id;
-        params["start_date"] = this._dialog.find("[name='start_date']").val();
-        params["end_date"] = this._dialog.find("[name='end_date']").val();
-        params["capacity"] = this._dialog.find("[name='capacity']").val() || 0;
-        var rpc = this.callRpc("Agile.Sprint", "create", params);
-        rpc.done($.proxy(this, "_onCreateSprintDone"));
-        this._dialog.dialog("close");
-    },
-
-    /**
-     * Create sprint RPC done handler
-     */
-    _onCreateSprintDone: function(result)
-    {
-        var newOption = $("<option>" + result.name + "</option>")
-            .attr("value", result.id)
-            .appendTo(this.contentSelector)
-            .prop("selected", true);
-        this.contentSelector.find("option").not(newOption).each(function() {
-            var element = $(this);
-            if (/sprint/.test(element.text()) && element.text() < result.name) {
-                element.before(newOption);
-                return false;
-            }
-        });
-        this._changeContent();
     },
 
     /**
