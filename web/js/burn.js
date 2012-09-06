@@ -101,6 +101,7 @@ function getBurnMarkers()
     now = now.getTime();
     var markings = [];
     var day = new Date(BURN.start);
+    day.setUTCHours(0);
     var end = new Date(BURN.end);
     var weekend = false;
     var from = 0;
@@ -138,6 +139,7 @@ function getIdealBurn(start_value)
 {
     var end = new Date(BURN.end);
     var day = new Date(BURN.start);
+    day.setUTCHours(0);
     var delta_days = Math.ceil((end - day) / 1000 / 60 / 60 / 24);
     var data = [];
     var week_days = 0;
