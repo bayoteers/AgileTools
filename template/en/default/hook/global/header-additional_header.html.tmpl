@@ -10,7 +10,9 @@
         var bugStatusSelect = $("select[name=bug_status]");
         if (assigneeInput.val() == BB_CONFIG.user.login
                 && bugStatusSelect.val() == 'ASSIGNED')
-            return false;
+            return;
+        if (bugStatusSelect.find("option[value=ASSIGNED]").size() == 0)
+            return;
         var commentInput = $("textarea[name=comment]");
         $("div.knob-buttons").prepend('<input type="submit" class="start_working" value="Start Working"/>');
         $("div.knob-buttons input.start_working").click(function() {
