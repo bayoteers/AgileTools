@@ -26,7 +26,7 @@ use base qw(Bugzilla::Extension);
 use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Field;
-
+use Bugzilla::Util qw(detaint_natural);
 
 use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Pool;
@@ -185,6 +185,19 @@ _add_template_handler('list/burnchart.html.tmpl', sub {
     $vars->{burn_json} = JSON->new->utf8->encode($data);
 });
 
+###################
+# Template handlers
+###################
+
+sub active_pools_to_vars {
+    my $vars = shift;
+    $vars->{active_pools} = Bugzilla::Extension::AgileTools::Pool->match(
+        {is_active => 1});
+}
+
+_add_template_handler("bug/edit.html.tmpl", \&active_pools_to_vars);
+_add_template_handler("list/edit-multiple.html.tmpl", \&active_pools_to_vars);
+
 #######################################
 # Page and template processing handlers
 #######################################
@@ -315,6 +328,22 @@ sub bug_end_of_update {
                     delete $bug->{pool};
                     delete $bug->{pool_id};
                 }
+            }
+        }
+    }
+
+    # Set pool
+    my $new_pool_id = Bugzilla->cgi->param('agile_bug_pool_id') || '';
+    my $dontchange = Bugzilla->cgi->param('dontchange') || '';
+    if ($new_pool_id ne $dontchange) {
+        detaint_natural($new_pool_id);
+        if (defined $new_pool_id && $new_pool_id != $bug->pool_id) {
+            if ($new_pool_id) {
+                my $pool = Bugzilla::Extension::AgileTools::Pool->check(
+                    {id => $new_pool_id});
+                $pool->add_bug($bug);
+            } else {
+                $bug->pool->remove_bug($bug);
             }
         }
     }

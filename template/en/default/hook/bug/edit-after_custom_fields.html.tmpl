@@ -1,11 +1,24 @@
-[% IF bug.pool %]
-[% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
 <tr>
     <th class="field_label">Pool:</th>
     <td>
-        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% bug.pool_id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]&amp;query_based_on=[% bug.pool.name FILTER uri %]">[% bug.pool.name FILTER html %]</a>
+        <select name="agile_bug_pool_id">
+            <option value="0">None</option>
+        [% IF bug.pool_id %]
+            <option value="[% bug.pool_id %]" selected="selected">
+            [% bug.pool.name FILTER html %]</option>
+        [% END %]
+        [% FOREACH pool = active_pools %]
+            [% NEXT IF bug.pool_id == pool.id %]
+            <option value="[% pool.id %]">
+            [% pool.name FILTER html %]</option>
+        [% END %]
+        </select>
+        [% IF bug.pool_id %]
+        <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% bug.pool_id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% Param('agile_scrum_buglist_columns') FILTER uri %]&amp;query_based_on=[% bug.pool.name FILTER uri %]">[% terms.Bug %] list</a>
+        [% END %]
     </td>
 </tr>
+[% IF bug.pool_id %]
 <tr>
     <th class="field_label">Pool ID:</th>
     <td>[% bug.pool_id %]</td>

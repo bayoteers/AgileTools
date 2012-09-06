@@ -1,0 +1,14 @@
+<tr>
+    <th class="field_label">Pool:</th>
+    <td>
+        <select name="agile_bug_pool_id">
+            <option value="[% dontchange FILTER html %]" selected="selected">
+            [% dontchange FILTER html %]</option>
+            <option value="0">None</option>
+        [% FOREACH pool = active_pools %]
+            <option value="[% pool.id %]">
+            [% pool.name FILTER html %]</option>
+        [% END %]
+        </select>
+    </td>
+</tr>
