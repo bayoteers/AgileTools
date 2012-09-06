@@ -31,11 +31,15 @@ burn_type = cgi.param('burn_type') or 'items'
 <script type="text/javascript"
     src="[% "extensions/AgileTools/web/js/jquery.flot.min.js" FILTER mtime %]"></script>
 <script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/jquery.flot.axislabels.js" FILTER mtime %]"></script>
+<script type="text/javascript"
     src="[% "extensions/AgileTools/web/js/burn.js" FILTER mtime %]"></script>
 <script type="text/javascript">
 var BURN = [% burn_json or "{}" %];
-BURN.start_date = "[% burn_start %]";
-BURN.end_date = "[% burn_end %]";
-BURN.type = "[% burn_type %]";
+BURN.start_date = "[% burn_start FILTER js %]";
+BURN.end_date = "[% burn_end FILTER js %]";
+BURN.type = "[% burn_type FILTER js %]";
+BURN.itemUnit ="[% terms.Bugs FILTER js %]";
+BURN.workUnit ="[% Param('agile_use_points') ? 'Points' : 'Hours' %]";
 $(initBurn);
 </script>

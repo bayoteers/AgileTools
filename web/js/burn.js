@@ -79,6 +79,7 @@ function plotBurn(type)
                 points: {show: false},
             },
         ];
+        BURN.chartOptions.yaxis.axisLabel = BURN.itemUnit;
     } else {
         series = [
             getIdealBurn(BURN.start_rem),
@@ -87,10 +88,11 @@ function plotBurn(type)
                 data: BURN.remaining,
             },
             {
-                label: "Work done",
+                label: "Actual",
                 data: BURN.actual,
             },
         ];
+        BURN.chartOptions.yaxis.axisLabel = BURN.workUnit;
     }
     $.plot("#burnchart", series, BURN.chartOptions);
 };
