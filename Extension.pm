@@ -166,6 +166,10 @@ _add_page_handler("agiletools/user_summary.html", sub {
     $vars->{agile_teams} = Bugzilla->user->agile_teams;
 });
 
+###################
+# Template handlers
+###################
+
 _add_template_handler('list/burnchart.html.tmpl', sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
@@ -184,10 +188,6 @@ _add_template_handler('list/burnchart.html.tmpl', sub {
     my $data = get_burndata(\@bug_ids, $start, $end);
     $vars->{burn_json} = JSON->new->utf8->encode($data);
 });
-
-###################
-# Template handlers
-###################
 
 sub active_pools_to_vars {
     my $vars = shift;
@@ -293,22 +293,25 @@ sub buglist_column_joins {
     };
 }
 
-#########################################
-# Additional opretions when updating bugs
-#########################################
+##########################################
+# Additional operations when updating bugs
+##########################################
 
 sub bug_end_of_update {
     my ($self, $args) = @_;
 
     my ($bug, $changes) = @$args{qw(bug changes)};
+    my $user = Bugzilla->user;
 
-    if (my $status_change = $changes->{'bug_status'}) {
+    if ((my $status_change = $changes->{'bug_status'})
+            && !$user->in_group('non_human')) {
         my $old_status = new Bugzilla::Status({ name => $status_change->[0] });
         my $new_status = new Bugzilla::Status({ name => $status_change->[1] });
         if (!$new_status->is_open && $old_status->is_open) {
             # Bug is being closed
 
-            # Check that actual time is set if it is required for the severity and resolution
+            # Check that actual time is set if it is required for the severity
+            # and resolution
             my $check_severity = grep {$bug->bug_severity eq $_}
                     @{Bugzilla->params->{"agile_check_time_severity"}};
             my $check_resolution = grep {$bug->resolution eq $_}
