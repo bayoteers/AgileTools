@@ -73,6 +73,7 @@ use Bugzilla::User;
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim trick_taint detaint_natural);
 
+use DateTime;
 use Scalar::Util qw(blessed);
 use List::Util qw(first);
 
@@ -684,13 +685,23 @@ sub create {
     );
     $clean_params->{group_id} = $group->id;
 
-    # Greate the backlog pool
+    # Create the backlog pool
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({
             name => $params->{name} . " backlog",
         });
     $clean_params->{backlog_id} = $pool->id;
 
     my $team = $class->insert_create_data($clean_params);
+
+    # Create current sprint
+    my $now = DateTime->now();
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->create({
+            team_id => $team->id,
+            start_date => $now->strftime("%Y-%m-%d"),
+            end_date => $now->add(days => 7 )->strftime("%Y-%m-%d"),
+        });
+    $team->set_current_sprint_id($sprint->id);
+    $team->update();
 
     return $team;
 }
