@@ -72,56 +72,53 @@ sub get_burndata {
 
     my $dbh = Bugzilla->dbh;
 
-    my @remaining;
-    my @actual;
+    # TODO: Proper timezone handling.
+    #   jQuery Flot expects UTC timestamps, but BZ uses localtime
+    #   Currently we just pretend that these are all UTC
+    my $now = DateTime->now(time_zone => Bugzilla->local_timezone);
+    $now = $now->add(seconds => $now->offset)->epoch * 1000;
 
-    $from = defined $from ? 1000 * str2time($from."T00:00:00") : 0;
-    $to = defined $to ? 1000 * str2time($to."T23:59:59") : 1000 * time();
+    $from = defined $from ? 1000 * str2time($from."T00:00:00", "UTC") : 0;
+    $to = defined $to ? 1000 * str2time($to."T23:59:59", "UTC") : $now;
     my $first_ts;
-    my $last_ts;
 
     # Get current remaining time
-    my $current = $dbh->selectrow_array(
+    my $current = 0;
+    $current = $dbh->selectrow_array(
         'SELECT SUM(remaining_time) FROM bugs WHERE '.
-        $dbh->sql_in('bug_id', $bugs));
+        $dbh->sql_in('bug_id', $bugs)) if (@$bugs);
 
     # History query
-    my $sth = $dbh->prepare(
+    my $sth;
+    $sth = $dbh->prepare(
         'SELECT ac.bug_id, ac.bug_when, ac.removed, ac.added '.
         'FROM bugs_activity AS ac '.
         'LEFT JOIN fielddefs fd ON fd.id = ac.fieldid '.
         'WHERE '.$dbh->sql_in('ac.bug_id', $bugs).' AND fd.name = ? '.
-        'ORDER BY ac.bug_when DESC');
+        'ORDER BY ac.bug_when DESC') if(@$bugs);
 
     ############################
     # Get remaining time history
     # This is done by trversing the remaining_time changes in reverse
     # chronological order and adding the change to current remaining.
 
-    my $start_rem;
-    my $end_rem;
-    my $previous;
-
-    $sth->execute('remaining_time');
-    while (my @row  = $sth->fetchrow_array) {
-        my ($bug_id, $when, $rem, $add) = @row;
-        my $change = $rem - $add;
-        my $ts = 1000 * str2time($when);
-        if ($from <= $ts && $to >= $ts) {
-            push @remaining, [$ts, $current];
+    my @tmp;
+    if (defined $sth){
+        $sth->execute('remaining_time');
+        while (my @row  = $sth->fetchrow_array) {
+            my ($bug_id, $when, $rem, $add) = @row;
+            my $change = $rem - $add;
+            my $ts = 1000 * str2time($when, "UTC");
             $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
-            $last_ts = defined $last_ts ? max($ts, $last_ts) : $ts;
-            $end_rem = $current unless defined $end_rem;
+            push @tmp, [$ts, $current];
+            $current += $change;
         }
-        # Start of remaining is the value before first change in range
-        if ($previous && $from <= $previous) {
-            $start_rem = $current;
-        }
-        $current += $change;
-        $previous = $ts;
     }
-    $start_rem ||= $current;
-    push @remaining, [$from, $start_rem];
+    my $start_rem = 0;
+    my @remaining = grep {
+        $start_rem = $_->[1] if ($_->[0] < $from);
+        $from <= $_->[0] && $to >= $_->[0];
+    } reverse @tmp;
 
     ######################
     # Get actual work time
@@ -130,19 +127,19 @@ sub get_burndata {
     # order, We need to first get the data and reverse it.
 
     my @work_time;
-    $sth->execute('work_time');
-    while (my @row  = $sth->fetchrow_array) {
-        my ($bug_id, $when, $rem, $add) = @row;
-        my $ts = 1000 * str2time($when);
-        if ($from <= $ts && $to >= $ts) {
-            push @work_time, [$ts, $add];
-            $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
-            $last_ts = defined $last_ts ? max($ts, $last_ts) : $ts;
+    if (defined $sth) {
+        $sth->execute('work_time');
+        while (my @row  = $sth->fetchrow_array) {
+            my ($bug_id, $when, $rem, $add) = @row;
+            my $ts = 1000 * str2time($when, "UTC");
+            if ($ts >= $from && $ts <= $to) {
+                push @work_time, [$ts, $add];
+                $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
+            }
         }
     }
     my $sum = 0;
-    push @actual, [$from, 0];
-
+    my @actual = ([$from, $sum]);
     for my $row (reverse @work_time) {
         my ($ts, $add) = @$row;
         $sum += $add;
@@ -154,56 +151,61 @@ sub get_burndata {
     # Fetch changes in bug_status and filter them to just changes from open
     # to closed statuses or vice versa.
 
-    my @items;
-    my $start_items;
+    my $start_items = 0;
     # Get count of currently open bugs
-    $current = $dbh->selectrow_array(
+    my $open_count = 0;
+    $open_count = $dbh->selectrow_array(
         'SELECT COUNT(*) FROM bugs '.
         'LEFT JOIN bug_status st ON bugs.bug_status = st.value '.
         'WHERE '.$dbh->sql_in('bug_id', $bugs).
-        ' AND st.is_open = 1;');
+        ' AND st.is_open = 1;') if (@$bugs);
 
     # Get the open/closed statuses
     my %is_open = map {$_->[0] => $_->[1]} @{$dbh->selectall_arrayref(
         'SELECT value, is_open FROM bug_status')};
 
-    $sth->execute('bug_status');
-    my $first_close = 1;
-    while (my @row  = $sth->fetchrow_array) {
-        my ($bug_id, $when, $rem, $add) = @row;
+    @tmp = ();
+    if (defined $sth) {
+        my $first_close = 1;
+        $sth->execute('bug_status');
+        while (my @row  = $sth->fetchrow_array) {
+            my ($bug_id, $when, $rem, $add) = @row;
 
-        # Check if status changes from open to closed or from closed to open
-        my $closed = $is_open{$rem} && !$is_open{$add};
-        my $opened = $is_open{$add} && !$is_open{$rem};
-        next unless $opened || $closed;
-        my $ts = 1000 * str2time($when);
-
-        if ($from <= $ts && $to >= $ts) {
-            push @items, [$ts, $current];
+            # Check if status changes from open to closed or from closed to open
+            my $closed = $is_open{$rem} && !$is_open{$add};
+            my $opened = $is_open{$add} && !$is_open{$rem};
+            next unless $opened || $closed;
+            my $ts = 1000 * str2time($when, "UTC");
             $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
-            $last_ts = defined $last_ts ? max($ts, $last_ts) : $ts;
-            $start_items = $current;
-            $first_close = $closed;
-        }
-        if ($opened) {
-            $current -= 1;
-        } elsif ($closed) {
-            $current += 1;
+            push @tmp, [$ts, $open_count];
+            if ($opened) {
+                $open_count -= 1;
+            } elsif ($closed) {
+                $open_count += 1;
+            }
         }
     }
-    # Set start point to +-1 based on type of first change in the range
-    $start_items += $first_close ? 1 : -1;
-    push @items, [$from, $start_items];
+    my @items = grep {
+        $start_items = $_->[1] if ($_->[0] < $from);
+        $from <= $_->[0] && $to >= $_->[0];
+    } reverse @tmp;
+
+    # If start date is not given, use first history entry on month before today
+    $from ||= $first_ts || $now - 30*24*60*60*1000;
+
+    # Set some reasonable start values for the data sets
+    unshift @remaining, [$from, $start_rem || $remaining[0][1] || 0];
+    unshift @items, [$from, $start_items || $items[0][1] || 0];
 
     return {
-        start => $from || $first_ts,
+        start => $from,
         end => $to,
         start_rem => $start_rem,
-        end_rem => $end_rem,
         remaining => \@remaining,
         actual => \@actual,
         open_items => \@items,
         start_open => $start_items,
+        now => $now,
     };
 }
 

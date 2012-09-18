@@ -99,8 +99,6 @@ function plotBurn(type)
 
 function getBurnMarkers()
 {
-    var now = new Date();
-    now = now.getTime();
     var markings = [];
     var day = new Date(BURN.start);
     day.setUTCHours(0);
@@ -132,7 +130,7 @@ function getBurnMarkers()
 
     }
     // Today marker
-    markings.push({ color: 'red', xaxis: {from: now, to: now} });
+    markings.push({ color: 'red', xaxis: {from: BURN.now, to: BURN.now} });
 
     return markings;
 };
