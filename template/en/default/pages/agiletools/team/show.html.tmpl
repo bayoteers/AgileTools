@@ -104,16 +104,16 @@ $(function() {
         </tr>
     </thead>
     <tbody>
-    [% IF team.user_can_edit %]
         <tr class="editor">
+        [% IF team.user_can_edit %]
             <td>
                 <input class="member-new">
             </td>
             <td>
                 <button class="add" type="button">Add member</button>
             </td>
+        [% END %]
         </tr>
-    [% END %]
     </tbody>
 </table>
 </ul>
@@ -126,8 +126,8 @@ $(function() {
         </tr>
     </thead>
     <tbody>
-        [% IF team.user_can_edit %]
         <tr class="editor">
+            [% IF team.user_can_edit %]
             <td>
                 <select class="component-new"/>
                     <option value=""></option>
@@ -137,8 +137,8 @@ $(function() {
                 </select>
             </td>
             <td><button type="button" class="add">Add</button></td>
+            [% END %]
         </tr>
-        [% END %]
     </tbody>
 </table>
 <table id="team_keywords">
@@ -148,8 +148,8 @@ $(function() {
         </tr>
     </thead>
     <tbody>
-        [% IF team.user_can_edit %]
         <tr class="editor">
+            [% IF team.user_can_edit %]
             <td>
                 <select class="keyword-new"/>
                     <option value=""></option>
@@ -159,8 +159,8 @@ $(function() {
                 </select>
             </td>
             <td><button type="button" class="add">Add</button></td>
+            [% END %]
         </tr>
-        [% END %]
     </tbody>
 </table>
 [% IF team.user_can_edit %]
