@@ -151,7 +151,6 @@ sub get_burndata {
     # Fetch changes in bug_status and filter them to just changes from open
     # to closed statuses or vice versa.
 
-    my $start_items = 0;
     # Get count of currently open bugs
     my $open_count = 0;
     $open_count = $dbh->selectrow_array(
@@ -160,13 +159,14 @@ sub get_burndata {
         'WHERE '.$dbh->sql_in('bug_id', $bugs).
         ' AND st.is_open = 1;') if (@$bugs);
 
+    my $start_items = $open_count;
+
     # Get the open/closed statuses
     my %is_open = map {$_->[0] => $_->[1]} @{$dbh->selectall_arrayref(
         'SELECT value, is_open FROM bug_status')};
 
     @tmp = ();
     if (defined $sth) {
-        my $first_close = 1;
         $sth->execute('bug_status');
         while (my @row  = $sth->fetchrow_array) {
             my ($bug_id, $when, $rem, $add) = @row;
@@ -183,6 +183,7 @@ sub get_burndata {
             } elsif ($closed) {
                 $open_count += 1;
             }
+            $start_items = $open_count;
         }
     }
     my @items = grep {
