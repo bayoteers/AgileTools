@@ -59,6 +59,10 @@ button.remove {
     overflow-x: hidden;
 }
 
+.buglist.dependson {
+    overflow: visible;
+}
+
 .blitem .dependson {
     margin-left: 1em;
 }
@@ -66,7 +70,6 @@ button.remove {
 .blitem {
     border: 1px solid;
     margin: 1px;
-    overflow-x: hidden;
     margin-bottom: 5px;
 }
 
