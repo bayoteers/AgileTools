@@ -67,6 +67,13 @@ sub get_param_list {
             default => 1,
         },
         {
+            name => 'agile_working_on_status',
+            desc => 'Status that means user is working on an item',
+            type    => 's',
+            choices => get_legal_field_values('bug_status'),
+            default => 'IN_PROGRESS',
+        },
+        {
             name => 'agile_start_working_comment',
             desc => 'Default comment to add when "start working"-button is used. '.
                     'If empty, then no comment is added.',

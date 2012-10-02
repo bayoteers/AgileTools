@@ -2,20 +2,21 @@
         template.name == 'bug/process/results.html.tmpl' %]
     [% IF Param('agile_start_working_button') %]
     <script type="text/javascript">
+    var AGILE_ASSIGNED = "[% Param('agile_working_on_status') FILTER js %]";
     $(function() {
         var defaultComment = "[% Param('agile_start_working_comment') FILTER js %]";
         var assigneeInput = $("input[name=assigned_to]");
         var bugStatusSelect = $("select[name=bug_status]");
         if (assigneeInput.val() == BB_CONFIG.user.login
-                && bugStatusSelect.val() == 'ASSIGNED')
+                && bugStatusSelect.val() == AGILE_ASSIGNED)
             return;
-        if (bugStatusSelect.find("option[value=ASSIGNED]").size() == 0)
+        if (bugStatusSelect.find("option[value=" + AGILE_ASSIGNED + "]").size() == 0)
             return;
         var commentInput = $("textarea[name=comment]");
         $("div.knob-buttons").prepend('<input type="submit" class="start_working" value="Start Working"/>');
         $("div.knob-buttons input.start_working").click(function() {
             assigneeInput.val(BB_CONFIG.user.login);
-            bugStatusSelect.val("ASSIGNED");
+            bugStatusSelect.val(AGILE_ASSIGNED);
             var comment = commentInput.val();
             if (!comment && defaultComment) {
                 commentInput.val(defaultComment);
