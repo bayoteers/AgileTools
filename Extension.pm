@@ -62,6 +62,7 @@ sub _add_page_handler {
 
 _add_page_handler("agiletools/team/list.html", sub {
     my ($vars) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     my $cgi = Bugzilla->cgi;
     my $action = $cgi->param("action") || "";
     if ($action eq "remove") {
@@ -79,6 +80,7 @@ _add_page_handler("agiletools/team/list.html", sub {
 
 _add_page_handler("agiletools/team/show.html", sub {
     my ($vars) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
 
     my $cgi = Bugzilla->cgi;
     my $team;
@@ -104,7 +106,7 @@ _add_page_handler("agiletools/team/show.html", sub {
     $vars->{keywords} = Bugzilla::Keyword->match();
     my @components;
     foreach my $product (Bugzilla::Product->get_all()) {
-        next unless Bugzilla->user->can_see_product($product->name);
+        next unless $user->can_see_product($product->name);
         foreach my $component (@{$product->components}) {
             push(@components, {
                     id => $component->id,
@@ -121,12 +123,14 @@ _add_page_handler("agiletools/team/show.html", sub {
 
 _add_page_handler("agiletools/team/create.html", sub {
     my ($vars) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     $vars->{processes} = AGILE_PROCESS_NAMES;
 });
 
 _add_page_handler("agiletools/scrum/planning.html", sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
     my $id = $cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
@@ -135,7 +139,7 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
     $vars->{team} = $team;
     my @roles = map {$_->name}
             @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
-                    $team, Bugzilla->user)};
+                    $team, $user)};
     $vars->{user_roles} = \@roles;
     my @pools;
     push(@pools, [-1, "Unprioritized items"]);
@@ -149,6 +153,7 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
 
 _add_page_handler("agiletools/scrum/sprints.html", sub {
     my ($vars) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     my $id = Bugzilla->cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
@@ -162,8 +167,9 @@ _add_page_handler("agiletools/scrum/sprints.html", sub {
 
 _add_page_handler("agiletools/user_summary.html", sub {
     my ($vars) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
     $vars->{processes} = AGILE_PROCESS_NAMES;
-    $vars->{agile_teams} = Bugzilla->user->agile_teams;
+    $vars->{agile_teams} = $user->agile_teams;
 });
 
 ###################
