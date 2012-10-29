@@ -13,7 +13,7 @@
         if (bugStatusSelect.find("option[value=" + AGILE_ASSIGNED + "]").size() == 0)
             return;
         var commentInput = $("textarea[name=comment]");
-        $("div.knob-buttons").prepend('<input type="submit" class="start_working" value="Start Working"/>');
+        $("div.knob-buttons").prepend('<input type="button" class="start_working" value="Start Working"/>');
         $("div.knob-buttons input.start_working").click(function() {
             assigneeInput.val(BB_CONFIG.user.login);
             bugStatusSelect.val(AGILE_ASSIGNED);
@@ -21,6 +21,7 @@
             if (!comment && defaultComment) {
                 commentInput.val(defaultComment);
             }
+            $("form#changeform").submit();
         });
     });
     </script>
