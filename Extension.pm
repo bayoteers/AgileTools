@@ -308,6 +308,7 @@ sub bug_end_of_update {
 
     my ($bug, $changes) = @$args{qw(bug changes)};
     my $user = Bugzilla->user;
+    my $cgi = Bugzilla->cgi;
 
     if ((my $status_change = $changes->{'bug_status'})
             && !$user->in_group('non_human')) {
@@ -342,11 +343,12 @@ sub bug_end_of_update {
     }
 
     # Set pool
-    my $new_pool_id = Bugzilla->cgi->param('agile_bug_pool_id') || '';
-    my $dontchange = Bugzilla->cgi->param('dontchange') || '';
-    if ($new_pool_id ne $dontchange) {
+    my $new_pool_id = $cgi->param('agile_bug_pool_id');
+    my $dontchange = $cgi->param('dontchange') || '';
+    if (defined $new_pool_id && $new_pool_id ne $dontchange) {
+        my $old_pool_id = $bug->pool_id || 0;
         detaint_natural($new_pool_id);
-        if (defined $new_pool_id && $new_pool_id != $bug->pool_id) {
+        if (defined $new_pool_id && $new_pool_id != $old_pool_id) {
             if ($new_pool_id) {
                 my $pool = Bugzilla::Extension::AgileTools::Pool->check(
                     {id => $new_pool_id});
