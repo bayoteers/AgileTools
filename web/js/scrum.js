@@ -221,10 +221,9 @@ var PoolController = ListController.extend({
                 text: false,
             });
             addBugButton.bugentry({
-                fields: ['summary','product', 'component', 'severity', 'estimated_time', 'blocks', 'comment'],
+                bug: new Bug(bug),
+                clone: ['product', 'component', 'version'],
                 defaults:{
-                    product: bug.product,
-                    component: bug.component,
                     blocks: bug.id,
                     severity: scrumItemSeverity[bug.severity],
                 },
