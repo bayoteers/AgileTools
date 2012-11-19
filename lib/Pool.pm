@@ -9,15 +9,19 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Pool
+Bugzilla::Extension::AgileTools::Pool - Bug pool Object class
 
 =head1 SYNOPSIS
 
     use Bugzilla::Extension::AgileTools::Pool;
 
+    my $pool = Bugzilla::Extension::AgileTools::Pool->new(1);
+    $pool->add_bug(1, 1);
+    $pool->remove_bug(2);
+
 =head1 DESCRIPTION
 
-Pool object presents a ordered set of bugs
+Pool object presents an ordered set of bugs.
 
 =cut
 

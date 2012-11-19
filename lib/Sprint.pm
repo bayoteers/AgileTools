@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Sprint
+Bugzilla::Extension::AgileTools::Sprint - Sprint Object class
 
 =head1 SYNOPSIS
 

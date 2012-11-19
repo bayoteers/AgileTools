@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::WebService::Team
+Bugzilla::Extension::AgileTools::WebService::Team - Team manipulation WS methods
 
 =head1 DESCRIPTION
 

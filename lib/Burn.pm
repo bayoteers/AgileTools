@@ -9,15 +9,17 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Burn
+Bugzilla::Extension::AgileTools::Burn - Burndown chart generation
 
 =head1 SYNOPSIS
 
-    TBD
+    use Bugzilla::Extension::AgileTools:Burn
+
+    my $data = get_burndata([1,2,3,4], '2012-10-01', '2012-10-31');
 
 =head1 DESCRIPTION
 
-AgileTools extension burnup/down data generation functions
+AgileTools extension burnup/down data generation functions.
 
 =cut
 
@@ -47,8 +49,11 @@ our @EXPORT = qw(
         remaining  => Array of remaining time history
         actual     => Array of actual work time history
         open_items => Array of open item history
-        start      => start time stamp
-        end        => end time stamp
+        start      => Start time stamp
+        end        => End time stamp
+        start_rem  => Remaining work at start time
+        start_open => Open items at start time
+        now        => Current timestamp
 
     Return data is formated so that it can be directly encoded to JSON and used
     with the FLOT javascript library.

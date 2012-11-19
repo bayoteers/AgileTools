@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::WebService::Sprint
+Bugzilla::Extension::AgileTools::WebService::Sprint - Sprint manipulation WS methods
 
 =head1 DESCRIPTION
 

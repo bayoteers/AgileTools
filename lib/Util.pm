@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Util
+Bugzilla::Extension::AgileTools::Util - AgileTools utility functions
 
 =head1 SYNOPSIS
 

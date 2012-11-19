@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::WebService::Pool
+Bugzilla::Extension::AgileTools::WebService::Pool - Pool manipultaion WS methods
 
 =head1 DESCRIPTION
 

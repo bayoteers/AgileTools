@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bugzilla::Extension::AgileTools::Role
+Bugzilla::Extension::AgileTools::Role - Team member role class
 
 =head1 SYNOPSIS
 
