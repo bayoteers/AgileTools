@@ -297,7 +297,7 @@ sub bug_end_of_update {
     my $cgi = Bugzilla->cgi;
 
     if ((my $status_change = $changes->{'bug_status'})
-            && !$user->in_group('non_human')) {
+            && !$user->in_group(NON_HUMAN_GROUP)) {
         my $old_status = new Bugzilla::Status({ name => $status_change->[0] });
         my $new_status = new Bugzilla::Status({ name => $status_change->[1] });
         if (!$new_status->is_open && $old_status->is_open) {
@@ -375,7 +375,9 @@ sub object_end_of_update {
 
 sub install_update_db {
     my ($self, $args) = @_;
-    # Make sure agiletools user group exists
+    my $dbh = Bugzilla->dbh;
+
+    # Create agiletools user group
     if (!defined Bugzilla::Group->new({name => AGILE_USERS_GROUP})) {
         Bugzilla::Group->create(
             {
@@ -385,6 +387,21 @@ sub install_update_db {
             }
         );
     }
+
+    # Create non human user group
+    if (!defined Bugzilla::Group->new({name => NON_HUMAN_GROUP})) {
+        my $group = Bugzilla::Group->create(
+            {
+                name => NON_HUMAN_GROUP,
+                description => "Non human users",
+            }
+        );
+        # Remove the automatic admin group membership
+        $dbh->do('DELETE FROM group_group_map
+                  WHERE grantor_id = ? AND grant_type = ?',
+                  undef, $group->id, GROUP_MEMBERSHIP);
+    }
+
     # Create initial team member roles
     if (!Bugzilla::Extension::AgileTools::Role->any_exist()) {
         Bugzilla::Extension::AgileTools::Role->create(
@@ -435,7 +452,7 @@ sub install_update_db {
 
     # TODO Refactor schema setup so that it's in one place
     # Add new columns or update changed
-    my $dbh = Bugzilla->dbh;
+
     # VERSION 0.02
     $dbh->bz_add_column('agile_team', 'current_sprint_id', {
         TYPE => 'INT3',
@@ -759,7 +776,7 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 PRIMARYKEY => 1,
                 REFERENCES => {
-                    TABLE => 'agile_sprint',
+                    TABLE => 'agile_pool',
                     COLUMN => 'id',
                 },
             },

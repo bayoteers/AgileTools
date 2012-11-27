@@ -29,6 +29,8 @@ use base qw(Exporter);
 
 @Bugzilla::Extension::AgileTools::Constants::EXPORT = qw(
     AGILE_USERS_GROUP
+    NON_HUMAN_GROUP
+
     AGILE_PROCESS_SCRUM
     AGILE_PROCESS_NAMES
 );
@@ -44,6 +46,12 @@ use base qw(Exporter);
 =cut
 
 use constant AGILE_USERS_GROUP => "AgileTools users";
+
+=item NON_HUMAN_GROUP - Name of the non human user group
+
+=cut
+
+use constant NON_HUMAN_GROUP => "non_human";
 
 =back
 
