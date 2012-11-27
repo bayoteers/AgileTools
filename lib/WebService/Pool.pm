@@ -24,6 +24,7 @@ package Bugzilla::Extension::AgileTools::WebService::Pool;
 
 use base qw(Bugzilla::WebService);
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::WebService::Bug;
 
@@ -52,6 +53,7 @@ use constant FIELD_TYPES => {
 
 sub get {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.get',
             param => 'id'})
@@ -85,7 +87,7 @@ sub get {
 
 sub add_bug {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.add_bug',
             param => 'id'})
@@ -113,7 +115,7 @@ sub add_bug {
 
 sub remove_bug {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.remove_bug',
             param => 'id'})

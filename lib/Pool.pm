@@ -335,7 +335,7 @@ __END__
 
     Params:
         bug      => Bug object which pool was changed
-        old_pool => bugs new Pool object, or undef if bug wasn't in a pool
+        old_pool => Bugs old Pool object, or undef if bug wasn't in a pool
                     before
         new_pool => Bugs new Pool object, or undef if bug was removed from pool
 

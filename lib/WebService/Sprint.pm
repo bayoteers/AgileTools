@@ -24,6 +24,7 @@ package Bugzilla::Extension::AgileTools::WebService::Sprint;
 
 use base qw(Bugzilla::WebService);
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::AgileTools::Sprint;
 
@@ -55,6 +56,7 @@ use constant FIELD_TYPES => {
 
 sub get {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.update',
             param => 'id'})
@@ -77,7 +79,7 @@ sub get {
 
 sub create {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.create',
             param => 'team_id'})
@@ -106,7 +108,7 @@ sub create {
 
 sub update {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.update',
             param => 'id'})
@@ -144,7 +146,7 @@ those.
 
 sub close {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.close',
             param => 'id'})

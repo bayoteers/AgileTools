@@ -24,6 +24,7 @@ package Bugzilla::Extension::AgileTools::WebService::Team;
 
 use base qw(Bugzilla::WebService);
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::WebService::Bug;
 
@@ -56,7 +57,7 @@ use constant FIELD_TYPES => {
 
 sub update {
     my ($self, $params) = @_;
-
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
             function => 'Agile.Team.update',
             param => 'id'})
@@ -79,6 +80,7 @@ sub update {
 
 sub add_member {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member',
@@ -101,6 +103,7 @@ sub add_member {
 
 sub remove_member {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member',
@@ -124,6 +127,7 @@ sub remove_member {
 
 sub add_member_role {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member_role',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'Agile.Team.add_member_role',
@@ -153,6 +157,7 @@ sub add_member_role {
 
 sub remove_member_role {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'Agile.Team.remove_member_role',
@@ -181,6 +186,7 @@ sub remove_member_role {
 
 sub add_responsibility {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
@@ -207,6 +213,7 @@ sub add_responsibility {
 
 sub remove_responsibility {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
             param => 'id'}) unless defined $params->{id};
     ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
@@ -233,6 +240,7 @@ sub remove_responsibility {
 
 sub unprioritized_items {
     my ($self, $params) = @_;
+    Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {function => 'Agile.Team.unprioritized_items',
             param => 'id'}) unless defined $params->{id};
 
