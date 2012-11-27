@@ -296,6 +296,11 @@ sub bug_end_of_update {
     my $user = Bugzilla->user;
     my $cgi = Bugzilla->cgi;
 
+    my $removed_from_backlog = 0;
+    # FIXME Refactor this automatic udate logic
+    #   - User should be able to resolve bug and move it to sprint from backlog
+    #   - Also remove from backlog when non human user resolves bug
+
     if ((my $status_change = $changes->{'bug_status'})
             && !$user->in_group(NON_HUMAN_GROUP)) {
         my $old_status = new Bugzilla::Status({ name => $status_change->[0] });
@@ -323,11 +328,13 @@ sub bug_end_of_update {
                     $bug->pool->remove_bug($bug->id);
                     delete $bug->{pool};
                     delete $bug->{pool_id};
+                    $removed_from_backlog = 1;
                 }
             }
         }
     }
 
+    return if $removed_from_backlog;
     # Set pool
     my $new_pool_id = $cgi->param('agile_bug_pool_id');
     my $dontchange = $cgi->param('dontchange') || '';
