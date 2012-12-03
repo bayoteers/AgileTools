@@ -24,6 +24,7 @@ use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::Burn;
 
 use JSON;
+use Data::Dumper;
 
 our $VERSION = '0.02';
 
@@ -289,6 +290,29 @@ sub buglist_column_joins {
 # Additional operations when updating bugs
 ##########################################
 
+# Helper to determine which bugs are being updated by user
+# TODO Move this to BayotBase
+sub _bugs_being_updated {
+    my $cache = Bugzilla->request_cache;
+    if (!defined $cache->{bugs_being_updated}) {
+        my $params = Bugzilla->input_params;
+        my @ids;
+        # Change several
+        @ids = map {$_ =~ /^id_([0-9]*)/} grep(/^id_/, keys %$params);
+        unless (@ids) {
+            if (defined $params->{ids}) {
+                # Webservice
+                @ids = @{$params->{ids}} if defined ;
+            } elsif (defined $params->{id}) {
+                # Single bug
+                @ids = ($params->{id});
+            }
+        }
+        $cache->{bugs_being_updated} = \@ids;
+    }
+    return @{$cache->{bugs_being_updated}};
+}
+
 sub bug_end_of_update {
     my ($self, $args) = @_;
 
@@ -335,7 +359,10 @@ sub bug_end_of_update {
     }
 
     return if $removed_from_backlog;
+    return unless grep($bug->id eq $_, _bugs_being_updated);
+
     # Set pool
+
     my $new_pool_id = $cgi->param('agile_bug_pool_id');
     my $dontchange = $cgi->param('dontchange') || '';
     if (defined $new_pool_id && $new_pool_id ne $dontchange) {
