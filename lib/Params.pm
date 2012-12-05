@@ -68,7 +68,12 @@ sub get_param_list {
             type    => 't',
             default => "Started working on this",
         },
-
+        {
+            name => 'agile_lock_origest_in_sprint',
+            desc => 'Prevent changing the original estimate when item is in a sprint',
+            type    => 'b',
+            default => 0,
+        },
     );
     return @param_list;
 }

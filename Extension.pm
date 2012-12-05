@@ -380,6 +380,23 @@ sub bug_end_of_update {
     }
 }
 
+sub bug_check_can_change_field {
+    my ($self, $params) = @_;
+    my ($bug, $field, $new_value, $priv_results) = @$params{
+        qw(bug field new_value priv_results)};
+    if ($field eq 'estimated_time' &&
+            Bugzilla->params->{'agile_lock_origest_in_sprint'}) {
+        if ($bug->pool_id) {
+            my $sprint = Bugzilla::Extension::AgileTools::Sprint->new($bug->pool_id);
+            if (defined $sprint) {
+                if (!@{Bugzilla->user->agile_team_roles($sprint->team)}) {
+                    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+                }
+            }
+        }
+    }
+}
+
 sub object_end_of_update {
     my ($self, $args) = @_;
     my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
