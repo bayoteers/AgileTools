@@ -26,7 +26,6 @@ use Bugzilla::Extension::AgileTools::Constants;
 use Bugzilla::Extension::AgileTools::Team;
 use Bugzilla::Extension::AgileTools::Sprint;
 
-use Data::Dumper;
 
 my $dbh = Bugzilla->dbh;
 

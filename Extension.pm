@@ -24,7 +24,6 @@ use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::Burn;
 
 use JSON;
-use Data::Dumper;
 
 our $VERSION = '0.02';
 

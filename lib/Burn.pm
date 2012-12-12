@@ -28,7 +28,6 @@ use strict;
 
 use Date::Parse;
 use List::Util qw(min max);
-use Data::Dumper;
 
 use base qw(Exporter);
 our @EXPORT = qw(
