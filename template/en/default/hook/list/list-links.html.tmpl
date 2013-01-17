@@ -5,5 +5,7 @@
   # Copyright (C) 2012 Jolla Ltd.
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
+[% IF template.name != 'list/list-burn.html.tmpl' %]
 <!-- AgileTools -->
-<a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;format=burn">Burndown</a> |
+<a href="buglist.cgi?[% urlquerypart FILTER remove_query_param('format') FILTER html %]&amp;format=burn">Burndown</a> |
+[% END %]

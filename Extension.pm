@@ -162,7 +162,7 @@ _add_page_handler("agiletools/user_summary.html", sub {
 # Template handlers
 ###################
 
-_add_template_handler('list/burnchart.html.tmpl', sub {
+_add_template_handler('list/list-burn.html.tmpl', sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
     my @bug_ids = map {$_->{bug_id}} @{$vars->{bugs}};

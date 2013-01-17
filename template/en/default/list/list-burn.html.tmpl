@@ -4,123 +4,64 @@
   #
   # Copyright (C) 2012 Jolla Ltd.
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
-  #
-  # Original code is the default Bugzilla list.html.tmpl
   #%]
 
+[% PROCESS "global/variables.none.tmpl" %]
 
-[%############################################################################%]
-[%# Template Initialization                                                  #%]
-[%############################################################################%]
-
-[% PROCESS "global/field-descs.none.tmpl" %]
-
-[% title = "$terms.Bug Burndown" %]
-[% IF searchname || defaultsavename %]
-  [% title = title _ ": " _ (searchname OR defaultsavename) FILTER html %]
-[% END %]
-
-[% qorder = order FILTER uri IF order %]
-
-
-[%############################################################################%]
-[%# Page Header                                                              #%]
-[%############################################################################%]
-
-[% PROCESS global/header.html.tmpl
-  title = title
-  style = style
-  yui = [ 'autocomplete', 'calendar' ]
-  javascript_urls = [ "js/util.js", "js/field.js" ]
-  style_urls = [ "skins/standard/buglist.css" ]
-  doc_section = "query.html#list"
+[% WRAPPER bb/wraplist.html.tmpl
+    title="$terms.Bug Burndown"
 %]
 
-[% IF toolong %]
-  <h2 class="bz_smallminded">
-    This list is too long for [% terms.Bugzilla %]'s little mind; the
-    Next/Prev/First/Last buttons won't appear on individual [% terms.bugs %].
-  </h2>
-[% END %]
+[%
+burn_start = cgi.param('burn_start')
+burn_end = cgi.param('burn_end')
+burn_type = cgi.param('burn_type') or 'items'
+%]
+<table>
+    <tr>
+        <td>
+            <div id="burnchart"
+                style="width: 700px; height: 400px; display: inline-block; float: left;">
+            </div>
+        </td>
+        <td style="vertical-align: top;">
+            <input id="burn_type" type="radio" name="burn_type" value="items"
+            [% IF burn_type == 'items' %]checked="checked"[% END %]>Open items</input>
+            <br/>
+            <input type="radio" name="burn_type" value="work"
+            [% IF burn_type == 'work' %]checked="checked"[% END %]>Work done/remaining</input>
+            <br/>
+        </td>
+    </tr>
+</table>
 
-[% SET shown_types = [
-  'notequals', 'regexp', 'notregexp', 'lessthan', 'lessthaneq',
-  'greaterthan', 'greaterthaneq', 'changedbefore', 'changedafter',
-  'changedfrom', 'changedto', 'changedby', 'notsubstring', 'nowords',
-  'nowordssubstr', 'notmatches', 'anddependson', 'andblocked',
-] %]
-<ul class="search_description">
-[% FOREACH desc_item = search_description %]
-  <li>
-    <strong>[% field_descs.${desc_item.field} FILTER html %]:</strong>
-    [% IF shown_types.contains(desc_item.type) || debug %]
-      ([% search_descs.${desc_item.type} FILTER html %])
-    [% END %]
-    [% FOREACH val IN desc_item.value.split(',') %]
-      [%+ display_value(desc_item.field, val) FILTER html %][% ',' UNLESS loop.last %]
-    [% END %]
-    [% IF debug %]
-      (<code>[% desc_item.term FILTER html %]</code>)
-   [% END %]
-  </li>
-[% END %]
-</ul>
+<label for="burn_start">From</label>
+<input name="burn_start" value="[% burn_start %]"></input>
+<label for="burn_end">To</label>
+<input name="burn_end" value="[% burn_end %]"></input>
+<button type="button" id="changeDates">Go</button>
 
-[%############################################################################%]
-[%# Preceding Status Line                                                    #%]
-[%############################################################################%]
 
-[% PROCESS num_results %]
-<hr>
+<script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/jquery.flot.min.js" FILTER mtime %]"></script>
+<script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/jquery.flot.axislabels.js" FILTER mtime %]"></script>
+<script type="text/javascript"
+    src="[% "extensions/AgileTools/web/js/burn.js" FILTER mtime %]"></script>
+<script type="text/javascript">
+var BURN = [% burn_json or "{}" %];
+BURN.start_date = "[% burn_start FILTER js %]";
+BURN.end_date = "[% burn_end FILTER js %]";
+BURN.type = "[% burn_type FILTER js %]";
+BURN.itemUnit ="[% terms.Bugs FILTER js %]";
+BURN.workUnit ="[% Param('agile_use_points') ? 'Points' : 'Hours' %]";
+$(initBurn);
+</script>
 
-<div>
-[% PROCESS 'list/burnchart.html.tmpl' %]
-</div>
-
-<hr>
 
 [% IF cgi.param("include_list") %]
-
-[%############################################################################%]
-[%# Bug Table                                                                #%]
-[%############################################################################%]
-
-[% FLUSH %]
-
-[% PROCESS list/table.html.tmpl %]
-
-[%############################################################################%]
-[%# Succeeding Status Line                                                   #%]
-[%############################################################################%]
-
-[% PROCESS num_results %]
+  [% FLUSH %]
+  [% PROCESS list/table.html.tmpl %]
 [% END %]
 
-[%############################################################################%]
-[%# Page Footer                                                              #%]
-[%############################################################################%]
-
-[% PROCESS global/footer.html.tmpl %]
-
-[%##########%]
-[%# Blocks #%]
-[%##########%]
-
-[% BLOCK num_results %]
-  <span class="bz_result_count">
-    [% IF bugs.size == 0 %]
-      <span class="zero_results">[% terms.zeroSearchResults %].</span>
-    [% ELSIF default_limited AND bugs.size >= Param('default_search_limit') %]
-      This result was limited to [% Param('default_search_limit') FILTER html %]
-      [%+ terms.bugs %].
-      <a href="buglist.cgi?[% urlquerypart FILTER html %]
-              [%- "&order=$qorder" FILTER html IF order %]&limit=0">See
-        all search results for this query</a>.
-      [% time_summary_limited = 1 %]
-    [% ELSIF bugs.size == 1 %]
-      One [% terms.bug %] found.
-    [% ELSE %]
-      [% bugs.size %] [%+ terms.bugs %] found.
-    [% END %]
-  </span>
 [% END %]
