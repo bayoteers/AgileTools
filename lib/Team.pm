@@ -543,10 +543,34 @@ responsibilities, but are not in any pool.
 sub unprioritized_items {
     my ($self, $include) = @_;
 
-    # Generate search params
-    # TODO: Move parameter generation in separate method
-    #       So that they can be used in other places, like generating query URL
+    # Get search params
+    my $params = $self->unprioritized_search_params($include);
 
+    # Return directly if nothing was included
+    return [] unless defined $params;
+
+    # Use search to get the bug ids
+    my $search = new Bugzilla::Search(fields => ["bug_id"], params => $params);
+    my $dbh = Bugzilla->dbh;
+    my $bug_ids = $dbh->selectcol_arrayref($search->sql);
+    return Bugzilla::Bug->new_from_list($bug_ids);
+}
+
+=head3 unprioritized_search_params
+
+Returns hash ref containing the parameters suitable for Bugzilla search
+
+=over
+
+=item C<$include> - (optional) Resposibilities to include
+        A hass ref where key is responsibility type and value is array ref of IDs
+
+=back
+
+=cut
+
+sub unprioritized_search_params {
+    my ($self, $include) = @_;
     # Open bugs which are not in a pool
     my $params = {
         resolution => "---",
@@ -572,13 +596,7 @@ sub unprioritized_items {
             $fidx++;
         }
     }
-    # Return directly if nothing was included
-    return [] if ($fidx == 3);
-    # Use search to get the bug ids
-    my $search = new Bugzilla::Search(fields => ["bug_id"], params => $params);
-    my $dbh = Bugzilla->dbh;
-    my $bug_ids = $dbh->selectcol_arrayref($search->sql);
-    return Bugzilla::Bug->new_from_list($bug_ids);
+    return ($fidx == 3) ? undef : $params;
 }
 
 =head3 pools
