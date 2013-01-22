@@ -265,6 +265,14 @@ sub update {
     return $changes;
 }
 
+sub remove_from_db {
+    my $self = shift;
+    # Take pool for later deletion
+    my $pool = $self->pool;
+    $self->SUPER::remove_from_db(@_);
+    $pool->remove_from_db();
+}
+
 sub TO_JSON {
     my $self = shift;
     # fetch the pool
