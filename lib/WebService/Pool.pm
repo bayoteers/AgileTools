@@ -81,7 +81,6 @@ sub get {
     Params:      id - Pool id
                  bug_id - Bug id
                  order - (optional) Order of the bug in pool, last if not given
-    Returns:     ???
 
 =cut
 
@@ -99,9 +98,10 @@ sub add_bug {
 
     my $pool = Bugzilla::Extension::AgileTools::Pool->check({
             id => $params->{id}});
+    my $bug = Bugzilla::Bug->check({id => $params->{bug_id}});
 
-    my $changed = $pool->add_bug($params->{bug_id}, $params->{order});
-    return { name => $pool->name, changed => $changed };
+    $bug->set_all({pool_id => $pool->id, pool_order => $params->{order}});
+    $bug->update();
 }
 
 =item C<remove_bug>
@@ -109,7 +109,6 @@ sub add_bug {
     Description: Remove bug from the pool
     Params:      id - Pool ID
                  bug_id - Bug ID
-    Returns:     ???
 
 =cut
 
@@ -125,11 +124,10 @@ sub remove_bug {
             param => 'bug_id'})
         unless defined $params->{bug_id};
 
-    my $pool = Bugzilla::Extension::AgileTools::Pool->check({
-            id => $params->{id}});
-
-    my $changed = $pool->remove_bug($params->{bug_id});
-    return { name => $pool->name, changed => $changed };
+    my $bug = Bugzilla::Bug->check({id => $params->{bug_id}});
+    ThrowCodeError('bug_not_in_pool') unless $bug->pool_id == $params->{id};
+    $bug->set_pool_id(undef);
+    $bug->update();
 }
 
 1;

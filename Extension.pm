@@ -11,6 +11,7 @@ package Bugzilla::Extension::AgileTools;
 use strict;
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Bug qw(LogActivityEntry);
 use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Field;
@@ -315,31 +316,27 @@ sub _bugs_being_updated {
 sub bug_end_of_update {
     my ($self, $args) = @_;
 
-    my ($bug, $changes) = @$args{qw(bug changes)};
+    my ($bug, $old_bug, $changes, $delta_ts) = @$args{
+        qw(bug old_bug changes timestamp)};
     my $user = Bugzilla->user;
     my $cgi = Bugzilla->cgi;
 
-    my $removed_from_backlog = 0;
-    # FIXME Refactor this automatic udate logic
-    #   - User should be able to resolve bug and move it to sprint from backlog
-    #   - Also remove from backlog when non human user resolves bug
-
-    if ((my $status_change = $changes->{'bug_status'})
-            && !$user->in_group(NON_HUMAN_GROUP)) {
+    if (my $status_change = $changes->{'bug_status'}) {
         my $old_status = new Bugzilla::Status({ name => $status_change->[0] });
         my $new_status = new Bugzilla::Status({ name => $status_change->[1] });
         if (!$new_status->is_open && $old_status->is_open) {
             # Bug is being closed
-
-            # Check that actual time is set if it is required for the severity
-            # and resolution
-            my $check_severity = grep {$bug->bug_severity eq $_}
-                    @{Bugzilla->params->{"agile_check_time_severity"}};
-            my $check_resolution = grep {$bug->resolution eq $_}
-                    @{Bugzilla->params->{"agile_check_time_resolution"}};
-            if ($check_severity && $check_resolution) {
-                ThrowUserError("agile_actual_time_required")
-                    if ($bug->actual_time == 0);
+            if (!$user->in_group(NON_HUMAN_GROUP)) {
+                # Check that actual time is set if it is required for the
+                # severity and resolution
+                my $check_severity = grep {$bug->bug_severity eq $_}
+                        @{Bugzilla->params->{"agile_check_time_severity"}};
+                my $check_resolution = grep {$bug->resolution eq $_}
+                        @{Bugzilla->params->{"agile_check_time_resolution"}};
+                if ($check_severity && $check_resolution) {
+                    ThrowUserError("agile_actual_time_required")
+                        if ($bug->actual_time == 0);
+                }
             }
 
             # Remove closed bug from any backlog
@@ -348,32 +345,15 @@ sub bug_end_of_update {
                         'SELECT COUNT(*) FROM agile_team '.
                         'WHERE backlog_id = ?',
                         undef, $bug->pool_id)) {
-                    $bug->pool->remove_bug($bug->id);
-                    delete $bug->{pool};
-                    delete $bug->{pool_id};
-                    $removed_from_backlog = 1;
+                    $bug->pool->remove_bug($bug);
+                    $changes->{'bug_agile_pool.pool_id'} = [ $old_bug->pool_id,
+                            $bug->pool_id ];
+                    # Activity log has been writen at this point so we need to
+                    # add this entry
+                    LogActivityEntry($bug->id, 'bug_agile_pool.pool_id',
+                        $old_bug->pool_id, $bug->pool_id,
+                        Bugzilla->user->id, $delta_ts);
                 }
-            }
-        }
-    }
-
-    return if $removed_from_backlog;
-    return unless grep($bug->id eq $_, _bugs_being_updated);
-
-    # Set pool
-
-    my $new_pool_id = $cgi->param('agile_bug_pool_id');
-    my $dontchange = $cgi->param('dontchange') || '';
-    if (defined $new_pool_id && $new_pool_id ne $dontchange) {
-        my $old_pool_id = $bug->pool_id || 0;
-        detaint_natural($new_pool_id);
-        if (defined $new_pool_id && $new_pool_id != $old_pool_id) {
-            if ($new_pool_id) {
-                my $pool = Bugzilla::Extension::AgileTools::Pool->check(
-                    {id => $new_pool_id});
-                $pool->add_bug($bug);
-            } else {
-                $bug->pool->remove_bug($bug);
             }
         }
     }
@@ -396,6 +376,20 @@ sub bug_check_can_change_field {
     }
 }
 
+sub object_end_of_set_all {
+    my ($self, $args) = @_;
+    my $bug = $args->{object};
+    return unless Bugzilla->usage_mode == USAGE_MODE_BROWSER;
+    return unless $bug->isa("Bugzilla::Bug");
+    # If we are editing bug via browser, we need to manually set pool_id,
+    # because it is not included in set_all in process_bug.cgi
+    my $cgi = Bugzilla->cgi;
+    my $dontchange = $cgi->param('dontchange') || '';
+    my $pool_id = $cgi->param('pool_id');
+    return if (defined $pool_id && $pool_id eq $dontchange);
+    $bug->set_pool_id($pool_id);
+}
+
 sub object_end_of_update {
     my ($self, $args) = @_;
     my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
@@ -414,6 +408,20 @@ sub object_end_of_update {
                         undef, $new, $obj->id);
                 $changes->{remaining_time} = [$old_obj->{remaining_time}, $new];
             }
+        }
+
+        # Update pool_id and pool_order if they have been changed
+        if ($obj->pool_id != $old_obj->pool_id) {
+            if ($obj->pool_id) {
+                $obj->pool->add_bug($obj,
+                        $obj->{pool_order_set} ? $obj->pool_order : undef);
+            } elsif ($old_obj->pool_id) {
+                $old_obj->pool->remove_bug($obj);
+            }
+            $changes->{'bug_agile_pool.pool_id'} = [ $old_obj->pool_id,
+                    $obj->pool_id ];
+        } elsif ($obj->pool_order != $old_obj->pool_order) {
+            $obj->pool->add_bug($obj, $obj->pool_order);
         }
     }
 }

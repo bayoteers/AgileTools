@@ -105,10 +105,10 @@ sub bugs {
 =item C<add_bug($bug, $order)>
 
     Description: Inserts new bug into the pool
-    Params:      $bug - Bug ID or object to be added
+    Params:      $bug - Bug object to be added to this pool
                  $order - (optional) Order of the new bug in this pool,
                           goes last if not given
-    Returns:     Boolean value telling if pool was changed
+    Returns:     New order value of the bug in the new pool
     Note:        Bug can be only in one pool at the time and it will be removed
                  from any previous pool.
 
@@ -118,15 +118,10 @@ sub add_bug {
     my $self = shift;
     my ($bug, $order) = @_;
 
-    my $class = blessed($bug) || "";
-
     ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
-        unless ($class eq "Bugzilla::Bug" || detaint_natural($bug));
+        unless (blessed($bug) eq "Bugzilla::Bug");
     ThrowUserError("param_must_be_numeric", { param => 'order', function => 'Pool->add_bug'})
         unless (!defined $order || detaint_natural($order));
-
-    $bug = Bugzilla::Bug->check({id => $bug})
-        unless $class eq "Bugzilla::Bug";
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -181,16 +176,9 @@ sub add_bug {
                   WHERE pool_id = ? AND pool_order >= ? AND bug_id != ?",
             undef, ($self->id, $order, $bug->id));
         delete $self->{bugs};
-    }
-    if ($old_pool != $self->id) {
-        my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-        LogActivityEntry($bug->id, 'bug_agile_pool.pool_id', $old_pool, $self->id,
-                Bugzilla->user->id, $delta_ts);
-        Bugzilla::Hook::process("agile_pool_change", {
-            bug => $bug,
-            new_pool => $self,
-            old_pool => Bugzilla::Extension::AgileTools::Pool->new($old_pool),
-        });
+        $bug->{pool} = $self;
+        $bug->{pool_id} = $self->id;
+        $bug->{pool_order} = $order;
     }
     $dbh->bz_commit_transaction();
     return $changed;
@@ -199,20 +187,15 @@ sub add_bug {
 =item C<remove_bug($bug)>
 
     Description: Remove bug from pool
-    Params:      $bug - Bug ID or object to be removed
-    Returns:     Boolean value telling if pool was changed
+    Params:      $bug - Bug object to be removed from this pool
 
 =cut
 
 sub remove_bug {
     my ($self, $bug) = @_;
-    my $class = blessed($bug) || "";
 
     ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
-        unless ($class eq "Bugzilla::Bug" || detaint_natural($bug));
-
-    $bug = Bugzilla::Bug->check({id => $bug})
-        unless $class eq "Bugzilla::Bug";
+        unless (blessed($bug) eq "Bugzilla::Bug");
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
@@ -235,17 +218,11 @@ sub remove_bug {
                   WHERE pool_id = ? AND pool_order > ?",
             undef, ($self->id, $order));
         delete $self->{bugs};
-        my $delta_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-        LogActivityEntry($bug->id, 'bug_agile_pool.pool_id', $self->id, 0,
-                Bugzilla->user->id, $delta_ts);
-        Bugzilla::Hook::process("agile_pool_change", {
-            bug => $bug,
-            new_pool => undef,
-            old_pool => $self,
-        });
+        delete $bug->{pool};
+        delete $bug->{pool_id};
+        delete $bug->{pool_order};
     }
     $dbh->bz_commit_transaction();
-    return defined $order;
 }
 
 =back
@@ -272,8 +249,8 @@ BEGIN {
             SELECT pool_id, pool_order FROM bug_agile_pool
              WHERE bug_id = ?", undef, $self->id);
 
-        $self->{pool_id} = $pool_id;
-        $self->{pool_order} = $pool_order;
+        $self->{pool_id} = $pool_id || 0;
+        $self->{pool_order} = $pool_order || 0;
     }
     return $self->{pool_order};
 };
@@ -292,8 +269,8 @@ BEGIN {
             SELECT pool_id, pool_order FROM bug_agile_pool
              WHERE bug_id = ?", undef, $self->id);
 
-        $self->{pool_id} = $pool_id;
-        $self->{pool_order} = $pool_order;
+        $self->{pool_id} = $pool_id || 0;
+        $self->{pool_order} = $pool_order || 0;
     }
     return $self->{pool_id};
 };
@@ -308,36 +285,29 @@ BEGIN {
 *Bugzilla::Bug::pool = sub {
     my $self = shift;
     if (!exists $self->{pool}) {
-        if ($self->pool_id) {
-            $self->{pool} = new Bugzilla::Extension::AgileTools::Pool($self->pool_id);
-        } else {
-            $self->{pool} = undef;
-        }
+        $self->{pool} = $self->pool_id ?
+            new Bugzilla::Extension::AgileTools::Pool($self->pool_id) : undef;
     }
     return $self->{pool};
 };
+
+*Bugzilla::Bug::set_pool_id = sub {
+    my ($self, $pool_id) = @_;
+    delete $self->{pool};
+    $self->{pool_id} = $pool_id;
+};
+
+*Bugzilla::Bug::set_pool_order = sub {
+    my ($self, $order) = @_;
+    $self->{pool_order} = $order;
+    $self->{pool_order_set} = 1;
+};
+
 } # END BEGIN
 
 1;
 
 __END__
-
-=back
-
-=head1 HOOKS
-
-=over
-
-=item C<agile_pool_change>
-
-    Executed on Pool->add_bug() and Pool->remove_bug() when the pool of the bug
-    changes.
-
-    Params:
-        bug      => Bug object which pool was changed
-        old_pool => Bugs old Pool object, or undef if bug wasn't in a pool
-                    before
-        new_pool => Bugs new Pool object, or undef if bug was removed from pool
 
 =back
 
