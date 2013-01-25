@@ -254,10 +254,11 @@ var PoolController = ListController.extend({
 
 var SprintController = PoolController.extend({
 
-    constructor: function(element, poolID)
+    constructor: function(element, poolID, updateCb)
     {
         this.base(element, poolID);
         this._sprint = null;
+        this._sprintUpdateCb = updateCb;
     },
 
     load: function()
@@ -314,6 +315,9 @@ var SprintController = PoolController.extend({
         }
         this._footer.empty().append(info);
         this._sprint = sprint;
+        if (this._sprintUpdateCb) {
+            this._sprintUpdateCb(this._sprint);
+        }
     },
 
     /**
@@ -575,7 +579,8 @@ var ScrumPlaningView = Base.extend(
             .attr('disabled', 'disabled');
         var name = side.selector.find(':selected').text();
         if (/sprint/.test(name)) {
-            side.controller = new SprintController(side.element, id);
+            side.controller = new SprintController(side.element, id,
+                $.proxy(this, '_updateSprintName'));
         } else if (/backlog/.test(name)) {
             side.controller = new PoolController(side.element, id);
         } else if (id == -1) {
@@ -589,6 +594,12 @@ var ScrumPlaningView = Base.extend(
             side.controller.list.buglist('option', 'connectWith', other.controller.list);
             other.controller.list.buglist('option', 'connectWith', side.controller.list);
         }
+    },
+
+    _updateSprintName: function(sprint)
+    {
+        this.left.selector.find('[value='+sprint.id+']').text(sprint.name);
+        this.right.selector.find('[value='+sprint.id+']').text(sprint.name);
     },
 
     _resetSide: function(side)

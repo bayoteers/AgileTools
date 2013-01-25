@@ -256,7 +256,8 @@ sub update {
             $name .= "-".$end->week_number;
         }
         $self->pool->set_all({name => $name});
-        $self->pool->update();
+        my $pool_changes = $self->pool->update();
+        $changes->{name} = $pool_changes->{name};
     }
 
     if (wantarray) {
