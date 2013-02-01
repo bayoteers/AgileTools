@@ -386,7 +386,7 @@ sub object_end_of_set_all {
     my $cgi = Bugzilla->cgi;
     my $dontchange = $cgi->param('dontchange') || '';
     my $pool_id = $cgi->param('pool_id');
-    return if (defined $pool_id && $pool_id eq $dontchange);
+    return if (!defined $pool_id || $pool_id eq $dontchange);
     $bug->set_pool_id($pool_id);
 }
 
