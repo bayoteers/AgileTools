@@ -45,6 +45,7 @@ use base qw(Bugzilla::Object);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Hook;
 use Bugzilla::Util qw(datetime_from detaint_natural trim);
 
 
@@ -226,6 +227,31 @@ sub create {
         $team->update();
     }
     return $sprint;
+}
+
+# Object->insert_create_data does not work with non serial id on postgresql
+sub insert_create_data {
+    my ($class, $field_values) = @_;
+    my $dbh = Bugzilla->dbh;
+
+    my (@field_names, @values);
+    while (my ($field, $value) = each %$field_values) {
+        $class->_check_field($field, 'create');
+        push(@field_names, $field);
+        push(@values, $value);
+    }
+
+    my $qmarks = '?,' x @field_names;
+    chop($qmarks);
+    my $table = $class->DB_TABLE;
+    $dbh->do("INSERT INTO $table (" . join(', ', @field_names)
+             . ") VALUES ($qmarks)", undef, @values);
+
+    my $object = $class->new($field_values->{id});
+
+    Bugzilla::Hook::process('object_end_of_create', { class => $class,
+                                                      object => $object });
+    return $object;
 }
 
 sub update {
