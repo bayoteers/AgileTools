@@ -179,6 +179,9 @@ _add_template_handler('list/list-burn.html.tmpl', sub {
         if (defined $end && ! ($end =~ /^\d\d\d\d-\d\d-\d\d$/));
 
     my $data = get_burndata(\@bug_ids, $start, $end);
+    $vars->{burn_type} = $cgi->param("burn_type") || 'items';
+    $vars->{burn_start} = $start;
+    $vars->{burn_end} = $end;
     $vars->{burn_json} = JSON->new->utf8->encode($data);
 });
 

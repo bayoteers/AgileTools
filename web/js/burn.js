@@ -52,7 +52,17 @@ function initBurn()
     $("#changeDates").click(changeDates);
 
     $("[name=burn_type]").change(function() {
-        plotBurn($("[name=burn_type]:checked").val());
+        var newBurnType = $("[name=burn_type]:checked").val();
+        var oldBurnType = newBurnType == 'items' ? 'work' : 'items';
+        plotBurn(newBurnType);
+        try {
+            if (document.URL.indexOf('burn_type') == -1) {
+                var newUrl = document.URL + "&burn_type=" + newBurnType;
+            } else {
+                var newUrl = document.URL.replace(oldBurnType, newBurnType);
+            }
+            window.history.replaceState({}, document.title, newUrl);
+        } catch(err) {}
     });
 
     BURN.chartOptions = {
