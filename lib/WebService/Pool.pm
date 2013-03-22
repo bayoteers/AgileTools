@@ -96,12 +96,20 @@ sub add_bug {
             param => 'bug_id'})
         unless defined $params->{bug_id};
 
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction;
     my $pool = Bugzilla::Extension::AgileTools::Pool->check({
             id => $params->{id}});
     my $bug = Bugzilla::Bug->check({id => $params->{bug_id}});
 
+    my $delta_ts = $bug->delta_ts;
     $bug->set_all({pool_id => $pool->id, pool_order => $params->{order}});
     $bug->update();
+    unless ($delta_ts gt ($bug->lastdiffed || '')) {
+        $dbh->do("UPDATE bugs SET lastdiffed = NOW() WHERE bug_id = ?",
+            undef, $bug->id);
+    }
+    $dbh->bz_commit_transaction;
 }
 
 =item C<remove_bug>
@@ -124,10 +132,18 @@ sub remove_bug {
             param => 'bug_id'})
         unless defined $params->{bug_id};
 
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction;
     my $bug = Bugzilla::Bug->check({id => $params->{bug_id}});
     ThrowCodeError('bug_not_in_pool') unless $bug->pool_id == $params->{id};
+    my $delta_ts = $bug->delta_ts;
     $bug->set_pool_id(undef);
     $bug->update();
+    unless ($delta_ts gt ($bug->lastdiffed || '')) {
+        $dbh->do("UPDATE bugs SET lastdiffed = NOW() WHERE bug_id = ?",
+            undef, $bug->id);
+    }
+    $dbh->bz_commit_transaction;
 }
 
 1;
