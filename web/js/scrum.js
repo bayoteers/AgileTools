@@ -67,18 +67,6 @@ function countDays(from, to, skip)
     return count;
 };
 
-/**
- * Severity hierarchy used when adding new items
- * TODO: Move this to admin options
- */
-var scrumItemSeverity = {
-    goal: 'story',
-    story: 'task',
-    task: 'task',
-    defect: 'task',
-};
-
-
 var ListController = Base.extend(
 {
     constructor: function(element)
@@ -211,7 +199,6 @@ var PoolController = ListController.extend({
                 clone: ['product', 'component', 'version'],
                 defaults:{
                     blocks: bug.id,
-                    severity: scrumItemSeverity[bug.severity],
                 },
                 success: $.proxy(self, '_poolBugCreated'),
             });
