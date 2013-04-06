@@ -929,7 +929,7 @@ sub sanitycheck_repair {
                 my $change = $gap->{end} - $gap->{start};
                 if ($change > 0) {
                     $fix_gap->execute($change, $pool_id, $gap->{start});
-                } elsif ($change = -1) {
+                } elsif ($change == -1) {
                     # Duplicate values
                     $get_dupes->execute($pool_id, $gap->{end});
                     my @dupes = map {$_->[0]} @{$get_dupes->fetchall_arrayref};
