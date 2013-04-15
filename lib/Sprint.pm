@@ -60,8 +60,8 @@ sub DB_COLUMNS {
         team_id
         capacity
     ),
-    $dbh->sql_date_format('start_date', '%Y-%m-%d 00:00:00') . ' AS start_date',
-    $dbh->sql_date_format('end_date', '%Y-%m-%d 23:59:59') . ' AS end_date',
+    $dbh->sql_date_format('start_date', '%Y-%m-%d') . ' AS start_date',
+    $dbh->sql_date_format('end_date', '%Y-%m-%d') . ' AS end_date',
     );
     return @columns;
 }
@@ -148,12 +148,11 @@ sub _check_start_date {
     $date = trim($date);
     $date || ThrowUserError("agile_missing_field", {field=>'start_date'});
 
-    my $start_date = datetime_from($date);
-    $start_date || ThrowUserError("agile_invalid_field", {
+    my $start_dt = datetime_from($date);
+    $start_dt || ThrowUserError("agile_invalid_field", {
             field => "start_date", value => $date});
-    $start_date->set({hour=>0, minute=>0, second=>0});
-    $start_date = $start_date->datetime;
-    return $start_date;
+    $date = $start_dt->ymd;
+    return $date;
 }
 
 sub _check_end_date {
@@ -161,21 +160,20 @@ sub _check_end_date {
     $date = trim($date);
     $date || ThrowUserError("agile_missing_field", {field=>'end_date'});
 
-    my $end_date = datetime_from($date);
-    $end_date || ThrowUserError("agile_invalid_field", {
-            field => "end_date", value => $date});
-    $end_date->set({hour=>23, minute=>59, second=>59});
+    my $end_dt = datetime_from($date);
+    $end_dt || ThrowUserError("agile_invalid_field", {
+            field => "end_dt", value => $date});
 
-    my $start_date = ref $invocant ?
+    my $start_dt = ref $invocant ?
             datetime_from($invocant->start_date) :
             datetime_from($params->{start_date});
 
-    ThrowUserError("agile_sprint_end_before_start") if ($end_date < $start_date);
+    ThrowUserError("agile_sprint_end_before_start") if ($end_dt < $start_dt);
 
     my $id = ref $invocant ? $invocant->id : 0;
     my $team_id = ref $invocant ? $invocant->team_id : $params->{team_id};
-    $start_date = $start_date->datetime;
-    $end_date = $end_date->datetime;
+    my $start_date = $start_dt->ymd;
+    $date = $end_dt->ymd;
 
     my $dbh = Bugzilla->dbh;
     my $overlaping = $dbh->selectrow_array(
@@ -184,11 +182,11 @@ sub _check_end_date {
          'WHERE team_id = ? AND id != ? AND ('.
                '(start_date > ? AND start_date < ?) OR '.
                '(end_date > ? AND end_date < ?))',
-        undef, ($team_id, $id, $start_date, $end_date, $start_date, $end_date ));
+        undef, ($team_id, $id, $start_date, $date, $start_date, $date ));
     ThrowUserError("agile_overlaping_sprint",
             {sprint => Bugzilla::Extension::AgileTools::Sprint->new($overlaping)})
         if ($overlaping);
-    return $end_date;
+    return $date;
 }
 
 # TODO Move overlaping check to separate validator and check both start and
