@@ -26,7 +26,7 @@ use Bugzilla::Extension::AgileTools::Burn;
 
 use JSON;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my %template_handlers;
 my %page_handlers;
@@ -523,6 +523,48 @@ sub install_update_db {
         TYPE => 'BOOLEAN',
         NOTNULL => 1,
         DEFAULT => 1,
+    });
+
+    # VERSION 0.03
+    $dbh->bz_add_column('agile_sprint', 'committed', {
+        TYPE => 'BOOLEAN',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'items_on_commit', {
+        TYPE => 'INT2',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'items_on_close', {
+        TYPE => 'INT2',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'resolved_on_close', {
+        TYPE => 'INT2',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'estimate_on_commit', {
+        TYPE => 'decimal(7,2)',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'effort_on_commit', {
+        TYPE => 'decimal(7,2)',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'estimate_on_close', {
+        TYPE => 'decimal(7,2)',
+        NOTNULL => 1,
+        DEFAULT => 0,
+    });
+    $dbh->bz_add_column('agile_sprint', 'effort_on_close', {
+        TYPE => 'decimal(7,2)',
+        NOTNULL => 1,
+        DEFAULT => 0,
     });
 }
 

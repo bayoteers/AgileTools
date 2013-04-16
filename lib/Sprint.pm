@@ -34,6 +34,24 @@ team and start and end dates.
 
 =item C<capacity> (mutable) - Estimated work capacity for the sprint
 
+=item C<committed> - Has the sprint been committed or not
+
+=item C<items_on_commit> - Number of items in sprint at the time of commit
+
+=item C<items_on_close> - Number of open items at the time of closing
+
+=item C<resolved_on_close> - Number of resolved items at the time of closing
+
+=item C<effort_on_commit> - Effort used on items at the time of commit
+
+=item C<estimate_on_commit> - Remaining effort estimate of items at the time of
+                              commit
+
+=item C<effort_on_close> - Effort used on items at the time of closing
+
+=item C<estimate_on_close> - Remaining effort estimate of items at the time of
+                             closing
+
 =back
 
 =cut
@@ -59,6 +77,14 @@ sub DB_COLUMNS {
         id
         team_id
         capacity
+        committed
+        items_on_commit
+        items_on_close
+        resolved_on_close
+        effort_on_commit
+        estimate_on_commit
+        effort_on_close
+        estimate_on_close
     ),
     $dbh->sql_date_format('start_date', '%Y-%m-%d') . ' AS start_date',
     $dbh->sql_date_format('end_date', '%Y-%m-%d') . ' AS end_date',
@@ -69,6 +95,14 @@ sub DB_COLUMNS {
 use constant NUMERIC_COLUMNS => qw(
     team_id
     capacity
+    committed
+    items_on_commit
+    items_on_close
+    resolved_on_close
+    effort_on_commit
+    estimate_on_commit
+    effort_on_close
+    estimate_on_close
 );
 
 use constant DATE_COLUMNS => qw(
@@ -80,6 +114,14 @@ use constant UPDATE_COLUMNS => qw(
     start_date
     end_date
     capacity
+    committed
+    items_on_commit
+    items_on_close
+    resolved_on_close
+    effort_on_commit
+    estimate_on_commit
+    effort_on_close
+    estimate_on_close
 );
 
 use constant VALIDATORS => {
@@ -87,6 +129,14 @@ use constant VALIDATORS => {
     end_date => \&_check_end_date,
     team_id => \&_check_number,
     capacity => \&Bugzilla::Object::check_time,
+    committed => \&Bugzilla::Object::check_boolean,
+    items_on_commit => \&_check_number,
+    items_on_close => \&_check_number,
+    resolved_on_close => \&_check_number,
+    effort_on_commit => \&Bugzilla::Object::check_time,
+    estimate_on_commit => \&Bugzilla::Object::check_time,
+    effort_on_close => \&Bugzilla::Object::check_time,
+    estimate_on_close => \&Bugzilla::Object::check_time,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -106,6 +156,14 @@ sub start_date  { return $_[0]->{start_date}; }
 sub end_date    { return $_[0]->{end_date}; }
 sub team_id     { return $_[0]->{team_id}; }
 sub capacity    { return $_[0]->{capacity}; }
+sub committed          { return $_[0]->{committed}; }
+sub items_on_commit    { return $_[0]->{items_on_commit}; }
+sub items_on_close     { return $_[0]->{items_on_close}; }
+sub resolved_on_close  { return $_[0]->{resolved_on_close}; }
+sub effort_on_commit   { return $_[0]->{effort_on_commit}; }
+sub estimate_on_commit { return $_[0]->{estimate_on_commit}; }
+sub effort_on_close    { return $_[0]->{effort_on_close}; }
+sub estimate_on_close  { return $_[0]->{estimate_on_close}; }
 
 sub team {
     my $self = shift;
