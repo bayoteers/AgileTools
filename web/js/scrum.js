@@ -293,12 +293,18 @@ var SprintController = PoolController.extend({
         info.find('.start-date').text(scrumFormatDate(sprint.start_date));
         info.find('.end-date').text(scrumFormatDate(sprint.end_date));
         info.find('.estimated-cap').text(sprint.capacity);
-        info.find('button[name=edit]').click($.proxy(this, '_openEditSprint'));
-        if (sprint.is_current) {
-            info.find('button[name=close]').click(
+        info.find('button[name=edit]').click(
+                    $.proxy(this, '_openEditSprint'));
+        info.find('button[name=close]').click(
                     $.proxy(this, '_openCloseSprint'));
+        if (sprint.committed) {
+            info.find('button[name=close]').show();
+            info.find('button[name=commit]').text('Uncommit')
+                    .click($.proxy(this, '_unCommitSprint'));
         } else {
             info.find('button[name=close]').hide();
+            info.find('button[name=commit]').text('Commit')
+                    .click($.proxy(this, '_commitSprint'));
         }
         this._footer.empty().append(info);
         this._sprint = sprint;
@@ -399,6 +405,22 @@ var SprintController = PoolController.extend({
         var rpc = this.callRpc('Agile.Sprint', 'close', params);
         rpc.done($.proxy(this, 'load'));
         this._dialog.dialog('close');
+    },
+
+    /**
+     * Commit sprint button handler
+     */
+    _commitSprint: function() {
+        var rpc = this.callRpc('Agile.Sprint', 'commit', {id: this._sprint.id});
+        rpc.done($.proxy(this, 'load'));
+    },
+
+    /**
+     * Uncommit sprint button handler
+     */
+    _unCommitSprint: function() {
+        var rpc = this.callRpc('Agile.Sprint', 'uncommit', {id: this._sprint.id});
+        rpc.done($.proxy(this, 'load'));
     },
 
     /**
