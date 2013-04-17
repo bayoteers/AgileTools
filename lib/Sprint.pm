@@ -241,7 +241,7 @@ sub _check_end_date {
                '(start_date > ? AND start_date < ?) OR '.
                '(end_date > ? AND end_date < ?))',
         undef, ($team_id, $id, $start_date, $date, $start_date, $date ));
-    ThrowUserError("agile_overlaping_sprint",
+    ThrowUserError("agile_sprint_overlap",
             {sprint => Bugzilla::Extension::AgileTools::Sprint->new($overlaping)})
         if ($overlaping);
     return $date;
@@ -350,6 +350,9 @@ sub update {
 
 sub remove_from_db {
     my $self = shift;
+    ThrowUserError("agile_permission_denied",
+            {permission=>'delete active sprint'})
+        if $self->is_active;
     # Take pool for later deletion
     my $pool = $self->pool;
     $self->SUPER::remove_from_db(@_);
@@ -401,32 +404,54 @@ sub is_active {
 sub close {
     my ($self, $params) = @_;
 
-    ThrowCodeError('param_required', {
+    ThrowCodeError('params_required', {
             function => 'AgileTools::Sprint->close',
             params => ['next_id', 'start_date and end_date']})
         unless ($params->{next_id} ||
             ($params->{start_date} && $params->{end_date}));
 
-    ThrowUserError('agile_cant_close_not_current', {
+    ThrowUserError('agile_sprint_close_not_current', {
             sprint => $self})
         unless $self->is_current;
+    ThrowUserError('agile_sprint_close_uncommitted', {
+            sprint => $self})
+        unless $self->committed;
+
+    my $archive = {
+        team_id => $self->team_id,
+        start_date => $self->start_date,
+        end_date => $self->end_date,
+        capacity => $self->capacity,
+        committed => 1,
+        items_on_commit => $self->items_on_commit,
+        estimate_on_commit => $self->estimate_on_commit,
+        effort_on_commit => $self->effort_on_commit,
+        items_on_close => 0,
+        resolved_on_close => 0,
+        estimate_on_close => 0,
+        effort_on_close => 0,
+    };
+
+    my @archive_bugs;
+    for my $bug (sort {$a->pool_order - $b->pool_order} @{$self->pool->bugs}) {
+        if (!$bug->isopened) {
+            push(@archive_bugs, $bug);
+            $archive->{resolved_on_close} += 1;
+        }
+        $archive->{items_on_close} += 1;
+        $archive->{estimate_on_close} += $bug->remaining_time || 0;
+        $archive->{effort_on_close} += $bug->actual_time || 0;
+    }
 
     my $start_date = $params->{start_date};
     my $end_date = $params->{end_date};
-    my $archive_start = $self->start_date;
-    my $archive_end = $self->end_date;
-    my @archive_bugs;
-    for my $bug (sort {$a->pool_order - $b->pool_order} @{$self->pool->bugs}) {
-        next if $bug->isopened;
-        push(@archive_bugs, $bug);
-    }
 
     # If existing sprint is given, take bugs and date rage from that and
     # delete it.
     if ($params->{next_id}) {
         my $next_sprint = Bugzilla::Extension::AgileTools::Sprint->check(
             $params->{next_id});
-        ThrowCodeError('agile_cant_change_to_inactive_sprint')
+        ThrowCodeError('agile_sprint_change_to_inactive')
             unless $next_sprint->pool->active;
         for my $bug (sort {$a->pool_order - $b->pool_order} @{$next_sprint->pool->bugs}) {
             $self->pool->add_bug($bug);
@@ -440,19 +465,64 @@ sub close {
             end_date => $end_date,
             capacity => $params->{capacity} || 0,
         });
+    $self->set('items_on_commit', 0);
+    $self->set('estimate_on_commit', 0);
+    $self->set('effort_on_commit', 0);
+    $self->set('committed', 0);
     $self->update();
 
-    my $archive_sprint = Bugzilla::Extension::AgileTools::Sprint->create({
-            team_id => $self->team_id,
-            start_date => $archive_start,
-            end_date => $archive_end,
-        });
+    my $archive_sprint = Bugzilla::Extension::AgileTools::Sprint->create($archive);
     for my $bug (@archive_bugs) {
         $archive_sprint->pool->add_bug($bug);
     }
     $archive_sprint->pool->set_is_active(0);
     $archive_sprint->pool->update;
     return $archive_sprint;
+}
+
+=item C<commit>
+
+    Description: Commit to the sprint
+
+=cut
+
+sub commit {
+    my $self = shift;
+    return 0 if $self->committed;
+
+    my $items = 0;
+    my $estimate = 0;
+    my $effort = 0;
+    for my $bug (@{$self->pool->bugs}) {
+        $items += 1 if $bug->isopened;
+        $estimate += $bug->remaining_time || 0;
+        $effort += $bug->actual_time || 0;
+    }
+    ThrowUserError('agile_sprint_commit_empty') unless $items;
+    $self->set('items_on_commit', $items);
+    $self->set('estimate_on_commit', $estimate);
+    $self->set('effort_on_commit', $effort);
+    $self->set('committed', 1);
+    $self->update();
+    return 1;
+}
+
+=item C<uncommit>
+
+    Description: Revert the committed state of sprint
+
+=cut
+
+sub uncommit {
+    my $self = shift;
+    return 0 unless $self->committed;
+    ThrowCodeError('agile_commit_closed_sprint') unless $self->is_active;
+    $self->set('items_on_commit', 0);
+    $self->set('estimate_on_commit', 0);
+    $self->set('effort_on_commit', 0);
+    $self->set('committed', 0);
+    $self->update();
+    return 1;
 }
 
 1;

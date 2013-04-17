@@ -40,6 +40,7 @@ use constant FIELD_TYPES => {
     "capacity" => "double",
     "is_current" => "boolean",
     "is_active" => "boolean",
+    "committed" => "boolean",
 };
 
 =head1 METHODS
@@ -58,7 +59,7 @@ sub get {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
     ThrowCodeError('param_required', {
-            function => 'Agile.Sprint.update',
+            function => 'Agile.Sprint.get',
             param => 'id'})
         unless defined $params->{id};
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
@@ -92,6 +93,12 @@ sub create {
             function => 'Agile.Sprint.create',
             param => 'end_date'})
         unless defined $params->{end_date};
+
+    my $team = Bugzilla::Extension::AgileTools::Sprint->check({
+            id => $params->{team_id} });
+    ThrowUserError("agile_permission_denied", {permission=>'create sprint'})
+        unless $team->user_can_edit;
+
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->create($params);
     return object_to_hash($self, $sprint, FIELD_TYPES);
 }
@@ -116,6 +123,10 @@ sub update {
 
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
             id =>delete $params->{id} });
+
+    ThrowUserError("agile_permission_denied", {permission=>'edit sprint'})
+        unless $sprint->team->user_can_edit;
+
     $sprint->set_all($params);
     my $changes = $sprint->update();
     return {
@@ -155,11 +166,84 @@ sub close {
     my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
             id => delete $params->{id} });
 
-    ThrowUserError('agile_cant_close_not_current', {
-            sprint => $sprint})
-        unless $sprint->is_current;
+    ThrowUserError("agile_permission_denied", {permission=>'close sprint'})
+        unless $sprint->team->user_can_edit;
+
     my $archived = $sprint->close($params);
     return object_to_hash($self, $archived, FIELD_TYPES);
+}
+
+=item C<commit>
+
+    Description: Marks the sprint as committed
+    Params:      id - Sprint ID
+
+=cut
+
+sub commit {
+    my ($self, $params) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    ThrowCodeError('param_required', {
+            function => 'Agile.Sprint.commit',
+            param => 'id'})
+        unless defined $params->{id};
+
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
+            id => delete $params->{id} });
+
+    ThrowUserError("agile_permission_denied", {permission=>'commit sprint'})
+        unless $sprint->team->user_can_edit;
+
+    return $sprint->commit();
+}
+
+=item C<uncommit>
+
+    Description: Marks the sprint as not committed
+    Params:      id - Sprint ID
+
+=cut
+
+sub uncommit {
+    my ($self, $params) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    ThrowCodeError('param_required', {
+            function => 'Agile.Sprint.uncommit',
+            param => 'id'})
+        unless defined $params->{id};
+
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
+            id => delete $params->{id} });
+
+    ThrowUserError("agile_permission_denied", {permission=>'uncommit sprint'})
+        unless $sprint->team->user_can_edit;
+
+    return $sprint->uncommit();
+}
+
+=item C<delete>
+
+    Description: Delete a sprint
+    Params:      id - Sprint ID
+
+=cut
+
+sub delete {
+    my ($self, $params) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    ThrowCodeError('param_required', {
+            function => 'Agile.Sprint.delete',
+            param => 'id'})
+        unless defined $params->{id};
+
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->check({
+            id => delete $params->{id} });
+
+    ThrowUserError("agile_permission_denied", {permission=>'delete sprint'})
+        unless $sprint->team->user_can_edit;
+
+    $sprint->remove_from_db;
+    return 1;
 }
 
 1;
