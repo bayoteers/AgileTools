@@ -13,6 +13,9 @@
   td.yellow {background-color: yellow; }
   td.red {background-color: red; }
   td.start,th.start { border-left: solid 1px; }
+  thead { text-align: left; }
+  tbody th { text-align: left; }
+  tbody td { text-align: right; }
 [% END %]
 
 [% INCLUDE global/header.html.tmpl
@@ -24,31 +27,30 @@
 
 [% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
 
-<table style="border-collapse: collapse; text-align: left;">
+<table style="border-collapse: collapse;">
   <thead>
     <tr>
-      <th colspan="6"></th>
+      <th colspan="5"></th>
       <th class="start" colspan="3">Items</th>
       <th class="start" colspan="3">Remaining effort</th>
       <th class="start" colspan="3">Work done</th>
     </tr>
     <tr>
       <th>Sprint</th>
-      <th>Pool ID</th>
       <th>Start date</th>
+      <th></th>
       <th>End date</th>
-      <th>Committed</th>
       <th>Capacity</th>
-      <td class="start">commit</td>
-      <td>close</td>
+      <td class="start">on commit</td>
+      <td>on close</td>
       <td>+/-</td>
-      <td class="start">commit</td>
-      <td>close</td>
+      <td class="start">on commit</td>
+      <td>on close</td>
       <td>+/-</td>
       <td class="start">Items</td>
+      <td>%</td>
       <td>Effort</td>
-      <th>Items %</th>
-      <th>Effort %</th>
+      <td>%</td>
     </tr>
   </thead>
   <tbody>
@@ -56,47 +58,44 @@
     [% IF sprint.committed AND !sprint.is_active %]
       [% items_ch = sprint.items_on_close - sprint.items_on_commit %]
       [% estimate_ch = sprint.estimate_on_close - sprint.estimate_on_commit %]
-      [% effort = sprint.effort_on_close - sprint.effort_on_commit %]
     [% ELSE %]
       [% items_ch = '' %]
       [% estimate_ch = '' %]
-      [% effort = '' %]
     [% END %]
     <tr class="[% loop.index() % 2 ? 'even' : 'odd' %]">
-      <td>
+      <th>
         <a href="buglist.cgi?query_format=advanced&amp;f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% sprint.id %]&amp;order=bug_agile_pool.pool_order&amp;columnlist=[% columnlist %]">
           [% sprint.name FILTER html %]</a>
           [% IF team.current_sprint_id == sprint.id %]
-          (current)
+          <br/>(Current
           [% IF user.in_group_id(team.group_id) %]
-          [<a href="page.cgi?id=agiletools/scrum/planning.html&amp;team_id=[% team.id %]">Planning</a>]
+          <a href="page.cgi?id=agiletools/scrum/planning.html&amp;team_id=[% team.id %]">[% sprint.committed ? 'committed' : 'planning' %]</a>
+          [% END %])
           [% END %]
-          [% END %]
-      </td>
-      <td>[% sprint.id FILTER html %]</td>
+      </th>
       <td>[% sprint.start_date FILTER time("%Y-%m-%d") FILTER html %]</td>
+      <td>-</td>
       <td>[% sprint.end_date FILTER time("%Y-%m-%d") FILTER html %]</td>
-      <td>[% 'X' IF sprint.committed %]</td>
       <td>[% sprint.capacity FILTER html %]</td>
 
       <td class="start">[% sprint.items_on_commit FILTER html IF sprint.committed %]</td>
       <td>[% sprint.items_on_close FILTER html
               IF sprint.committed AND !sprint.is_active %]</td>
-      <td>[% items_ch FILTER html %]</td>
+      <td>[% items_ch FILTER format('%+d') FILTER html %]</td>
 
       <td class="start">[% sprint.estimate_on_commit FILTER html IF sprint.committed %]</td>
       <td>[% sprint.estimate_on_close FILTER html
               IF sprint.committed AND !sprint.is_active %]</td>
-      <td>[% estimate_ch FILTER html %]</td>
+      <td>[% estimate_ch FILTER format('%+d') FILTER html %]</td>
 
       <td class="start">[% sprint.resolved_on_close FILTER html
               IF sprint.committed AND !sprint.is_active %]</td>
-      <td>[% effort FILTER html %]</td>
-
       [% IF sprint.items_completion.defined %]
       <td class="[% PROCESS color value=sprint.items_completion %]">
         [% sprint.items_completion FILTER format('%d %%') %]</td>
       [% ELSE %]<td></td>[% END %]
+
+      <td>[% sprint.effort FILTER html %]</td>
 
       [% IF sprint.effort_completion.defined %]
       <td class="[% PROCESS color value=sprint.effort_completion %]">
@@ -112,7 +111,7 @@
 [% BLOCK color %]
   [%- IF value != '' -%]
     [%- IF value > 90 -%]green
-    [%- ELSIF value > 50 -%]yellow
+    [%- ELSIF value > 40 -%]yellow
     [%- ELSE -%]red
     [%- END -%]
   [%- END -%]
