@@ -525,6 +525,30 @@ sub uncommit {
     return 1;
 }
 
+
+sub effort {
+    my $self = shift;
+    return unless $self->committed && !$self->is_active;
+    return $self->effort_on_close - $self->effort_on_commit;
+}
+
+sub items_completion {
+    my $self = shift;
+    return unless $self->committed && !$self->is_active;
+    if ($self->items_on_close) {
+        return $self->resolved_on_close / $self->items_on_close * 100;
+    }
+}
+
+sub effort_completion {
+    my $self = shift;
+    return unless $self->committed && !$self->is_active;
+    my $total_on_close = $self->estimate_on_close + $self->effort;
+    if ($total_on_close) {
+        return $self->effort / $total_on_close * 100;
+    }
+}
+
 1;
 
 __END__
