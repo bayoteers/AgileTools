@@ -26,6 +26,8 @@ AgileTools extension burnup/down data generation functions.
 package Bugzilla::Extension::AgileTools::Burn;
 use strict;
 
+use Bugzilla::Status qw(is_open_state);
+
 use Date::Parse;
 use List::Util qw(min max);
 
@@ -112,6 +114,11 @@ sub get_burndata {
         $from <= $_->[0] && $to >= $_->[0];
     } reverse @tmp;
 
+    # Add dummy point to this moment if there isn't recent changes
+    if (scalar @remaining && $remaining[-1]->[0] < $now - 60*60*1000) {
+        push(@remaining, [$now, $remaining[-1]->[1]])
+    }
+
     ######################
     # Get actual work time
     # work_time changes present the time added, so this can be simply summed
@@ -138,6 +145,11 @@ sub get_burndata {
         push @actual, [$ts, $sum];
     }
 
+    # Add dummy point to this moment if there isn't recent changes
+    if (scalar @actual && $actual[-1]->[0] < $now - 60*60*1000) {
+        push(@actual, [$now, $actual[-1]->[1]])
+    }
+
     #######################
     # Get open item history
     # Fetch changes in bug_status and filter them to just changes from open
@@ -153,10 +165,6 @@ sub get_burndata {
 
     my $start_items = $open_count;
 
-    # Get the open/closed statuses
-    my %is_open = map {$_->[0] => $_->[1]} @{$dbh->selectall_arrayref(
-        'SELECT value, is_open FROM bug_status')};
-
     @tmp = ();
     if (defined $sth) {
         $sth->execute('bug_status');
@@ -164,8 +172,9 @@ sub get_burndata {
             my ($bug_id, $when, $rem, $add) = @row;
 
             # Check if status changes from open to closed or from closed to open
-            my $closed = $is_open{$rem} && !$is_open{$add};
-            my $opened = $is_open{$add} && !$is_open{$rem};
+            my $closed = is_open_state($rem) && !is_open_state($add);
+            my $opened = $closed ? 0 :
+                is_open_state($add) && !is_open_state($rem);
             next unless $opened || $closed;
             my $ts = 1000 * str2time($when, "UTC");
             $first_ts = defined $first_ts ? min($ts, $first_ts) : $ts;
@@ -182,6 +191,11 @@ sub get_burndata {
         $start_items = $_->[1] if ($_->[0] < $from);
         $from <= $_->[0] && $to >= $_->[0];
     } reverse @tmp;
+
+    # Add dummy point to this moment if there isn't recent changes
+    if (scalar @items && $items[-1]->[0] < $now - 60*60*1000) {
+        push(@items, [$now, $items[-1]->[1]])
+    }
 
     # If start date is not given, use first history entry on month before today
     $from ||= $first_ts || $now - 30*24*60*60*1000;
