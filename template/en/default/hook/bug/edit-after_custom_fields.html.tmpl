@@ -5,6 +5,7 @@
   # Copyright (C) 2012 Jolla Ltd.
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
+[% IF bug.check_can_change_field('pool_id', 0, 1) %]
 <tr>
     <th class="field_label">Pool:</th>
     <td>
@@ -25,6 +26,7 @@
         [% END %]
     </td>
 </tr>
+[% END %]
 [% IF bug.pool_id %]
 <tr>
     <th class="field_label">Pool ID / Order:</th>

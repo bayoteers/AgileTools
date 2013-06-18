@@ -497,10 +497,9 @@ Returns boolean true if user is allowed to edit the team.
 
 sub user_can_edit {
     my ($self, $user) = @_;
-    $user ||= Bugzilla->user;
-    return 0 unless defined $user;
-
     $user = get_user($user);
+    return 0 unless $user->id;
+
     $self->{user_can_edit} = {} unless defined $self->{user_can_edit};
 
     if (!defined $self->{user_can_edit}->{$user->id}) {

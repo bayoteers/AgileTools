@@ -15,10 +15,30 @@ use warnings;
 use Bugzilla::Config::Common;
 use Bugzilla::Field;
 
+use Bugzilla::Extension::AgileTools::Constants;
+
 sub get_param_list {
     my ($class) = @_;
 
+    my $old_usergroup = Bugzilla::Group->new({name => AGILE_USERS_GROUP});
+    my $old_nonhuman = Bugzilla::Group->new({name => NON_HUMAN_GROUP});
+    my $groups = ['', sort map {$_->name} Bugzilla::Group->get_all()];
+
     my @param_list = (
+        {
+            name    => 'agile_user_group',
+            desc    => 'User group allowed to use AgileTools',
+            type    => 's',
+            choices => $groups,
+            default => defined $old_usergroup ? $old_usergroup->name : '',
+        },
+        {
+            name    => 'agile_nonhuman_group',
+            desc    => 'User group containing non-human users, bots, etc.',
+            type    => 's',
+            choices => $groups,
+            default => defined $old_nonhuman ? $old_nonhuman->name : '',
+        },
         {
             name    => 'agile_use_points',
             desc    => 'Display estimated, remaining and actual time as points '.

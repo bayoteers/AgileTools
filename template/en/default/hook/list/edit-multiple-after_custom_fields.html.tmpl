@@ -6,6 +6,7 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
+[% IF !Param('agile_user_group') || user.in_group(Param('agile_user_group')) %]
 <tr>
     <th class="field_label">Pool:</th>
     <td>
@@ -20,3 +21,4 @@
         </select>
     </td>
 </tr>
+[% END %]

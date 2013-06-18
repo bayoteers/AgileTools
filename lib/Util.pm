@@ -38,6 +38,7 @@ our @EXPORT = qw(
     get_team
     get_role
     user_can_manage_teams
+    user_in_agiletools_group
 );
 
 use Bugzilla::Error;
@@ -50,14 +51,15 @@ use Scalar::Util qw(blessed);
 
 =item C<get_user($user)>
 
-    Description: Gets user object or throws error if user is not found
+    Description: Gets user object or throws error if user is not found. Without
+                 parameters returns the logged in user
     Params:      $user -> User ID or login name
     Returns:     L<Bugzilla::User> object
 
 =cut
 
 sub get_user {
-    my $user = shift;
+    my $user = shift || Bugzilla->user;
     if (!blessed $user) {
         if ($user =~ /^\d+$/) {
             $user = Bugzilla::User->check({id => $user});
@@ -121,9 +123,36 @@ future.
 =cut
 
 sub user_can_manage_teams {
-    my $user = shift || Bugzilla->user;
+    my $user = shift;
     $user = get_user($user);
     return $user->in_group("admin");
+}
+
+=item C<user_in_agiletools_group($user, $throwerror)>
+
+    Description: Check if user is in AgileTools user group
+    Params:      $throwerror - (Optional) If true, throw access denied erro if
+                 there is no logged in user or the user is not in the group.
+
+    Returns:     true if user in AgileTools user group or if the group is not
+                 defined
+
+=cut
+
+sub user_in_agiletools_group {
+    my $throwerror = shift;
+    my $user = Bugzilla->user;
+    my $ingroup = 0;
+    if ($user->id) {
+        my $group = Bugzilla->params->{agile_user_group};
+        if ($group) {
+            $ingroup = $user->in_group($group) ? 1 : 0;
+        } else {
+            $ingroup = 1;
+        }
+    }
+    ThrowUserError("agile_access_denied") if ($throwerror && !$ingroup);
+    return $ingroup;
 }
 
 1;

@@ -30,7 +30,7 @@ use Bugzilla::WebService::Bug;
 
 use Bugzilla::Extension::AgileTools::Sprint;
 
-use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
+use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::WebService::Util;
 
 # Webservice field type mapping
@@ -54,6 +54,8 @@ use constant FIELD_TYPES => {
 sub get {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
+
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.get',
             param => 'id'})
@@ -87,6 +89,8 @@ sub get {
 sub add_bug {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
+
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.add_bug',
             param => 'id'})
@@ -123,6 +127,8 @@ sub add_bug {
 sub remove_bug {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
+
     ThrowCodeError('param_required', {
             function => 'Agile.Pool.remove_bug',
             param => 'id'})

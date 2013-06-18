@@ -42,12 +42,14 @@ use base qw(Exporter);
 =over
 
 =item AGILE_USERS_GROUP - Name of the user group allowed to use AgileTools
+	  *DEPRECATED* use agile_user_group param instead
 
 =cut
 
 use constant AGILE_USERS_GROUP => "AgileTools users";
 
 =item NON_HUMAN_GROUP - Name of the non human user group
+	  *DEPRECATED* use agile_nonhuman_group param instead
 
 =cut
 

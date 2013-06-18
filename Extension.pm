@@ -12,8 +12,9 @@ use strict;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Bug qw(LogActivityEntry);
-use Bugzilla::Error;
+use Bugzilla::Config qw(SetParam write_params);
 use Bugzilla::Constants;
+use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::Util qw(detaint_natural);
 
@@ -49,7 +50,6 @@ sub _add_page_handler {
 
 _add_page_handler("agiletools/team/list.html", sub {
     my ($vars) = @_;
-    Bugzilla->login(LOGIN_REQUIRED);
     my $cgi = Bugzilla->cgi;
     my $action = $cgi->param("action") || "";
     if ($action eq "remove") {
@@ -110,14 +110,12 @@ _add_page_handler("agiletools/team/show.html", sub {
 
 _add_page_handler("agiletools/team/create.html", sub {
     my ($vars) = @_;
-    Bugzilla->login(LOGIN_REQUIRED);
     $vars->{processes} = AGILE_PROCESS_NAMES;
 });
 
 _add_page_handler("agiletools/scrum/planning.html", sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
     my $id = $cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
@@ -126,7 +124,7 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
     $vars->{team} = $team;
     my @roles = map {$_->name}
             @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
-                    $team, $user)};
+                    $team)};
     $vars->{user_roles} = \@roles;
     my @pools;
     push(@pools, [-1, "Unprioritized items"]);
@@ -140,7 +138,6 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
 
 _add_page_handler("agiletools/scrum/sprints.html", sub {
     my ($vars) = @_;
-    Bugzilla->login(LOGIN_REQUIRED);
     my $id = Bugzilla->cgi->param("team_id");
     ThrowUserError("invalid_parameter",
         {name=>"team_id", err => "Not specified"})
@@ -154,9 +151,9 @@ _add_page_handler("agiletools/scrum/sprints.html", sub {
 
 _add_page_handler("agiletools/user_summary.html", sub {
     my ($vars) = @_;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
+
     $vars->{processes} = AGILE_PROCESS_NAMES;
-    $vars->{agile_teams} = $user->agile_teams;
+    $vars->{agile_teams} = Bugzilla->user->agile_teams;
 });
 
 ###################
@@ -187,8 +184,11 @@ _add_template_handler('list/list-burn.html.tmpl', sub {
 
 sub active_pools_to_vars {
     my $vars = shift;
-    $vars->{active_pools} = Bugzilla::Extension::AgileTools::Pool->match(
-        {is_active => 1});
+    Bugzilla->login(LOGIN_OPTIONAL);
+    if (user_in_agiletools_group()) {
+        $vars->{active_pools} = Bugzilla::Extension::AgileTools::Pool->match(
+            {is_active => 1});
+    }
 }
 
 _add_template_handler("bug/edit.html.tmpl", \&active_pools_to_vars);
@@ -201,10 +201,9 @@ _add_template_handler("list/edit-multiple.html.tmpl", \&active_pools_to_vars);
 sub page_before_template {
     my ($self, $params) = @_;
     my $page_id = $params->{page_id};
-    if ($page_id =~ /^agiletools\//) {
-        ThrowUserError("agile_access_denied")
-            unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
-    }
+    return unless ($page_id =~ /^agiletools\//);
+    Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
 
     my $subs = $page_handlers{$page_id};
     for my $sub (@{$subs || []}) {
@@ -227,7 +226,7 @@ sub template_before_process {
 
 sub bb_common_links {
     my ($self, $args) = @_;
-    return unless Bugzilla->user->in_group(AGILE_USERS_GROUP);
+    return unless user_in_agiletools_group();
     $args->{links}->{agile_teams} = [
         {
             text => "All teams",
@@ -329,7 +328,8 @@ sub bug_end_of_update {
         my $new_status = new Bugzilla::Status({ name => $status_change->[1] });
         if (!$new_status->is_open && $old_status->is_open) {
             # Bug is being closed
-            if (!$user->in_group(NON_HUMAN_GROUP)) {
+            my $non_human = Bugzilla->params->{agile_nonhuman_group};
+            if ($non_human && !$user->in_group($non_human)) {
                 # Check that actual time is set if it is required for the
                 # severity and resolution
                 my $check_severity = grep {$bug->bug_severity eq $_}
@@ -368,6 +368,8 @@ sub bug_check_can_change_field {
         qw(bug field new_value priv_results)};
     if ($field eq 'estimated_time' &&
             Bugzilla->params->{'agile_lock_origest_in_sprint'}) {
+        # Check if user is allowed to edit the original estimates of items in
+        # sprint
         if ($bug->pool_id) {
             my $sprint = Bugzilla::Extension::AgileTools::Sprint->new($bug->pool_id);
             if (defined $sprint) {
@@ -375,6 +377,13 @@ sub bug_check_can_change_field {
                     push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
                 }
             }
+        }
+    }
+    if ($field eq 'pool_id') {
+        # User needs to be logged in and in agile_user_group to change bug pool
+        my $user = Bugzilla->login(LOGIN_OPTIONAL);
+        if (!user_in_agiletools_group()) {
+            push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
         }
     }
 }
@@ -427,6 +436,20 @@ sub object_end_of_update {
             $obj->pool->add_bug($obj, $obj->pool_order);
         }
     }
+
+    # Update params if group names change
+    if ($obj->isa("Bugzilla::Group") && defined $changes->{name}) {
+        if (Bugzilla->params->{agile_user_group} &&
+                Bugzilla->params->{agile_user_group} eq $old_obj->name) {
+            SetParam('agile_user_group', $obj->name);
+            write_params();
+        }
+        if (Bugzilla->params->{agile_nonhuman_group} &&
+                Bugzilla->params->{agile_nonhuman_group} eq $old_obj->name) {
+            SetParam('agile_nonhuman_group', $obj->name);
+            write_params();
+        }
+    }
 }
 
 
@@ -438,29 +461,23 @@ sub install_update_db {
     my ($self, $args) = @_;
     my $dbh = Bugzilla->dbh;
 
-    # Create agiletools user group
-    if (!defined Bugzilla::Group->new({name => AGILE_USERS_GROUP})) {
-        Bugzilla::Group->create(
-            {
-                name => AGILE_USERS_GROUP,
-                description => "Users allowed to use AgileTools",
-                userregexp => ".*",
-            }
-        );
+    # Make the old hardcoded user group deletable
+    # isactive && !isbuggroups == system group
+    # isactive && isbuggroup == admin has enabled it for bugs
+    my $old_user_group = Bugzilla::Group->new({name => AGILE_USERS_GROUP});
+    if (defined $old_user_group && $old_user_group->is_active &&
+                !$old_user_group->is_bug_group) {
+        $dbh->do("UPDATE groups SET isactive = 0, isbuggroup = 1 WHERE name = ?",
+            undef, AGILE_USERS_GROUP);
     }
 
-    # Create non human user group
-    if (!defined Bugzilla::Group->new({name => NON_HUMAN_GROUP})) {
-        my $group = Bugzilla::Group->create(
-            {
-                name => NON_HUMAN_GROUP,
-                description => "Non human users",
-            }
-        );
-        # Remove the automatic admin group membership
-        $dbh->do('DELETE FROM group_group_map
-                  WHERE grantor_id = ? AND grant_type = ?',
-                  undef, $group->id, GROUP_MEMBERSHIP);
+    # Make the old hardcoded nonhuman group deletable
+    my $old_nonhuman = Bugzilla::Group->new({name => NON_HUMAN_GROUP});
+    if (defined $old_nonhuman && $old_nonhuman->is_active &&
+                !$old_nonhuman->is_bug_group) {
+        $dbh->do("UPDATE groups SET isactive = 0, isbuggroup = 1 WHERE name = ?",
+            undef, NON_HUMAN_GROUP);
+
     }
 
     # Create initial team member roles
@@ -910,6 +927,9 @@ sub db_schema_abstract_schema {
     };
 }
 
+###############
+# Sanity checks
+###############
 sub _get_bad_pools {
     my $dbh = Bugzilla->dbh;
 

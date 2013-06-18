@@ -28,7 +28,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::AgileTools::Sprint;
 
-use Bugzilla::Extension::AgileTools::Util qw(get_team get_role get_user);
+use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::WebService::Util;
 
 # Webservice field type mapping
@@ -58,6 +58,7 @@ use constant FIELD_TYPES => {
 sub get {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.get',
             param => 'id'})
@@ -81,6 +82,7 @@ sub get {
 sub create {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.create',
             param => 'team_id'})
@@ -116,6 +118,7 @@ sub create {
 sub update {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.update',
             param => 'id'})
@@ -158,6 +161,7 @@ those.
 sub close {
     my ($self, $params) = @_;
     Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.close',
             param => 'id'})
@@ -182,7 +186,8 @@ sub close {
 
 sub commit {
     my ($self, $params) = @_;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.commit',
             param => 'id'})
@@ -206,7 +211,8 @@ sub commit {
 
 sub uncommit {
     my ($self, $params) = @_;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.uncommit',
             param => 'id'})
@@ -230,7 +236,8 @@ sub uncommit {
 
 sub delete {
     my ($self, $params) = @_;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    Bugzilla->login(LOGIN_REQUIRED);
+    user_in_agiletools_group(1);
     ThrowCodeError('param_required', {
             function => 'Agile.Sprint.delete',
             param => 'id'})
