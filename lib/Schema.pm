@@ -398,6 +398,33 @@ sub agiletools_schema_init {
         INDEXES => [
         ],
     };
+
+    # Backlog
+    $schema->{agile_backlog} = {
+        FIELDS => [
+            pool_id => {
+                TYPE => 'INT3',
+                NOTNULL => 1,
+                PRIMARYKEY => 1,
+                REFERENCES => {
+                    TABLE => 'agile_pool',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+                },
+            },
+            team_id => {
+                TYPE => 'INT3',
+                NOTNULL => 0,
+                REFERENCES => {
+                    TABLE => 'agile_team',
+                    COLUMN => 'id',
+                    DELETE => 'SET NULL',
+                },
+            },
+        ],
+        INDEXES => [
+        ],
+    };
 }
 
 =item C<agiletools_schema_update()>
