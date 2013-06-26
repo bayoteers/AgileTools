@@ -20,24 +20,26 @@ use Bugzilla::Extension::AgileTools::Constants;
 sub get_param_list {
     my ($class) = @_;
 
-    my $old_usergroup = Bugzilla::Group->new({name => AGILE_USERS_GROUP});
-    my $old_nonhuman = Bugzilla::Group->new({name => NON_HUMAN_GROUP});
-    my $groups = ['', sort map {$_->name} Bugzilla::Group->get_all()];
+    my @groups = sort @{Bugzilla->dbh->selectcol_arrayref(
+            "SELECT name FROM groups")};
+    my ($old_usergroup) = grep {$_ eq AGILE_USERS_GROUP} @groups;
+    my ($old_nonhuman) = grep {$_ eq NON_HUMAN_GROUP} @groups;
+    unshift @groups, '';
 
     my @param_list = (
         {
             name    => 'agile_user_group',
             desc    => 'User group allowed to use AgileTools',
             type    => 's',
-            choices => $groups,
-            default => defined $old_usergroup ? $old_usergroup->name : '',
+            choices => \@groups,
+            default => defined $old_usergroup ? $old_usergroup : '',
         },
         {
             name    => 'agile_nonhuman_group',
             desc    => 'User group containing non-human users, bots, etc.',
             type    => 's',
-            choices => $groups,
-            default => defined $old_nonhuman ? $old_nonhuman->name : '',
+            choices => \@groups,
+            default => defined $old_nonhuman ? $old_nonhuman : '',
         },
         {
             name    => 'agile_use_points',

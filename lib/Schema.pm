@@ -46,20 +46,24 @@ sub agiletools_db_init {
     # Make the old hardcoded user group deletable
     # isactive && !isbuggroups == system group
     # isactive && isbuggroup == admin has enabled it for bugs
-    my $old_user_group = Bugzilla::Group->new({name => AGILE_USERS_GROUP});
-    if (defined $old_user_group && $old_user_group->is_active &&
-                !$old_user_group->is_bug_group) {
+    my $groups = $dbh->selectall_hashref(
+            "SELECT name, isactive, isbuggroup FROM groups ".
+            "WHERE name IN(?,?)", 'name', undef,
+            AGILE_USERS_GROUP, NON_HUMAN_GROUP);
+
+    my $old_user_group = $groups->{+AGILE_USERS_GROUP};
+    if (defined $old_user_group && $old_user_group->{isactive} &&
+                !$old_user_group->{isbuggroup}) {
         $dbh->do("UPDATE groups SET isactive = 0, isbuggroup = 1 WHERE name = ?",
             undef, AGILE_USERS_GROUP);
     }
 
     # Make the old hardcoded nonhuman group deletable
-    my $old_nonhuman = Bugzilla::Group->new({name => NON_HUMAN_GROUP});
-    if (defined $old_nonhuman && $old_nonhuman->is_active &&
-                !$old_nonhuman->is_bug_group) {
+    my $old_nonhuman = $groups->{+NON_HUMAN_GROUP};
+    if (defined $old_nonhuman && $old_nonhuman->{isactive} &&
+                !$old_nonhuman->{isbuggroup}) {
         $dbh->do("UPDATE groups SET isactive = 0, isbuggroup = 1 WHERE name = ?",
             undef, NON_HUMAN_GROUP);
-
     }
 
     # Create initial team member roles
