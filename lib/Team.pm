@@ -746,9 +746,9 @@ BEGIN {
         return $self->{agile_teams} if defined $self->{agile_teams};
 
         my @group_ids = map { $_->id } @{$self->direct_group_membership};
-        my $team_ids = Bugzilla->dbh->selectcol_arrayref("
-            SELECT id FROM agile_team
-             WHERE group_id IN (". join(",", @group_ids) .")");
+        my $team_ids = @group_ids ? Bugzilla->dbh->selectcol_arrayref(
+                "SELECT id FROM agile_team ".
+                "WHERE group_id IN (". join(",", @group_ids) .")") : [];
         $self->{agile_teams} = Bugzilla::Extension::AgileTools::Team->
                 new_from_list($team_ids);
         return $self->{agile_teams};
