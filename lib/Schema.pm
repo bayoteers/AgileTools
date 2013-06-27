@@ -23,6 +23,11 @@ use strict;
 
 use Bugzilla::Extension::AgileTools::Backlog;
 use Bugzilla::Extension::AgileTools::Constants;
+use Bugzilla::Extension::AgileTools::Role;
+use Bugzilla::Extension::AgileTools::Team;
+
+
+use Bugzilla::Constants;
 
 use base qw(Exporter);
 our @EXPORT = qw(
@@ -477,6 +482,185 @@ sub agiletools_schema_update {
         $dbh->bz_drop_fk('agile_team', 'backlog_id');
         $dbh->bz_drop_column('agile_team', 'backlog_id');
     }
+
+    if ($dbh->bz_column_info('scrums_team', 'id')) {
+        my %answer = %{Bugzilla->installation_answers};
+        my $mode = $answer{MIGRATE_SCRUMS};
+        # Skip this in non interactive mode if answer not given
+        $mode ||= Bugzilla->installation_mode == INSTALLATION_MODE_NON_INTERACTIVE ?
+            's' : undef;
+        if (!$mode) {
+            print "You seem to have old BAYOT Scrum teams in the database.\n".
+            "Do you wish to:\n".
+            "m - Migrate the teams with backlogs and sprints to AgileTools\n".
+            "d - Delete the old teams (You should select this if you have used ".
+                "migrate_bayot_scrums.pl sript earlier)\n".
+            "s - Skip this for now\n >> ";
+        }
+        while (!$mode) {
+            $mode = <STDIN>;
+            chomp $mode;
+            if ($mode eq 'm') {
+                migrate_bayot_scrums();
+                delete_bayot_scrums();
+            } elsif ($mode eq 'd') {
+                delete_bayot_scrums();
+            } elsif ($mode ne 's') {
+                undef $mode;
+            }
+        }
+    }
+}
+
+# Migration team data from old BAYOT Scrums extension to AgileTools.
+#
+# Copies
+#  - all teams from old DB schema
+#  - members from old teams and sets product owner and scrum master roles
+#  - team resposibility components
+#  - bugs in team backlog for those teams which used backlog
+#  - team sprints and bugs in the sprints
+
+sub migrate_bayot_scrums {
+    print "Migrating Scrums teams to AgileTools...\n";
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+
+    my $old_teams = $dbh->selectall_arrayref(
+        "SELECT id, name, owner, scrum_master, is_using_backlog ".
+          "FROM scrums_team", undef);
+
+    foreach my $row (@$old_teams) {
+        my ($old_id, $name, $owner_id, $sm_id, $use_bl) = @$row;
+        my $team = Bugzilla::Extension::AgileTools::Team->new({name => $name});
+        if (defined $team) {
+            print "Team '".$name."' exists, skipping.\n";
+            next;
+        }
+        print "Creating team: ".$name."\n";
+        $team = Bugzilla::Extension::AgileTools::Team->create({
+                name => $name,
+                process_id => AGILE_PROCESS_SCRUM,
+            });
+
+        # Add members
+        my $role;
+        my $user = Bugzilla::User->new($owner_id);
+        if (defined $user) {
+            print "\tAdding owner: ".$user->name."\n";
+            $team->add_member($user);
+            $role = Bugzilla::Extension::AgileTools::Role->new({name => "Product Owner"});
+            $role->add_user_role($team, $user);
+        }
+        $user = Bugzilla::User->new($sm_id);
+        if (defined $user) {
+            print "\tAdding scrum master: ".$user->name."\n";
+            $team->add_member($user);
+            $role = Bugzilla::Extension::AgileTools::Role->new({name => "Scrum Master"});
+            $role->add_user_role($team, $user);
+        }
+        my $members = $dbh->selectcol_arrayref("SELECT userid FROM scrums_teammember ".
+            "WHERE teamid = ?", undef, $old_id);
+        print "\tAdding members: ";
+        foreach my $member_id (@$members) {
+            next if ($member_id == $owner_id || $member_id == $sm_id);
+            $user = Bugzilla::User->new($member_id);
+            print $user->name.", ";
+            $team->add_member($user);
+        }
+        print "\n";
+
+        # Add components to responsibilities
+        my $components = $dbh->selectcol_arrayref("SELECT component_id FROM scrums_componentteam ".
+            "WHERE teamid = ?", undef, $old_id);
+        print "\tAdding components: ";
+        foreach my $component_id (@$components) {
+            my $component = Bugzilla::Component->new($component_id);
+            print $component->name.", ";
+            $team->add_responsibility("component", $component);
+        }
+        print "\n";
+
+        # Copy backlog
+        if ($use_bl) {
+            my $backlog = Bugzilla::Extension::AgileTools::Backlog->create({
+                name => $team->name." backlog",
+                team_id => $team->id,
+                });
+            my ($bl_id) = $dbh->selectrow_array("SELECT id FROM scrums_sprints ".
+                "WHERE team_id = ? AND item_type = ?", undef, ($old_id, 2));
+            my $bl_bugs = $dbh->selectcol_arrayref(
+                "SELECT bm.bug_id FROM scrums_sprint_bug_map AS bm ".
+                "LEFT JOIN scrums_bug_order bo ON bo.bug_id = bm.bug_id ".
+                "WHERE sprint_id = ? ORDER BY bo.team", undef, $bl_id);
+            print "\tAdding bugs to backlog: ";
+            foreach my $bug_id (@$bl_bugs) {
+                print $bug_id.", ";
+                $backlog->pool->add_bug($bug_id);
+            }
+            print "\n";
+        }
+
+        # Copy sprints
+        my $sprints = $dbh->selectall_arrayref(
+            "SELECT id, start_date, end_date, estimated_capacity FROM scrums_sprints ".
+                "WHERE team_id = ? AND item_type = ? ORDER BY start_date",
+                undef, ($old_id, 1));
+        foreach my $sprint_info (@$sprints) {
+            my ($sprint_id, $start_date, $end_date, $capacity) = @$sprint_info;
+            print "\tCreating sprint ".$start_date." - ".$end_date."\n";
+            my $sprint = Bugzilla::Extension::AgileTools::Sprint->create({
+                    team_id => $team->id,
+                    start_date => $start_date,
+                    end_date => $end_date,
+                    capacity => $capacity,
+                });
+            my $sprint_bugs = $dbh->selectcol_arrayref(
+                "SELECT bm.bug_id FROM scrums_sprint_bug_map AS bm ".
+                "LEFT JOIN scrums_bug_order bo ON bo.bug_id = bm.bug_id ".
+                "WHERE sprint_id = ? ORDER BY bo.team", undef, $sprint_id);
+            print "\t\tAdding bugs to sprint: ";
+            foreach my $bug_id (@$sprint_bugs) {
+                print $bug_id.", ";
+                $sprint->pool->add_bug($bug_id);
+            }
+            print "\n";
+        }
+    }
+    $dbh->bz_commit_transaction();
+}
+
+# Removes the old Scrums tables
+sub delete_bayot_scrums {
+    print "Removing old Scrums tables...\n";
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+    # Remove foreign keys
+    $dbh->bz_drop_fk('scrums_team','owner');
+    $dbh->bz_drop_fk('scrums_team','scrum_master');
+    $dbh->bz_drop_fk('scrums_teammember','teamid');
+    $dbh->bz_drop_fk('scrums_teammember','userid');
+    $dbh->bz_drop_fk('scrums_componentteam','teamid');
+    $dbh->bz_drop_fk('scrums_componentteam','component_id');
+    $dbh->bz_drop_fk('scrums_sprints','team_id');
+    $dbh->bz_drop_fk('scrums_sprint_estimate','sprintid');
+    $dbh->bz_drop_fk('scrums_sprint_estimate','userid');
+    $dbh->bz_drop_fk('scrums_sprint_bug_map','bug_id');
+    $dbh->bz_drop_fk('scrums_sprint_bug_map','sprint_id');
+    # Drop tables
+    # Leaving scrums_releases, scrums_flagtype_release_map and scrums_bug_order
+    # unmodified as there isn't anything to migrate those into
+    $dbh->bz_drop_table('scrums_team');
+    $dbh->bz_drop_table('scrums_teammember');
+    $dbh->bz_drop_table('scrums_componentteam');
+    $dbh->bz_drop_table('scrums_sprints');
+    $dbh->bz_drop_table('scrums_sprint_estimate');
+    $dbh->bz_drop_table('scrums_sprint_bug_map');
+
+    # Remove the field definition
+    $dbh->do(
+        "DELETE FROM fielddefs WHERE name = 'scrums_sprint_bug_map.sprint_id'");
+    $dbh->bz_commit_transaction();
 }
 
 1;
