@@ -105,7 +105,7 @@ sub bugs {
 =item C<add_bug($bug, $order)>
 
     Description: Inserts new bug into the pool
-    Params:      $bug - Bug object to be added to this pool
+    Params:      $bug - Bug object or ID to be added to this pool
                  $order - (optional) Order of the new bug in this pool,
                           goes last if not given
     Returns:     New order value of the bug in the new pool
@@ -117,10 +117,18 @@ sub bugs {
 sub add_bug {
     my $self = shift;
     my ($bug, $order) = @_;
-
-    ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
-        unless (blessed($bug) eq "Bugzilla::Bug");
-    ThrowUserError("param_must_be_numeric", { param => 'order', function => 'Pool->add_bug'})
+    if (!defined $bug) {
+        ThrowCodeError("param_required", {
+            param=>'bug', function=>'Pool->remove_bug'});
+    }
+    $bug = Bugzilla::Bug->new($bug) unless ref $bug;
+    if (!defined $bug) {
+        ThrowCodeError("param_invalid", {
+            param => blessed($bug),
+            function => 'Pool->remove_bug',
+            });
+    }
+    ThrowCodeError("param_must_be_numeric", { param => 'order', function => 'Pool->add_bug'})
         unless (!defined $order || detaint_natural($order));
 
     my $dbh = Bugzilla->dbh;
@@ -187,15 +195,23 @@ sub add_bug {
 =item C<remove_bug($bug)>
 
     Description: Remove bug from pool
-    Params:      $bug - Bug object to be removed from this pool
+    Params:      $bug - Bug object or ID to be removed from this pool
 
 =cut
 
 sub remove_bug {
     my ($self, $bug) = @_;
-
-    ThrowCodeError("param_invalid", {param => 'bug', function => 'Pool->add_bug'})
-        unless (blessed($bug) eq "Bugzilla::Bug");
+    if (!defined $bug) {
+        ThrowCodeError("param_required", {
+            param=>'bug', function=>'Pool->remove_bug'});
+    }
+    $bug = Bugzilla::Bug->new($bug) unless ref $bug;
+    if (!defined $bug) {
+        ThrowCodeError("param_invalid", {
+            param => blessed($bug),
+            function => 'Pool->remove_bug',
+            });
+    }
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
