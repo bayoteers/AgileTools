@@ -20,6 +20,9 @@ use Bugzilla::Util qw(detaint_natural);
 
 use Bugzilla::Extension::AgileTools::Burn;
 use Bugzilla::Extension::AgileTools::Constants;
+use Bugzilla::Extension::AgileTools::Pages;
+use Bugzilla::Extension::AgileTools::Pages::Team;
+use Bugzilla::Extension::AgileTools::Pages::Scrum;
 use Bugzilla::Extension::AgileTools::Pool;
 use Bugzilla::Extension::AgileTools::Role;
 use Bugzilla::Extension::AgileTools::Schema;
@@ -31,136 +34,22 @@ use JSON;
 our $VERSION = '0.03';
 
 my %template_handlers;
-my %page_handlers;
+
+use constant PAGE_HANDLERS => (
+    [qr/^agiletools\/([^\/]+)\./, 'Pages'],
+    [qr/^agiletools\/scrum\/([^\/.]+)\./, 'Pages::Scrum'],
+    [qr/^agiletools\/team\/([^\/.]+)\./, 'Pages::Team'],
+);
+
+###################
+# Template handlers
+###################
 
 # Helper to add a handler for the given template.
 sub _add_template_handler {
     my ($name, $sub) = @_;
     push @{$template_handlers{$name} ||= []}, $sub;
 }
-
-# Helper to add a handler for the given page.
-sub _add_page_handler {
-    my ($name, $sub) = @_;
-    push @{$page_handlers{$name} ||= []}, $sub;
-}
-
-###############
-# Page handlers
-###############
-
-_add_page_handler("agiletools/team/list.html", sub {
-    my ($vars) = @_;
-    my $cgi = Bugzilla->cgi;
-    my $action = $cgi->param("action") || "";
-    if ($action eq "remove") {
-        ThrowUserError("agile_team_manage_denied")
-            unless user_can_manage_teams;
-        my $team = Bugzilla::Extension::AgileTools::Team->check({
-                id => $cgi->param("team_id")});
-        $vars->{team} = {name=>$team->name};
-        $team->remove_from_db();
-        $vars->{message} = "agile_team_removed";
-    }
-    $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
-    $vars->{can_manage_teams} = user_can_manage_teams();
-});
-
-_add_page_handler("agiletools/team/show.html", sub {
-    my ($vars) = @_;
-    my $user = Bugzilla->login(LOGIN_REQUIRED);
-
-    my $cgi = Bugzilla->cgi;
-    my $team;
-    my $action = $cgi->param("action") || "";
-    if ($action eq "create") {
-        ThrowUserError("agile_team_manage_denied")
-            unless user_can_manage_teams;
-        $team = Bugzilla::Extension::AgileTools::Team->create({
-                name => $cgi->param("name"),
-                process_id => $cgi->param("process_id"),
-            });
-        $vars->{message} = "agile_team_created";
-    } else {
-        my $id = $cgi->param("team_id");
-        $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});
-    }
-
-    $vars->{processes} = AGILE_PROCESS_NAMES;
-    $vars->{team} = $team;
-    $vars->{roles} = Bugzilla::Extension::AgileTools::Role->match();
-
-    # TODO these values are probably cached already
-    $vars->{keywords} = Bugzilla::Keyword->match();
-    my @components;
-    foreach my $product (Bugzilla::Product->get_all()) {
-        next unless $user->can_see_product($product->name);
-        foreach my $component (@{$product->components}) {
-            push(@components, {
-                    id => $component->id,
-                    name => $product->name . " : " . $component->name,
-                });
-        }
-    }
-    $vars->{components} = \@components;
-    $team->roles;
-    $team->components;
-    $team->keywords;
-    $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
-});
-
-_add_page_handler("agiletools/team/create.html", sub {
-    my ($vars) = @_;
-    $vars->{processes} = AGILE_PROCESS_NAMES;
-});
-
-_add_page_handler("agiletools/scrum/planning.html", sub {
-    my ($vars) = @_;
-    my $cgi = Bugzilla->cgi;
-    my $id = $cgi->param("team_id");
-    ThrowUserError("invalid_parameter",
-        {name=>"team_id", err => "Not specified"})
-            unless defined $id;
-    my $team = get_team($id);
-    $vars->{team} = $team;
-    my @roles = map {$_->name}
-            @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
-                    $team)};
-    $vars->{user_roles} = \@roles;
-    my @pools;
-    push(@pools, [-1, "Unprioritized items"]);
-    for my $pool (@{$team->pools(1)}) {
-        push(@pools, [$pool->id, $pool->name]);
-    }
-    $vars->{pools_json} = JSON->new->utf8->encode(\@pools);
-    $vars->{left_id} = $cgi->param("left") || $team->current_sprint_id;
-    $vars->{right_id} = $cgi->param("right") || $team->backlogs->[0] &&
-            $team->backlogs->[0]->id;
-});
-
-_add_page_handler("agiletools/scrum/sprints.html", sub {
-    my ($vars) = @_;
-    my $id = Bugzilla->cgi->param("team_id");
-    ThrowUserError("invalid_parameter",
-        {name=>"team_id", err => "Not specified"})
-            unless defined $id;
-    my $team = get_team($id);
-    my @sprints = reverse @{Bugzilla::Extension::AgileTools::Sprint->match(
-            {team_id => $team->id})};
-    $vars->{team} = $team;
-    $vars->{sprints} = \@sprints;
-});
-
-_add_page_handler("agiletools/user_summary.html", sub {
-    my ($vars) = @_;
-
-    $vars->{processes} = AGILE_PROCESS_NAMES;
-    $vars->{agile_teams} = Bugzilla->user->agile_teams;
-});
-
-###################
-# Template handlers
-###################
 
 _add_template_handler('list/list-burn.html.tmpl', sub {
     my ($vars) = @_;
@@ -196,6 +85,7 @@ sub active_pools_to_vars {
 _add_template_handler("bug/edit.html.tmpl", \&active_pools_to_vars);
 _add_template_handler("list/edit-multiple.html.tmpl", \&active_pools_to_vars);
 
+
 #######################################
 # Page and template processing handlers
 #######################################
@@ -204,18 +94,26 @@ sub page_before_template {
     my ($self, $params) = @_;
     my $page_id = $params->{page_id};
     return unless ($page_id =~ /^agiletools\//);
+
     Bugzilla->login(LOGIN_REQUIRED);
     user_in_agiletools_group(1);
 
-    my $subs = $page_handlers{$page_id};
-    for my $sub (@{$subs || []}) {
-        $sub->($params->{vars});
+    foreach (PAGE_HANDLERS()) {
+        my($rex, $mod) = @$_;
+        if($page_id =~ /$rex/) {
+            my $handler = $1;
+            $mod = "Bugzilla::Extension::AgileTools::$mod";
+            my $sub = $mod->can($handler);
+            if ($sub) {
+                $sub->($params->{vars});
+                last;
+            }
+        }
     }
 }
 
 sub template_before_process {
     my ($self, $params) = @_;
-
     my $subs = $template_handlers{$params->{file}};
     for my $sub (@{$subs || []}) {
         $sub->($params->{vars});
