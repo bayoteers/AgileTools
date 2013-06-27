@@ -72,6 +72,12 @@ sub show {
                 name => $cgi->param("name"),
                 process_id => $cgi->param("process_id"),
             });
+        if ($cgi->param("create_backlog")) {
+            Bugzilla::Extension::AgileTools::Backlog->create({
+                name => $team->name." backlog",
+                team_id => $team->id,
+            });
+        }
         $vars->{message} = "agile_team_created";
     } else {
         my $id = $cgi->param("team_id");

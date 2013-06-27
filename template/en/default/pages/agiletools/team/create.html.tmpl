@@ -18,7 +18,9 @@
         [% FOREACH p IN processes %]
         <option value="[% p.key %]">[% p.value %]</option>
         [% END %]
-    </select>
+    </select><br/>
+    <input type="checkbox" name="create_backlog"/> Create backlog<br/>
+
 </form>
 
 [% INCLUDE global/footer.html.tmpl %]
