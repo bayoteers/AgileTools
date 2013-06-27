@@ -134,7 +134,8 @@ _add_page_handler("agiletools/scrum/planning.html", sub {
     }
     $vars->{pools_json} = JSON->new->utf8->encode(\@pools);
     $vars->{left_id} = $cgi->param("left") || $team->current_sprint_id;
-    $vars->{right_id} = $cgi->param("right") || $team->backlog_id;
+    $vars->{right_id} = $cgi->param("right") || $team->backlogs->[0] &&
+            $team->backlogs->[0]->id;
 });
 
 _add_page_handler("agiletools/scrum/sprints.html", sub {
@@ -351,8 +352,8 @@ sub bug_end_of_update {
             # Remove closed bug from any backlog
             if ($bug->pool_id) {
                 if (Bugzilla->dbh->selectrow_array(
-                        'SELECT COUNT(*) FROM agile_team '.
-                        'WHERE backlog_id = ?',
+                        'SELECT COUNT(*) FROM agile_backlog '.
+                        'WHERE pool_id = ?',
                         undef, $bug->pool_id)) {
                     $bug->pool->remove_bug($bug);
                     $changes->{'bug_agile_pool.pool_id'} = [ $old_bug->pool_id,

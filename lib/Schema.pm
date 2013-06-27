@@ -21,6 +21,7 @@ older versions of the extension.
 package Bugzilla::Extension::AgileTools::Schema;
 use strict;
 
+use Bugzilla::Extension::AgileTools::Backlog;
 use Bugzilla::Extension::AgileTools::Constants;
 
 use base qw(Exporter);
@@ -147,15 +148,6 @@ sub agiletools_schema_init {
                 TYPE => 'INT1',
                 NOTNULL => 1,
                 DEFAULT => 1,
-            },
-            backlog_id => {
-                TYPE => 'INT3',
-                NOTNULL => 0,
-                REFERENCES => {
-                    TABLE => 'agile_pool',
-                    COLUMN => 'id',
-                    DELETE => 'SET NULL',
-                },
             },
             current_sprint_id => {
                 TYPE => 'INT3',
@@ -471,6 +463,20 @@ sub agiletools_schema_update {
     $dbh->bz_add_column('agile_sprint', 'effort_on_close', {
         TYPE => 'decimal(7,2)', NOTNULL => 1, DEFAULT => 0,
     });
+
+    if ($dbh->bz_column_info('agile_team', 'backlog_id')) {
+        print "Migrating team backlogs...\n";
+        my $insert = $dbh->prepare(
+                "INSERT INTO agile_backlog (pool_id, team_id) VALUES (?, ?)");
+        my $fetch = $dbh->prepare("SELECT id, backlog_id FROM agile_team ".
+                "WHERE backlog_id IS NOT NULL");
+        $fetch->execute();
+        while (my ($team_id, $backlog_id) = $fetch->fetchrow_array()) {
+            $insert->execute($backlog_id, $team_id);
+        }
+        $dbh->bz_drop_fk('agile_team', 'backlog_id');
+        $dbh->bz_drop_column('agile_team', 'backlog_id');
+    }
 }
 
 1;

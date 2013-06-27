@@ -28,9 +28,9 @@ team and start and end dates.
 
 =item C<end_date> (mutable) - End date of the sprint
 
-=item C<pool_id> - ID of the pool related to this backlog
+=item C<pool_id> - ID of the pool related to this sprint
 
-=item C<team_id> - ID of the team owning this backlog
+=item C<team_id> - ID of the team owning this sprint
 
 =item C<capacity> (mutable) - Estimated work capacity for the sprint
 

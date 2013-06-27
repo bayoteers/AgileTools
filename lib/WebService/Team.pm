@@ -39,7 +39,6 @@ use constant FIELD_TYPES => {
     name => "string",
     group_id => "int",
     process_id => "int",
-    backlog_id => "int",
 };
 
 =head1 METHODS
