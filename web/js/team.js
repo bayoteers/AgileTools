@@ -9,6 +9,7 @@
 
 var Team = Base.extend({
     constructor: function(teamData) {
+        var self = this;
         this.members = {};
         this.components = {};
         this.keywords = {};
@@ -33,6 +34,30 @@ var Team = Base.extend({
                 this._insertRole(member, role);
             }
         }
+
+        this.backlogList = $("ul#backlog_list_"+this.id);
+        this.backlogList.find("li").each(function() {
+            var $item = $(this);
+            var $button = $("<button>")
+                .attr("type", "button")
+                .attr("value", $item.attr("id"))
+                .addClass("remove editor")
+                .text("Detach backlog");
+            $item.append($button);
+            $button.button({
+                icons:{primary:"ui-icon-circle-minus"},
+                text: false,
+            }).click($.proxy(self, "_detachBacklog"));
+        });
+        $("button#add_new_backlog").button({
+                icons:{primary:"ui-icon-circle-plus"},
+                text: false,
+            }).click($.proxy(this, "_createBacklog"));
+        $("button#add_existing_backlog").button({
+                icons:{primary:"ui-icon-circle-plus"},
+                text: false,
+            }).click($.proxy(this, "_attachBacklog"));
+
 
         this.respTables = {};
         // COMPONENTS
@@ -115,7 +140,7 @@ var Team = Base.extend({
                 memberId: member.userid,
                 roleId: role.id
                 }, $.proxy(this, "_removeRoleClick"));
-        member.row.find(".roles").find("tr").last().before($roleRow);
+        member.row.find(".roles").find("li").last().before($roleRow);
         return $roleRow;
     },
 
@@ -137,9 +162,16 @@ var Team = Base.extend({
         this.respTables[type].find("tr").last().before($row);
     },
 
-    rpc: function(method, params)
+    team_rpc: function(method, params)
     {
         var rpc = new Rpc("Agile.Team", method, params);
+        rpc.fail(function(error) {alert("Operation failed: " + (error.message ||
+                        "Probably internal error.."));});
+        return rpc;
+    },
+    backlog_rpc: function(method, params)
+    {
+        var rpc = new Rpc("Agile.Backlog", method, params);
         rpc.fail(function(error) {alert("Operation failed: " + (error.message ||
                         "Probably internal error.."));});
         return rpc;
@@ -147,7 +179,7 @@ var Team = Base.extend({
 
     _addMemberClick: function(event)
     {
-        this.rpc("add_member", {
+        this.team_rpc("add_member", {
                     id: this.id, user: event.data.input.val()})
             .done($.proxy(this, "_addMemberDone"));
     },
@@ -164,7 +196,7 @@ var Team = Base.extend({
 
     _removeMemberClick: function(event)
     {
-        this.rpc("remove_member", {
+        this.team_rpc("remove_member", {
                     id: this.id, user: event.data.memberId})
             .done($.proxy(this, "_removeMemberDone"));
 
@@ -189,7 +221,7 @@ var Team = Base.extend({
 
     _addRoleClick: function(event)
     {
-        this.rpc("add_member_role", {
+        this.team_rpc("add_member_role", {
                     id: this.id, user: event.data.memberId,
                     role: event.data.input.val()})
             .done($.proxy(this, "_addMemberRoleDone"));
@@ -203,7 +235,7 @@ var Team = Base.extend({
 
     _removeRoleClick: function(event)
     {
-        this.rpc("remove_member_role", {
+        this.team_rpc("remove_member_role", {
                     id: this.id, user: event.data.memberId,
                     role: event.data.roleId})
             .done($.proxy(this, "_removeMemberRoleDone"));
@@ -223,7 +255,7 @@ var Team = Base.extend({
 
     _addRespClick: function(event)
     {
-        this.rpc("add_responsibility", {
+        this.team_rpc("add_responsibility", {
                     id: this.id,
                     type: event.data.type,
                     item_id: event.data.input.val()})
@@ -243,7 +275,7 @@ var Team = Base.extend({
     },
     _removeRespClick: function(event)
     {
-        this.rpc("remove_responsibility",
+        this.team_rpc("remove_responsibility",
                 {
                     id: this.id,
                     type: event.data.type,
@@ -267,5 +299,41 @@ var Team = Base.extend({
                 delete team.responsibilities[type][id];
             }
         });
+    },
+    _attachBacklog: function(event) {
+        var id = $("select#existing_backlog").val();
+        var element = $("select#existing_backlog :selected");
+        var that = this;
+        this.backlog_rpc("update", {id: id, team_id: this.id})
+            .done(function(result) {
+                element.remove();
+                that.backlogList.append("<li>"+result.backlog.name+
+                                " (pool ID "+result.backlog.pool_id +")</li>");
+            });
+
+    },
+    _detachBacklog: function(event) {
+        var element_id = $(event.currentTarget).val();
+        var element = this.backlogList.find("#"+element_id);
+        var id = element_id.split('_')[1];
+        this.backlog_rpc("update", {id: id, team_id: null})
+            .done(function(result) {
+                var option = $("<option>")
+                    .attr("value", result.backlog.pool_id)
+                    .text(result.backlog.name);
+                $("select#existing_backlog").append(option);
+                element.remove();
+            });
+    },
+    _createBacklog: function(event) {
+        var name = $("input#new_backlog").val();
+        var that = this;
+        this.backlog_rpc("create", {name: name, team_id: this.id})
+            .done(function(result){
+                that.backlogList.append(
+                    "<li>"+result.name+
+                    " (pool ID "+result.pool_id +")</li>");
+                $("input#new_backlog").val("");
+            });
     },
 });

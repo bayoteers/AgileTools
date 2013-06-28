@@ -28,7 +28,7 @@ Generic page handler functions
 =item C<process_id> (mutable) - ID of the development process the team uses.
         See: L<extensions::AgileTools::lib::Constants/Process types>
 
-=itme C<current_sprint_id> - ID of the sprint/pool containing the teams current
+=item C<current_sprint_id> - ID of the sprint/pool containing the teams current
         sprint.
 
 

@@ -11,6 +11,10 @@
     display: none;
 }
 
+span.ui-button-text {
+    padding: .1em 1em !important;
+}
+
 /* Team management pages */
 .editor {
     display: none;
@@ -44,6 +48,29 @@ button.remove {
     -khtml-border-radius: 4px;
 }
 
+ul.roles {
+    padding: 0px;
+    margin: 0px;
+    list-style-type: none;
+}
+
+ul.roles button {
+    float: right;
+}
+ul.roles select {
+    float: left;
+}
+ul.roles li {
+    clear: both;
+}
+
+table.team_info {
+    border-spacing: 0px;
+}
+table.team_info td {
+    vertical-align: top;
+    border-top: solid 1px;
+}
 
 /* Scrum planning page */
 .center {

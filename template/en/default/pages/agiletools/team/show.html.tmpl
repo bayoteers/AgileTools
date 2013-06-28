@@ -38,28 +38,24 @@ $(function() {
             <button class="editor remove" type="button">Remove member</button>
         </td>
         <td>
-            <table class="roles">
-                <tr class="editor">
-                    <td>
-                        <select class="role-new">
-                            <option value=""></option>
-                        [% FOREACH role IN roles %]
-                            <option value="[% role.id %]">[% role.name FILTER html %]</option>
-                        [% END %]
-                        </select>
-                    </td>
-                    <td><button class="add" type="button">Add role</button></td>
-                </tr>
-            </table>
+            <ul class="roles">
+                <li class="editor">
+                    <select class="role-new">
+                        <option value=""></option>
+                    [% FOREACH role IN roles %]
+                        <option value="[% role.id %]">[% role.name FILTER html %]</option>
+                    [% END %]
+                    </select>
+                    <button class="add" type="button">Add role</button>
+                </li>
+            </ul>
         </td>
     </tr>
     
-    <tr id="role_template">
-        <td class="name"></td>
-        <td class="editor">
-            <button class="remove" type="button">Remove role</button>
-        </td>
-    </tr>
+    <li id="role_template">
+        <span class="name"></span>
+        <button class="editor remove" type="button">Remove role</button>
+    </li>
 
     <tr id="responsibility_template">
         <td class="name"></td>
@@ -80,8 +76,26 @@ $(function() {
         [% error.type FILTER html %]: [% error.info FILTER html %]
 [% END %]
 
+[% IF team.user_can_edit %]
+<div class="editor">
+    <h2>Add backlogs</h2>
+    <input id="new_backlog" type="text"/>
+    <button class="add" type="button" id="add_new_backlog"
+        >Create new backlog</button><br/>
+    [% IF available_backlogs.size %]
+    <select id="existing_backlog">
+        [% FOREACH bl IN available_backlogs %]
+        <option value="[% bl.id %]">[% bl.name FILTER html %]</option>
+        [% END %]
+    </select>
+    <button class="add" type="button" id="add_existing_backlog"
+        >Add existing backlog</button><br/>
+    [% END %]
+</div>
+[% END %]
+
 <h2>Members</h2>
-<table id="team_members">
+<table id="team_members" class="team_info">
     <thead>
         <tr>
             <th>Name</th>
@@ -98,6 +112,7 @@ $(function() {
             <td>
                 <button class="add" type="button">Add member</button>
             </td>
+            <td></td>
         [% END %]
         </tr>
     </tbody>
@@ -105,7 +120,7 @@ $(function() {
 </ul>
 
 <h2>Responsibilities</h2>
-<table id="team_components">
+<table id="team_components"  class="team_info">
     <thead>
         <tr>
             <th>Components</th>
@@ -127,7 +142,7 @@ $(function() {
         </tr>
     </tbody>
 </table>
-<table id="team_keywords">
+<table id="team_keywords"  class="team_info">
     <thead>
         <tr>
             <th>Keywords</th>

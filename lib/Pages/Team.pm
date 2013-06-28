@@ -30,6 +30,7 @@ use Bugzilla::Extension::AgileTools::Role;
 use Bugzilla::Extension::AgileTools::Team;
 use Bugzilla::Extension::AgileTools::Util;
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 
 use JSON;
@@ -100,6 +101,8 @@ sub show {
                 });
         }
     }
+    $vars->{available_backlogs} =
+        Bugzilla::Extension::AgileTools::Backlog->match({team_id => IS_NULL});
     $vars->{components} = \@components;
     $team->roles;
     $team->components;

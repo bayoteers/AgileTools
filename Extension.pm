@@ -543,6 +543,8 @@ sub webservice {
         "Bugzilla::Extension::AgileTools::WebService::Sprint";
     $args->{dispatch}->{'Agile.Pool'} =
         "Bugzilla::Extension::AgileTools::WebService::Pool";
+    $args->{dispatch}->{'Agile.Backlog'} =
+        "Bugzilla::Extension::AgileTools::WebService::Backlog";
 }
 
 ########################
