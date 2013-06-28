@@ -68,9 +68,11 @@ sub update {
             {id=>$backlog_id});
     if (exists $params->{team_id}) {
         # Check that user is allowed to edit both teams
-        if ($params->{team_id} != $backlog->team_id) {
-            get_team($params->{team_id}, 1) if defined $params->{team_id};
-            get_team($backlog->team_id, 1) if defined $backlog->team_id;
+        my $new_team = $params->{team_id} || 0;
+        my $old_team = $backlog->team_id || 0;
+        if ($new_team != $old_team) {
+            get_team($new_team, 1) if $new_team;
+            get_team($old_team, 1) if $old_team;
         }
     }
 
