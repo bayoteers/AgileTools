@@ -590,10 +590,24 @@ sub unprioritized_search_params {
             next if (defined $include &&
                 !grep {$item->id == $_} @{$include->{$type} || []});
 
+			my $product = $item->product;	
+				
+			$params->{"f".$fidx} = "OP";
+			$fidx++;
+			
             $params->{"f".$fidx} = $field;
             $params->{"o".$fidx} = "equals";
             $params->{"v".$fidx} = $item->name;
             $fidx++;
+
+            $params->{"f".$fidx} = "product";
+            $params->{"o".$fidx} = "equals";
+            $params->{"v".$fidx} = $product->name;
+            $fidx++;	
+			
+			$params->{"f".$fidx} = "CP";
+			$fidx++;
+			
         }
     }
     return ($fidx == 3) ? undef : $params;
