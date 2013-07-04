@@ -38,12 +38,15 @@ $.widget("agile.buglist", {
             .appendTo(this.element);
 
         this.element.sortable({
+            containment: "document",
+            scroll: false,
             items: "> :agile-blitem",
             placeholder: "blitem-placeholder",
             connectWith: this.options.connectWith,
             stop: $.proxy(this, "_onSortStop"),
             receive: $.proxy(this, "_onSortReceive"),
             update: $.proxy(this, "_onSortUpdate"),
+            sort: _scrollWindow,
         });
 
         $.Widget.prototype._create.apply( this, arguments );
@@ -234,6 +237,24 @@ $.widget("agile.buglist", {
     },
 });
 
+/**
+ * sortable sort handler
+ * XXX: sortable scrolling doesn't seem to work, so we do the window
+ *      scrolling here
+ */
+var _scrollWindow = function(ev, ui) {
+    var d = $(document);
+    var scrollTop = d.scrollTop();
+    if(ui.offset.top > 0 && ui.offset.top < scrollTop ) {
+        d.scrollTop(ui.offset.top - 10);
+    } else {
+        var bottom = ui.offset.top + ui.helper.height();
+        var scrollBottom = scrollTop + $(window).height();
+        if(bottom > scrollBottom) {
+            d.scrollTop(scrollTop + bottom - scrollBottom + 10);
+        }
+    }
+};
 
 /**
  * jQuery buglist item widget
@@ -267,7 +288,9 @@ $.widget("agile.blitem", {
             text: false,
         }).click($.proxy(this, "_openEstimate"));
 
-        this._dList = this.element.find("ul.dependson").sortable();
+        this._dList = this.element.find("ul.dependson").sortable({
+            sort: _scrollWindow,
+        });
         this._dList.addClass("buglist");
         this._setBuglist(this.options._buglist);
         this._updateBug();

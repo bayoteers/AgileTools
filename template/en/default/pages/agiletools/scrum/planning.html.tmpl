@@ -10,14 +10,13 @@
 
 /* Global scrum variables */
 var SCRUM = {
-    team_id: [% team.id %],
-    pools: [% pools_json %],
+  sprint_id: [% sprint_id %],
+  backlog_id: [% backlog_id %],
+  team_id: [% team.id %],
 };
 
 /* Initialize the page on ready */
-$(function() {
-    new ScrumPlaningView([% left_id FILTER js %], [% right_id FILTER js %]);
-});
+$(function(){_initScrumPlanning()});
 
 [% END %]
 
@@ -25,6 +24,8 @@ $(function() {
     title = "Team " _ team.name _ " Scrum planning",
     style_urls = [
         "extensions/AgileTools/web/css/base.css",
+        "extensions/AgileTools/web/css/planning.css",
+        "extensions/AgileTools/web/css/buglist.css",
         ],
     javascript_urls = [
         "extensions/AgileTools/web/js/buglist.js",
@@ -32,35 +33,50 @@ $(function() {
         ],
 %]
 
-<table class="center">
-    <tr>
-        <td id="list_1" class="list-container">
-            <select class="content-selector"></select>
-            <div class="list-header"></div>
+<button class="left">&lt;&lt;</button>
+<button class="right">&gt;&gt;</button>
+<div class="pagebox"><div class="columnbox">
 
-            <ul class="list-content"></ul>
+    <div id="sprint" class="list-container">
+      <div id="sprint_name" class="list-title"
+          >[% team.current_sprint.name FILTER html %]</div>
+      <div class="list-header"></div>
+      <ul class="list-content"></ul>
+      <div class="list-footer"></div>
+    </div>
 
-            <div class="list-footer"></div>
-        </td>
+</div><div class="columnbox">
 
-        <td id="list_2" class="list-container">
+    <div id="backlog" class="list-container">
+      <select class="pool-selector list-title" name="backlog">
+          [% UNLESS backlog_id %]
+          <option disabled="disabled">No backlogs</option>
+          [% END %]
+          [% FOREACH bl IN team.backlogs %]
+          <option [% IF backlog_id == bl.id %]selected="selected"[% END #%]
+            value="[% bl.id FILTER html %]">[% bl.name FILTER html %]</option>
+          [% END %]
+        </select>
+      <div class="list-header"></div>
+      <ul class="list-content"></ul>
+      <div class="list-footer"></div>
+    </div>
 
-            <select class="content-selector"></select>
-            <div class="list-header"></div>
+</div><div class="columnbox" style="display:none;">
 
-            <ul class="list-content"></ul>
+    <div id="unprioritized" class="list-container">
+      <div class="list-title">Unprioritized items</div>
+      <div class="list-header"></div>
+      <ul class="list-content"></ul>
+      <div class="list-footer"></div>
+    </div>
 
-            <div class="list-footer"></div>
-        </td>
-    </tr>
-</table>
+</div></div>
 
 <hr/>
 [% IF team.user_can_edit %]
 [<a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">Manage team</a>]
 [% END %]
-
-
 
 <!-- Hidden templates start here -->
 <div id="templates">
@@ -106,7 +122,7 @@ $(function() {
             <td>Free capacity:</td>
             <td class="free-cap"></td>
         </tr>
-        [% IF user_roles.grep('Scrum Master') %]
+        [% IF team.user_can_edit %]
         <tr>
             <td></td>
             <td>
@@ -117,20 +133,6 @@ $(function() {
         </tr>
         [% END %]
     </table>
-
-    <div id="resposibility_filter_template">
-        Show responsibilities:<br/>
-        <select name="responsibilities" multiple="multiple">
-        [% FOREACH item IN team.responsibilities('component') %]
-            <option value="component:[% item.id %]" selected="selected">
-            component: [% item.name %]</option>
-        [% END %]
-        [% FOREACH item IN team.responsibilities('keyword') %]
-            <option value="keyword:[% item.id %]" selected="selected">
-            keyword: [% item.name %]</option>
-        [% END %]
-        </select>
-    </div>
 
     <ul>
         <li id="bug_item_template" class="ui-corner-all">

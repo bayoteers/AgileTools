@@ -1,0 +1,64 @@
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (C) 2013 Jolla Ltd.
+ * Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+ */
+
+/* Buglist related */
+.buglist {
+    padding: 2px;
+    list-style-type: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.buglist.dependson {
+    overflow: visible;
+}
+
+.blitem .dependson {
+    margin-left: 1em;
+}
+
+.blitem {
+    border: 1px solid;
+    margin: 1px;
+    margin-bottom: 5px;
+}
+
+.blitem-hl {
+    background-color: lightgray;
+}
+
+.blitem-placeholder {
+    background-color: gray;
+    height: 2em;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+}
+
+.over-capacity {
+    background-color: pink;
+}
+
+.blitem span.times {
+    float: right;
+    height: 0px;
+}
+
+.blitem div.details {
+    display: none;
+}
+
+.blitem button.expand,
+.blitem button.add-child,
+.blitem button.estimate {
+    width: 1em;
+    height: 1em;
+    vertical-align: text-bottom;
+}

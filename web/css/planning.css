@@ -1,0 +1,45 @@
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (C) 2013 Jolla Ltd.
+ * Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+ */
+
+/* Scrum planning page */
+div.pagebox {
+    white-space: nowrap;
+    margin-left: 20px;
+    margin-right: 20px;
+    /*overflow-x: hidden;*/
+    padding-bottom: 5px;
+}
+div.columnbox {
+    width: 50%;
+    vertical-align:top;
+    display: inline-block;
+    white-space: normal;
+}
+button.right {
+    float: right;
+    width: 20px;
+    margin: 0px;
+}
+button.left {
+    float: left;
+    width: 20px;
+    margin: 0px;
+}
+
+div.list-container {
+    margin: 1px;
+    padding: 5px;
+    border: solid 1px;
+    border-radius: 5px;
+}
+.list-title {
+    height: 2em;
+    font-weight: bold;
+    vertical-align: middle;
+}

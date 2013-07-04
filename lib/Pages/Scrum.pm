@@ -25,7 +25,6 @@ use strict;
 use warnings;
 package Bugzilla::Extension::AgileTools::Pages::Scrum;
 
-use Bugzilla::Extension::AgileTools::Role;
 use Bugzilla::Extension::AgileTools::Sprint;
 use Bugzilla::Extension::AgileTools::Util;
 
@@ -46,19 +45,10 @@ sub planning {
             unless defined $id;
     my $team = get_team($id);
     $vars->{team} = $team;
-    my @roles = map {$_->name}
-            @{Bugzilla::Extension::AgileTools::Role->get_user_roles(
-                    $team)};
-    $vars->{user_roles} = \@roles;
-    my @pools;
-    push(@pools, [-1, "Unprioritized items"]);
-    for my $pool (@{$team->pools(1)}) {
-        push(@pools, [$pool->id, $pool->name]);
-    }
-    $vars->{pools_json} = JSON->new->utf8->encode(\@pools);
-    $vars->{left_id} = $cgi->param("left") || $team->current_sprint_id;
-    $vars->{right_id} = $cgi->param("right") || $team->backlogs->[0] &&
-            $team->backlogs->[0]->id;
+    $vars->{team_id} = $team->id;
+    $vars->{sprint_id} = $team->current_sprint_id;
+    $vars->{backlog_id} = $cgi->param("backlog_id") ||
+            $team->backlogs->[0] ? $team->backlogs->[0]->id : 0;
 }
 
 =item C<sprints> - The team sprints listing page

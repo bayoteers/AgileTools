@@ -361,8 +361,8 @@ sub remove_from_db {
 
 sub TO_JSON {
     my $self = shift;
-    # fetch the pool
-    $self->pool;
+    # fetch the pool and name
+    $self->name;
     # Determine current status
     $self->is_current;
     return { %{$self} };

@@ -53,6 +53,14 @@ function scrumFormatDate(dateStr)
 };
 
 /**
+ * Helper to round the time units
+ */
+function roundTime(value)
+{
+    return Math.round(value * 100) / 100;
+}
+
+/**
  * Helper to get number of weekdays in date range
  */
 function countDays(from, to, skip)
@@ -77,32 +85,17 @@ var ListController = Base.extend(
         this._footer = element.find('.list-footer').empty();
         this._rpcwait = false;
 
-        this.list.empty().buglist();
-
-
+        this.list.buglist();
 
         this._header.append($('<button type="button">Reload</button>')
             .click($.proxy(this, 'load')));
         this._header.append('Search: ')
             .append($('<input>').keyup($.proxy(this, '_search')));
-
-        this._resizeList();
-        $(window).on('resize', $.proxy(this, '_resizeList'));
     },
 
     destroy: function()
     {
         this.list.buglist("destroy");
-    },
-
-    /**
-     * Adjust the list height to changed window size
-     */
-    _resizeList: function()
-    {
-        var height = $(window).height();
-        height = Math.max(height - 200, 200);
-        this.list.css('height', height);
     },
 
     /**
@@ -155,6 +148,8 @@ var PoolController = ListController.extend({
     constructor: function(element, poolID)
     {
         this.base(element);
+        this._selector = this._element.children("select.pool-selector");
+        this._selector.change($.proxy(this, "_onPoolChange"));
         this._poolID = poolID;
     },
 
@@ -163,6 +158,14 @@ var PoolController = ListController.extend({
         this._footer.empty();
         this.callRpc('Agile.Pool', 'get', {id: this._poolID})
             .done($.proxy(this, '_onPoolGetDone'));
+    },
+
+    /**
+     * Pool select change handler
+     */
+    _onPoolChange: function() {
+        this._poolID = this._selector.val();
+        this.load();
     },
 
     /**
@@ -241,11 +244,10 @@ var PoolController = ListController.extend({
 
 var SprintController = PoolController.extend({
 
-    constructor: function(element, poolID, updateCb)
+    constructor: function(element, poolID)
     {
         this.base(element, poolID);
         this._sprint = null;
-        this._sprintUpdateCb = updateCb;
     },
 
     load: function()
@@ -289,10 +291,11 @@ var SprintController = PoolController.extend({
      */
     _updateSprintInfo: function(sprint)
     {
+        this._element.children("#sprint_name").text(sprint.name);
         var info = $('#sprint_info_template').clone().attr('id', null);
         info.find('.start-date').text(scrumFormatDate(sprint.start_date));
         info.find('.end-date').text(scrumFormatDate(sprint.end_date));
-        info.find('.estimated-cap').text(sprint.capacity);
+        info.find('.estimated-cap').text(roundTime(sprint.capacity));
         info.find('button[name=edit]').click(
                     $.proxy(this, '_openEditSprint'));
         info.find('button[name=close]').click(
@@ -308,9 +311,6 @@ var SprintController = PoolController.extend({
         }
         this._footer.empty().append(info);
         this._sprint = sprint;
-        if (this._sprintUpdateCb) {
-            this._sprintUpdateCb(this._sprint);
-        }
     },
 
     /**
@@ -439,7 +439,7 @@ var SprintController = PoolController.extend({
         } else if (now > start) {
             daysLeft = countDays(now, end, [0,6]);
         }
-        var remainingCap = Math.round(daysLeft / days * capacity * 100) / 100;
+        var remainingCap = daysLeft / days * capacity;
 
         this.list.find(':agile-blitem').each(function() {
             work += Number($(this).blitem('bug').remaining_time || 0);
@@ -450,45 +450,22 @@ var SprintController = PoolController.extend({
             }
         });
         var free = remainingCap - work;
-        this._footer.find('.remaining-work').text(work);
-        this._footer.find('.remaining-cap').text(remainingCap);
-        this._footer.find('.free-cap').text(free);
+        this._footer.find('.remaining-work').text(roundTime(work));
+        this._footer.find('.remaining-cap').text(roundTime(remainingCap));
+        this._footer.find('.free-cap').text(roundTime(free));
     },
 
 });
 
 var UnprioritizedController = ListController.extend({
     /**
-     * Loads unrpioritized items
+     * Loads unprioritized items
      */
     load: function()
     {
         this.list.buglist('clear');
-        var filter = $('#resposibility_filter_template').clone().attr('id', null);
-        filter.change($.proxy(this, '_filterUnprioritized'));
-        this._footer.html(filter);
-        this._filterUnprioritized();
-    },
-
-    /**
-     * Apply the unrpioritized items filter selections
-     */
-    _filterUnprioritized: function(ev)
-    {
-        var params = {id: SCRUM.team_id};
-        if (ev) {
-            var items = $(ev.target).val();
-            if (! $.isEmptyObject(items)) {
-                var include = {};
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i].split(':');
-                    if (!include[item[0]]) include[item[0]] = [];
-                    include[item[0]].push(item[1]);
-                }
-                params.include = include;
-            }
-        }
-        var rpc = this.callRpc('Agile.Team', 'unprioritized_items', params);
+        var rpc = this.callRpc('Agile.Team', 'unprioritized_items',
+                {id: SCRUM.team_id});
         rpc.done($.proxy(this, '_onUnprioritizedGetDone'));
     },
 
@@ -521,103 +498,92 @@ var UnprioritizedController = ListController.extend({
 });
 
 
-var ScrumPlaningView = Base.extend(
-{
-    constructor: function(leftID, rightID)
-    {
-        this.left = {
-            element: $('#list_1'),
-            selector: $('#list_1 > select.content-selector'),
-            value: leftID,
-        };
-        this.right = {
-            element: $('#list_2'),
-            selector: $('#list_2 > select.content-selector'),
-            value: rightID,
-        };
+function _initScrumPlanning() {
+    var sprint;
+    var backlog;
+    $("div.columnbox").each(function() {
+        var column = $(this);
+        var container = column.children("div.list-container");
+        var controller;
+        switch(container.attr('id')) {
+        case 'sprint':
+            sprint = column;
+            column.data("loaded", true);
+            controller = new SprintController(container, SCRUM.sprint_id);
+            controller.load();
+            break;
+        case 'backlog':
+            backlog = column;
+            column.data("loaded", true);
+            if (SCRUM.backlog_id == 0) break;
+            controller = new PoolController(container, SCRUM.backlog_id);
+            controller.load();
+            break;
+        case 'unprioritized':
+            controller = new UnprioritizedController(container);
+            break;
+        default:
+            throw "Unknown container "+container.attr('id');
+        }
+        column.data("controller", controller);
+    });
+    _connectControllers(sprint, backlog);
 
-        this._populateSelectors();
-
-        this.left.selector
-                .change($.proxy(this, '_changeContent'))
-                .data('side', 'left').trigger('change');
-        this.right.selector
-                .change($.proxy(this, '_changeContent'))
-                .data('side', 'right').trigger('change');
-    },
-
-    _populateSelectors: function()
-    {
-        for (var i=0; i < SCRUM.pools.length; i++) {
-            var id = SCRUM.pools[i][0];
-            if(!this.left.value){
-                this.left.value = id;
-            } else if(!this.right.value) {
-                this.right.value = id;
+    $("button.right").button({
+        icons: { primary: "ui-icon-seek-next" },
+        text: false,
+    }).click(function(){
+        var button = $(this).button('disable');
+        var hidden = $("div.columnbox").last();
+        if(!hidden.data('loaded')) {
+            hidden.data('controller').load();
+            hidden.data('loaded', true);
+        }
+        var tohide = $("div.columnbox").first();
+        var visible = tohide.next();
+        hidden.show();
+        tohide.animate({'margin-left': -tohide.width()},{
+            complete: function() {
+                $("div.pagebox").append(tohide);
+                tohide.css("margin-left", 0);
+                tohide.hide();
+                button.button('enable');
             }
-            var name = SCRUM.pools[i][1];
-            var option = $('<option>');
-            option.attr('value', id).text(name);
-            var rOption = option.clone();
-            if (id == this.left.value) {
-                option.attr('selected', 'selected');
-            } else if (id == this.right.value) {
-                rOption.attr('selected', 'selected');
+        });
+        _connectControllers(visible, hidden);
+    });
+
+    $("button.left").button({
+        icons: { primary: "ui-icon-seek-prev" },
+        text: false,
+    }).click(function(){
+        var button = $(this).button('disable');
+        var hidden = $("div.columnbox").last();
+        if(!hidden.data('loaded')) {
+            hidden.data('controller').load();
+            hidden.data('loaded', true);
+        }
+        var tohide = hidden.prev();
+        var visible = tohide.prev();
+        $("div.pagebox").prepend(hidden);
+        hidden.css('margin-left', -hidden.width());
+        hidden.show();
+        hidden.animate({'margin-left': 0},{
+            complete: function() {
+                tohide.hide();
+                button.button('enable');
             }
-            this.left.selector.append(option);
-            this.right.selector.append(rOption);
-        }
-    },
+        });
+        _connectControllers(visible, hidden);
+    });
+}
 
-
-    /**
-     * Content selector change handler.
-     */
-    _changeContent: function(ev)
-    {
-        var selector = $(ev.currentTarget);
-        var side = selector.data('side');
-        if (!side) return;
-        var other = side == 'left' ? this.right : this.left;
-        other.selector.find('option[disabled=disabled]')
-            .attr('disabled', null);
-        side = this[side];
-        this._resetSide(side);
-        var id = side.selector.val();
-        other.selector.find('option[value=' + id +']')
-            .attr('disabled', 'disabled');
-        var name = side.selector.find(':selected').text();
-        if (/sprint/.test(name)) {
-            side.controller = new SprintController(side.element, id,
-                $.proxy(this, '_updateSprintName'));
-        } else if (/backlog/.test(name)) {
-            side.controller = new PoolController(side.element, id);
-        } else if (id == -1) {
-            side.controller = new UnprioritizedController(side.element);
-        } else {
-            alert("Sorry, don't know how to open '" + name + "'");
-            return;
-        }
-        side.controller.load();
-        if (other.controller) {
-            side.controller.list.buglist('option', 'connectWith', other.controller.list);
-            other.controller.list.buglist('option', 'connectWith', side.controller.list);
-        }
-    },
-
-    _updateSprintName: function(sprint)
-    {
-        this.left.selector.find('[value='+sprint.id+']').text(sprint.name);
-        this.right.selector.find('[value='+sprint.id+']').text(sprint.name);
-    },
-
-    _resetSide: function(side)
-    {
-        if (side.controller) side.controller.destroy();
-        delete side.controller;
-        side.element.find('.list-header, .list-content, .list-footer')
-            .empty();
-    },
-
-});
+_connectControllers = function(colA, colB) {
+    var contA = colA.data('controller');
+    var contB = colB.data('controller');
+    if (typeof(contA) == 'undefined' || typeof(contB) == 'undefined')
+        return;
+    contA.list.buglist('option', 'connectWith', contB.list);
+    contB.list.buglist('option', 'connectWith', contA.list);
+}
 
