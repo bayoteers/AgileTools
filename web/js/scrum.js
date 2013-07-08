@@ -17,7 +17,6 @@ function scrumDateRange(from, to, extraOpts)
             dateFormat: 'yy-mm-dd',
             firstDay: 1,
             showWeek: true,
-            showOn: 'button',
             showButtonPanel: true,
         }, extraOpts);
     from.datepicker($.extend({}, options,
