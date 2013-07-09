@@ -141,13 +141,10 @@ sub _check_team_id {
 sub _check_name {
     my ($invocant, $name) = @_;
     $name = trim($name);
-    $name || ThrowUserError("agile_missing_field", {field=>'name'});
-
-    if (!ref($invocant) || $invocant->name ne $name) {
-        ThrowUserError("agile_pool_exists", { name => $name })
-            if defined Bugzilla::Extension::AgileTools::Pool->new(
-                {name => $name});
-    }
+    ThrowUserError('invalid_parameter', {
+            name => 'name',
+            err => 'Name must not be empty'})
+        unless $name;
     return $name;
 }
 

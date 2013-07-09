@@ -30,7 +30,7 @@ package Bugzilla::Extension::AgileTools::Pool;
 
 use Bugzilla::Error;
 use Bugzilla::Hook;
-use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Util qw(detaint_natural trim);
 use Bugzilla::Bug qw(LogActivityEntry);
 
 use Scalar::Util qw(blessed);
@@ -57,6 +57,7 @@ use constant UPDATE_COLUMNS => qw(
 );
 
 use constant VALIDATORS => {
+    name => \&_check_name,
 };
 
 # Mutators
@@ -69,6 +70,28 @@ sub set_is_active     { $_[0]->set('is_active', $_[1]); }
 ###########
 
 sub is_active { return $_[0]->{is_active}; }
+
+# Validatord
+####
+sub _check_name {
+    my ($invocant, $value) = @_;
+    my $class = blessed($invocant) || $invocant;
+    my $name = trim($value);
+    ThrowUserError('invalid_parameter', {
+            name => 'name',
+            err => 'Name must not be empty'})
+        unless $name;
+
+    if (!blessed($invocant) || $invocant->name ne $name) {
+        ThrowUserError('invalid_parameter', {
+            name => 'name',
+            err => "Pool with name '$name' already exists"})
+            if defined Bugzilla::Extension::AgileTools::Pool->new(
+                {name => $name});
+    }
+    return $name;
+}
+
 
 =head1 METHODS
 
