@@ -82,7 +82,7 @@ sub _check_name {
             err => 'Name must not be empty'})
         unless $name;
 
-    if (!blessed($invocant) || $invocant->name ne $name) {
+    if (!blessed($invocant) || lc($invocant->name) ne lc($name)) {
         ThrowUserError('invalid_parameter', {
             name => 'name',
             err => "Pool with name '$name' already exists"})
