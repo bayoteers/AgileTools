@@ -244,7 +244,7 @@ var Team = Base.extend({
     {
         if (!result.role) return;
         var member = this.members[result.userid];
-        member.row.find(".roles tr").each(function() {
+        member.row.find(".roles li").each(function() {
             var $row = $(this);
             if ($row.data("roleId") == result.role.id) {
                 $row.remove();
