@@ -24,8 +24,10 @@ $(function() {
     title = "Team $team.name",
     style_urls = [
         "extensions/AgileTools/web/css/base.css",
+        "extensions/AgileTools/web/css/colorbox.css",
         ],
     javascript_urls = [
+        "extensions/AgileTools/web/js/jquery.colorbox-min.js",
         "extensions/AgileTools/web/js/team.js",
         ],
 %]
@@ -119,51 +121,6 @@ $(function() {
 </table>
 </ul>
 
-<h2>Responsibilities</h2>
-<table id="team_components"  class="team_info">
-    <thead>
-        <tr>
-            <th>Components</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="editor">
-            [% IF team.user_can_edit %]
-            <td>
-                <select class="component-new"/>
-                    <option value=""></option>
-                [% FOREACH component IN components %]
-                    <option value="[% component.id %]">[% component.name FILTER html %]</option>
-                [% END %]
-                </select>
-            </td>
-            <td><button type="button" class="add">Add</button></td>
-            [% END %]
-        </tr>
-    </tbody>
-</table>
-<table id="team_keywords"  class="team_info">
-    <thead>
-        <tr>
-            <th>Keywords</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="editor">
-            [% IF team.user_can_edit %]
-            <td>
-                <select class="keyword-new"/>
-                    <option value=""></option>
-                [% FOREACH keyword IN keywords %]
-                    <option value="[% keyword.id %]">[% keyword.name FILTER html %]</option>
-                [% END %]
-                </select>
-            </td>
-            <td><button type="button" class="add">Add</button></td>
-            [% END %]
-        </tr>
-    </tbody>
-</table>
 [% IF team.user_can_edit %]
 <button class="editor-toggle" type="button">Show/Hide Editing</button><br/>
 [% END %]

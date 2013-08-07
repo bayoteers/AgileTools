@@ -178,62 +178,6 @@ sub remove_member_role {
     return {};
 }
 
-=item C<add_responsibility>
-
-    Description: Add a new team responsibility
-    Params:      id => Team ID
-                 type => Responsibility type, 'component' or 'keyword'
-                 item_id - Object ID of the component or keyword
-    Returns:     The new list of team responsibilities for that type
-
-=cut
-
-sub add_responsibility {
-    my ($self, $params) = @_;
-    Bugzilla->login(LOGIN_REQUIRED);
-    user_in_agiletools_group(1);
-    ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
-            param => 'id'}) unless defined $params->{id};
-    ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
-            param => 'type'}) unless defined $params->{type};
-    ThrowCodeError('param_required', {function => 'Agile.Team.add_responsibility',
-            param => 'item_id'}) unless defined $params->{item_id};
-
-    my $team = get_team($params->{id}, 1);
-    $team->add_responsibility($params->{type}, $params->{item_id});
-    # TODO: WebService type the result
-    return {type => $params->{type},
-        items => $team->responsibilities($params->{type})};
-}
-
-=item c<remove_responsibility>
-
-    description: remove a team responsibility
-    params:      id - team id
-                 type - responsibility type, 'component' or 'keyword'
-                 item_id - object id of the component or keyword
-    returns:     the new list of team responsibilities for that type
-
-=cut
-
-sub remove_responsibility {
-    my ($self, $params) = @_;
-    Bugzilla->login(LOGIN_REQUIRED);
-    user_in_agiletools_group(1);
-    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
-            param => 'id'}) unless defined $params->{id};
-    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
-            param => 'type'}) unless defined $params->{type};
-    ThrowCodeError('param_required', {function => 'agile.team.remove_responsibility',
-            param => 'item_id'}) unless defined $params->{item_id};
-
-    my $team = get_team($params->{id}, 1);
-    $team->remove_responsibility($params->{type}, $params->{item_id});
-    # TODO: WebService type the result
-    return {type => $params->{type},
-        items => $team->responsibilities($params->{type})};
-}
-
 =item c<unprioritized_items>
 
     description: Get unprioritized bugs in teams responsibilites

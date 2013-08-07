@@ -163,6 +163,11 @@ sub agiletools_schema_init {
                     DELETE => 'SET NULL',
                 },
             },
+            responsibility_query => {
+                TYPE => 'MEDIUMTEXT',
+                NOTNULL => 1,
+                DEFAULT => "''",
+            },
         ],
         INDEXES => [
             agile_team_name_idx => {
@@ -170,68 +175,6 @@ sub agiletools_schema_init {
                 TYPE => 'UNIQUE',
             },
             agile_team_group_id_idx => ['group_id'],
-        ],
-    };
-
-    # Team component responsibilities
-    $schema->{agile_team_component} = {
-        FIELDS => [
-            team_id => {
-                TYPE => 'INT3',
-                NOTNULL => 1,
-                REFERENCES => {
-                    TABLE => 'agile_team',
-                    COLUMN => 'id',
-                    DELETE => 'CASCADE',
-                },
-            },
-            component_id => {
-                TYPE => 'INT2',
-                NOTNULL => 1,
-                REFERENCES => {
-                    TABLE => 'components',
-                    COLUMN => 'id',
-                    DELETE => 'CASCADE',
-                },
-            },
-        ],
-        INDEXES => [
-            agile_team_component_unique_idx => {
-                FIELDS => ['team_id', 'component_id'],
-                TYPE => 'UNIQUE',
-            },
-            agile_team_component_team_id_idx => ['team_id'],
-        ],
-    };
-
-    # Team keyword responsibilities
-    $schema->{agile_team_keyword} = {
-        FIELDS => [
-            team_id => {
-                TYPE => 'INT3',
-                NOTNULL => 1,
-                REFERENCES => {
-                    TABLE => 'agile_team',
-                    COLUMN => 'id',
-                    DELETE => 'CASCADE',
-                },
-            },
-            keyword_id => {
-                TYPE => 'INT2',
-                NOTNULL => 1,
-                REFERENCES => {
-                    TABLE => 'keyworddefs',
-                    COLUMN => 'id',
-                    DELETE => 'CASCADE',
-                },
-            },
-        ],
-        INDEXES => [
-            agile_team_keyword_unique_idx => {
-                FIELDS => ['team_id', 'keyword_id'],
-                TYPE => 'UNIQUE',
-            },
-            agile_team_keyword_team_id_idx => ['team_id'],
         ],
     };
 
@@ -469,6 +412,7 @@ sub agiletools_schema_update {
         TYPE => 'decimal(7,2)', NOTNULL => 1, DEFAULT => 0,
     });
 
+    # Multiple backlogs per team update
     if ($dbh->bz_column_info('agile_team', 'backlog_id')) {
         print "Migrating team backlogs...\n";
         my $insert = $dbh->prepare(
@@ -481,6 +425,14 @@ sub agiletools_schema_update {
         }
         $dbh->bz_drop_fk('agile_team', 'backlog_id');
         $dbh->bz_drop_column('agile_team', 'backlog_id');
+    }
+
+    # Responsibilities as freeform search update
+    $dbh->bz_add_column('agile_team', 'responsibility_query', {
+        TYPE => 'MEDIUMTEXT', NOTNULL => 1, DEFAULT => "''"
+    });
+    if (defined $dbh->bz_column_info('agile_team_keyword', 'team_id')) {
+        migrate_team_responsibilities();
     }
 
     if ($dbh->bz_column_info('scrums_team', 'id')) {
@@ -538,9 +490,22 @@ sub migrate_bayot_scrums {
             next;
         }
         print "Creating team: ".$name."\n";
+        # Add components to responsibilities
+        my $components = $dbh->selectcol_arrayref("SELECT component_id FROM scrums_componentteam ".
+            "WHERE teamid = ?", undef, $old_id);
+        print "\tResponsibility components: ";
+        my $query = '?';
+        foreach my $component_id (@$components) {
+            my $component = Bugzilla::Component->new($component_id);
+            print $component->product->name.":".$component->name.", ";
+            $query .= "product=".$component->product->name."&";
+            $query .= "component=".$component->name."&";
+        }
+        print "\n";
         $team = Bugzilla::Extension::AgileTools::Team->create({
                 name => $name,
                 process_id => AGILE_PROCESS_SCRUM,
+                responsibility_query => $query,
             });
 
         # Add members
@@ -567,17 +532,6 @@ sub migrate_bayot_scrums {
             $user = Bugzilla::User->new($member_id);
             print $user->name.", ";
             $team->add_member($user);
-        }
-        print "\n";
-
-        # Add components to responsibilities
-        my $components = $dbh->selectcol_arrayref("SELECT component_id FROM scrums_componentteam ".
-            "WHERE teamid = ?", undef, $old_id);
-        print "\tAdding components: ";
-        foreach my $component_id (@$components) {
-            my $component = Bugzilla::Component->new($component_id);
-            print $component->name.", ";
-            $team->add_responsibility("component", $component);
         }
         print "\n";
 
@@ -660,6 +614,41 @@ sub delete_bayot_scrums {
     # Remove the field definition
     $dbh->do(
         "DELETE FROM fielddefs WHERE name = 'scrums_sprint_bug_map.sprint_id'");
+    $dbh->bz_commit_transaction();
+}
+
+sub migrate_team_responsibilities {
+    print "Migrating old team responsibilities...\n";
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+
+    my %queries;
+
+    my $keywords = $dbh->selectall_arrayref("
+        SELECT agile_team_keyword.team_id, keyworddefs.name
+          FROM agile_team_keyword
+     LEFT JOIN keyworddefs ON agile_team_keyword.keyword_id = keyworddefs.id");
+    foreach (@$keywords) {
+        my ($team_id, $keyword) = @$_;
+        $queries{$team_id} ||= '?';
+        $queries{$team_id} .= "keywords=$keyword&";
+    }
+    my $components = $dbh->selectall_arrayref("
+        SELECT agile_team_component.team_id, components.name
+          FROM agile_team_component
+     LEFT JOIN components ON agile_team_component.component_id = components.id");
+    foreach (@$components) {
+        my ($team_id, $component) = @$_;
+        $queries{$team_id} ||= '?';
+        $queries{$team_id} .= "component=$component&";
+    }
+
+    for my $team (Bugzilla::Extension::AgileTools::Team->get_all) {
+        $team->set_all({responsibility_query => $queries{$team->id} || '?'});
+        $team->update();
+    }
+    $dbh->bz_drop_table('agile_team_keyword');
+    $dbh->bz_drop_table('agile_team_component');
     $dbh->bz_commit_transaction();
 }
 

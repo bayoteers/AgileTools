@@ -6,13 +6,6 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
-[% USE Bugzilla %]
-[% unprioritized_query = '' %]
-[% FOREACH param IN team.unprioritized_search_params %]
-    [% value = param.value FILTER uri %]
-    [% unprioritized_query = unprioritized_query _ "${param.key}=${value}&amp;" %]
-[% END %]
-
 [% columnlist = Param('agile_scrum_buglist_columns') FILTER uri %]
 
 <h2>Scrum</h2>
@@ -44,7 +37,7 @@
     <li>
         <a href="page.cgi?id=agiletools/scrum/sprints.html&amp;team_id=[% team.id %]">All sprints</a>
     </li>
-    [% IF team.backlogs.size %]
+    [% IF team.backlogs.size > 0%]
     <li>Backlog[% 's' IF team.backlogs.size > 1 %]
         <ul id="backlog_list_[% team.id %]">
             [% FOREACH bl IN team.backlogs %]
@@ -55,9 +48,9 @@
         </ul>
     </li>
     [% END %]
-    [% IF unprioritized_query %]
-    <li>
-        <a href="buglist.cgi?[% unprioritized_query %]query_format=advanced&amp;query_based_on=[% team.name _ ' unprioritized items' FILTER uri %]">Unprioritized items</a>
+    [% IF team.responsibility_query %]
+    <li id="unprioritized_items_[% team.id %]">
+        <a href="buglist.cgi[% team.responsibility_query FILTER html %]&amp;query_based_on=[% team.name _ ' unprioritized items' FILTER uri %]">Unprioritized items</a>
     </li>
     [% END %]
     [% IF user.in_group_id(team.group_id) %]

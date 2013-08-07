@@ -89,24 +89,9 @@ sub show {
     $vars->{team} = $team;
     $vars->{roles} = Bugzilla::Extension::AgileTools::Role->match();
 
-    # TODO these values are probably cached already
-    $vars->{keywords} = Bugzilla::Keyword->match();
-    my @components;
-    foreach my $product (Bugzilla::Product->get_all()) {
-        next unless $user->can_see_product($product->name);
-        foreach my $component (@{$product->components}) {
-            push(@components, {
-                    id => $component->id,
-                    name => $product->name . " : " . $component->name,
-                });
-        }
-    }
     $vars->{available_backlogs} =
         Bugzilla::Extension::AgileTools::Backlog->match({team_id => IS_NULL});
-    $vars->{components} = \@components;
     $team->roles;
-    $team->components;
-    $team->keywords;
     $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
 }
 

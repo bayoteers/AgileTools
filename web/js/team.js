@@ -3,18 +3,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright (C) 2012 Jolla Ltd.
+ * Copyright (C) 2012-2013 Jolla Ltd.
  * Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
  */
+
+/**
+ * Confirmation support to colorbox.close()
+ *
+ * Adds new configuration option to colorbox
+ *
+ *      onCloseConfirm: callback
+ *
+ * Where callback is a function which should return true if it is ok to close
+ * the box.
+ */
+$.colorbox.originalClose = $.colorbox.close;
+$.colorbox.close = function() {
+    element = $.colorbox.element();
+    var confirmClose = element.data().colorbox.onCloseConfirm;
+    if (typeof confirmClose != "function") {
+        $.colorbox.originalClose();
+    } else {
+        if (confirmClose() == true) $.colorbox.originalClose();
+    }
+}
 
 var Team = Base.extend({
     constructor: function(teamData) {
         var self = this;
         this.members = {};
-        this.components = {};
-        this.keywords = {};
         this.id = teamData.id;
-        this.responsibilities = {component:{}, keyword:{}};
+        this.responsibility_query = teamData.responsibility_query;
 
         // MEMBERS
         this.memberTable = $("#team_members tbody");
@@ -35,6 +54,7 @@ var Team = Base.extend({
             }
         }
 
+        // BACKLOGS
         this.backlogList = $("ul#backlog_list_"+this.id);
         this.backlogList.find("li").each(function() {
             var $item = $(this);
@@ -58,35 +78,16 @@ var Team = Base.extend({
                 text: false,
             }).click($.proxy(this, "_attachBacklog"));
 
-
-        this.respTables = {};
-        // COMPONENTS
-        var $componentTable = $("#team_components tbody");
-        $componentTable.find("button.add").click(
-                {
-                    input: $componentTable.find("select.component-new"),
-                    type: "component",
-                },
-                $.proxy(this, "_addRespClick"));
-        this.respTables["component"] = $componentTable;
-        for (var i=0; i< teamData.components.length; i++) {
-            var comp = teamData.components[i];
-            this._insertResp("component", comp);
-        }
-
-        // KEYWORDS
-        var $keywordTable = $("#team_keywords tbody");
-        $keywordTable.find("button.add").click(
-                {
-                    input: $keywordTable.find("select.keyword-new"),
-                    type: "keyword",
-                },
-                $.proxy(this, "_addRespClick"));
-        this.respTables["keyword"] = $keywordTable;
-        for (var i=0; i< teamData.keywords.length; i++) {
-            var keyw = teamData.keywords[i];
-            this._insertResp("keyword", keyw);
-        }
+        // UNPRIORITIZED ITEMS
+        var editQueryButton = $("<button>")
+            .attr('type', 'button')
+            .addClass("add editor")
+            .text('Edit query');
+        $("li#unprioritized_items_"+this.id).append(editQueryButton);
+        editQueryButton.button({
+                icons:{primary:"ui-icon-pencil"},
+                text: false,
+            }).click($.proxy(this, "_openQueryEdit"));
 
         $("input.member-new").userautocomplete();
         $("table").not("#templates").find("button.add").button({
@@ -142,24 +143,6 @@ var Team = Base.extend({
                 }, $.proxy(this, "_removeRoleClick"));
         member.row.find(".roles").find("li").last().before($roleRow);
         return $roleRow;
-    },
-
-    _insertResp: function(type, item)
-    {
-        this.responsibilities[type][item.id] = item;
-        var $row = $("#responsibility_template").clone().attr("id", null);
-        $row.data("itemId", item.id);
-        $row.find(".name").text(item.name);
-        $row.find("button.remove")
-            .button({
-                icons:{primary:"ui-icon-circle-minus"},
-                text: false,
-            }).click({
-                itemId: item.id,
-                type: type,
-                }, $.proxy(this, "_removeRespClick"));
-
-        this.respTables[type].find("tr").last().before($row);
     },
 
     team_rpc: function(method, params)
@@ -253,53 +236,6 @@ var Team = Base.extend({
         delete member.roles[result.role.id];
     },
 
-    _addRespClick: function(event)
-    {
-        this.team_rpc("add_responsibility", {
-                    id: this.id,
-                    type: event.data.type,
-                    item_id: event.data.input.val()})
-            .done($.proxy(this, "_addRespDone"));
-    },
-
-    _addRespDone: function(result)
-    {
-        var type = result.type;
-        for (var i=0; i < result.items.length; i++) {
-            var item = result.items[i];
-            if (this.responsibilities[type][item.id] == undefined) {
-                this._insertResp(type, item);
-            }
-        }
-
-    },
-    _removeRespClick: function(event)
-    {
-        this.team_rpc("remove_responsibility",
-                {
-                    id: this.id,
-                    type: event.data.type,
-                    item_id: event.data.itemId,
-                }
-            ).done($.proxy(this, "_removeRespDone"));
-    },
-    _removeRespDone: function(result)
-    {
-        var type = result.type;
-        var ids = [];
-        for (var i=0; i < result.items.length; i++) {
-            ids.push(result.items[i].id);
-        }
-        var team = this;
-        this.respTables[type].children("tr").not(".editor").each(function() {
-            var $row = $(this);
-            var id = $row.data("itemId");
-            if(id && ids.indexOf(id) == -1) {
-                $row.remove();
-                delete team.responsibilities[type][id];
-            }
-        });
-    },
     _attachBacklog: function(event) {
         var id = $("select#existing_backlog").val();
         var element = $("select#existing_backlog :selected");
@@ -335,5 +271,105 @@ var Team = Base.extend({
                     " (pool ID "+result.pool_id +")</li>");
                 $("input#new_backlog").val("");
             });
+    },
+
+    /**
+     * Opens the responsibility query editor
+     */
+    _openQueryEdit: function()
+    {
+        $.colorbox({
+                width: "90%",
+                height: "90%",
+                iframe: true,
+                fastIframe: false,
+                href: "query.cgi" + this.responsibility_query,
+                onCloseConfirm: $.proxy(this, "_confirmQueryClose"),
+                onCleanup: $.proxy(this, "_getSearchQuery"),
+                onComplete: $.proxy(this, "_onEditBoxReady")
+        })
+    },
+    /**
+     * Hide unneeded elements from the page in edit box and disable some
+     * controls from the search form
+     */
+    _onEditBoxReady: function()
+    {
+        $("#cboxContent iframe").load(function(event){
+            var contents = $(event.target).contents();
+            contents.find("div#header").hide();
+            contents.find("div#footer").hide();
+            if (!contents[0].location.pathname.match("query.cgi")) return;
+
+            // Disable the preset condition controls
+            var cover = $("<div>").css({
+                    position: 'absolute',
+                    top: 0, left: 0,
+                    width: '100%', height: '100%',
+                    color: '#000000',
+                    background: '#ffffff',
+                    opacity: 0.8,
+                    'z-index': 10000
+                });
+            contents.find("div#container_resolution").append(
+                cover.clone().attr('title', 'Resolution is forced to ---'))
+                .css('position', 'relative');
+            cover.attr('title', 'This is required condition');
+            contents.find(".custom_search_condition").first().append(cover)
+                .css('position', 'relative');
+        });
+    },
+    /**
+     * Get the query string from buglist page open in edit box
+     */
+    _getSearchQuery: function()
+    {
+        try {
+            var loc = $("#cboxContent iframe").contents()[0].location;
+            if (loc.pathname.match("buglist.cgi")) {
+                // Remove the ? from beginning
+                var query = loc.search.substring(1);
+                this.team_rpc('update', {id: this.id,
+                        responsibility_query: query}
+                ).done($.proxy(this, "_queryUpdated"))
+            }
+        } catch(e) {
+            if (window.console) console.error(e);
+            alert("Failed to get the query string");
+        }
+    },
+    /**
+     * Updates the responsibility query if it changed
+     */
+    _queryUpdated: function(changes)
+    {
+        if(changes.responsibility_query != undefined) {
+            this.responsibility_query = changes.responsibility_query[1];
+            $("li#unprioritized_items_" + this.id + " a")
+                .attr('href', 'buglist.cgi' + this.responsibility_query);
+        }
+    },
+
+    /**
+     * Confirm that query edit box is on buglist page before closing
+     */
+    _confirmQueryClose: function()
+    {
+        var path = "";
+        try {
+            path = $("#cboxContent iframe").contents()[0].location.pathname;
+        } catch(e) {
+            if (window.console) console.error(e);
+            return true;
+        }
+        if (path.match("buglist.cgi") == null) {
+            return confirm(
+                "After entering the search parameters, "
+                + "you need to click 'search' to open "
+                + "the buglist before closing. "
+                + "Do you really want to close?");
+        } else {
+            return true;
+        }
     },
 });
