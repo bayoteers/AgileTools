@@ -70,7 +70,7 @@ _add_template_handler('list/list-burn.html.tmpl', sub {
     $vars->{burn_type} = $cgi->param("burn_type") || 'items';
     $vars->{burn_start} = $start;
     $vars->{burn_end} = $end;
-    $vars->{burn_json} = JSON->new->utf8->encode($data);
+    $vars->{burn_json} = encode_json($data);
 });
 
 sub active_pools_to_vars {

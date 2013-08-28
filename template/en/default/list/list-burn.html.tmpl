@@ -12,47 +12,11 @@
     title="$terms.Bug Burndown"
 %]
 
-<table>
-    <tr>
-        <td>
-            <div id="burnchart"
-                style="width: 700px; height: 400px; display: inline-block; float: left;">
-            </div>
-        </td>
-        <td style="vertical-align: top;">
-            <input id="burn_type" type="radio" name="burn_type" value="items"
-            [% IF burn_type == 'items' %]checked="checked"[% END %]>Open items</input>
-            <br/>
-            <input type="radio" name="burn_type" value="work"
-            [% IF burn_type == 'work' %]checked="checked"[% END %]>Work done/remaining</input>
-            <br/>
-        </td>
-    </tr>
-</table>
+[% PROCESS "agiletools/burn-init.html.tmpl" %]
 
-<label for="burn_start">From</label>
-<input name="burn_start" value="[% burn_start %]"></input>
-<label for="burn_end">To</label>
-<input name="burn_end" value="[% burn_end %]"></input>
-<button type="button" id="changeDates">Go</button>
+[% PROCESS "agiletools/burn-chart.html.tmpl" %]
 
-
-<script type="text/javascript"
-    src="[% "extensions/AgileTools/web/js/jquery.flot.min.js" FILTER mtime %]"></script>
-<script type="text/javascript"
-    src="[% "extensions/AgileTools/web/js/jquery.flot.axislabels.js" FILTER mtime %]"></script>
-<script type="text/javascript"
-    src="[% "extensions/AgileTools/web/js/burn.js" FILTER mtime %]"></script>
-<script type="text/javascript">
-var BURN = [% burn_json or "{}" %];
-BURN.start_date = "[% burn_start FILTER js %]";
-BURN.end_date = "[% burn_end FILTER js %]";
-BURN.type = "[% burn_type FILTER js %]";
-BURN.itemUnit ="[% terms.Bugs FILTER js %]";
-BURN.workUnit ="[% Param('agile_use_points') ? 'Points' : 'Hours' %]";
-$(initBurn);
-</script>
-
+[% PROCESS burn_date_picker %]
 
 [% IF cgi.param("include_list") %]
   [% FLUSH %]

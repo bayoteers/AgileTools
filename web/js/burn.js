@@ -7,29 +7,10 @@
  * Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
  */
 
-var changeDates = function()
+var initBurnDatePicker = function(container)
 {
-    var start = $("[name=burn_start]").val();
-    var end = $("[name=burn_end]").val();
-    if (start == BURN.start_date &&
-            end == BURN.end_date) return;
-
-    var type = $("[name=burn_type]:checked").val();
-    var params = getQueryParams(window.location.search);
-    params.burn_start = start;
-    params.burn_end = end;
-    params.burn_type = type;
-    var query = getQueryString(params);
-    window.location.href = window.location.pathname + query;
-};
-
-function initBurn()
-{
-    var dateOptions = {
-
-    };
-    var startInput = $("[name=burn_start]");
-    var endInput = $("[name=burn_end]");
+    var startInput = $("[name=burn_start]", container);
+    var endInput = $("[name=burn_end]", container);
 
     startInput.datepicker({
             dateFormat:"yy-mm-dd",
@@ -49,12 +30,31 @@ function initBurn()
                 startInput.datepicker("option", "maxDate", dateText);
             },
         });
-    $("#changeDates").click(changeDates);
 
-    $("[name=burn_type]").change(function() {
-        var newBurnType = $("[name=burn_type]:checked").val();
+    $("[name=change_dates]", container).click(function() {
+        var params = getQueryParams(window.location.search);
+        var start = $("[name=burn_start]").val();
+        var end = $("[name=burn_end]").val();
+        if (start == params.burn_start &&
+                end == params.burn_end) return;
+
+        var type = $("[name=burn_type]:checked").val();
+        params.burn_start = start;
+        params.burn_end = end;
+        params.burn_type = type;
+        var query = getQueryString(params);
+        window.location.href = window.location.pathname + query;
+    });
+};
+
+var initBurnChart = function(data, container)
+{
+    var chartDiv = $("div.burnchart", container);
+    var typeRadio = $("[name=burn_type]", container);
+    typeRadio.change(function() {
+        var newBurnType = typeRadio.filter(":checked").val();
         var oldBurnType = newBurnType == 'items' ? 'work' : 'items';
-        plotBurn(newBurnType);
+        plotBurn(chartDiv, data, newBurnType);
         try {
             if (document.URL.indexOf('burn_type') == -1) {
                 var newUrl = document.URL + "&burn_type=" + newBurnType;
@@ -65,63 +65,63 @@ function initBurn()
         } catch(err) {}
     });
 
-    BURN.chartOptions = {
+    data.chartOptions = {
         series: {
             lines: { show: true },
             points: { show: true },
         },
         xaxis: {
             mode: "time",
-            min: BURN.start,
-            max: BURN.end,
+            min: data.start,
+            max: data.end,
         },
         yaxis: {
             min: 0,
         },
         grid: {
-            markings: getBurnMarkers(),
+            markings: getBurnMarkers(data),
         },
         colors: ['#EDC240', '#CB4B4B', '#AFD8F8',],
     };
-    plotBurn(BURN.type);
+    plotBurn(chartDiv, data, typeRadio.filter(":checked").val());
 };
 
-function plotBurn(type)
+var plotBurn = function(chartDiv, data, type)
 {
     var series;
     if (type == 'items') {
         series = [
-            getIdealBurn(BURN.start_open),
+            getIdealBurn(data, data.start_open),
             {
                 label: "Open items",
-                data: BURN.open_items,
+                data: data.open_items,
                 points: {show: false},
             },
         ];
-        BURN.chartOptions.yaxis.axisLabel = BURN.itemUnit;
+        data.chartOptions.yaxis.axisLabel = BURN.itemUnit;
     } else {
         series = [
-            getIdealBurn(BURN.start_rem),
+            getIdealBurn(data, data.start_rem),
             {
                 label: "Remaining",
-                data: BURN.remaining,
+                data: data.remaining,
             },
             {
                 label: "Actual",
-                data: BURN.actual,
+                data: data.actual,
             },
         ];
-        BURN.chartOptions.yaxis.axisLabel = BURN.workUnit;
+        data.chartOptions.yaxis.axisLabel = BURN.workUnit;
     }
-    $.plot("#burnchart", series, BURN.chartOptions);
+    $.plot(chartDiv, series, data.chartOptions);
 };
 
-function getBurnMarkers()
+var getBurnMarkers = function(data)
 {
     var markings = [];
-    var day = new Date(BURN.start);
+    var day = new Date(data.start);
     day.setUTCHours(0);
-    var end = new Date(BURN.end);
+    var end = new Date(data.end);
     var weekend = false;
     var from = 0;
     while (day < end) {
@@ -149,15 +149,15 @@ function getBurnMarkers()
 
     }
     // Today marker
-    markings.push({ color: 'red', xaxis: {from: BURN.now, to: BURN.now} });
+    markings.push({ color: 'red', xaxis: {from: data.now, to: data.now} });
 
     return markings;
 };
 
-function getIdealBurn(start_value)
+var getIdealBurn = function(data, start_value)
 {
-    var end = new Date(BURN.end);
-    var day = new Date(BURN.start);
+    var end = new Date(data.end);
+    var day = new Date(data.start);
     day.setUTCHours(0);
     var delta_days = Math.ceil((end - day) / 1000 / 60 / 60 / 24);
     var data = [];

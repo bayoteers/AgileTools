@@ -1,0 +1,32 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # Copyright (C) 2012 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+  #%]
+
+[% DEFAULT chartid ="burnchart" %]
+<table id ="[% chartid FILTER html %]">
+    <tr>
+        <td>
+            <div class="burnchart"
+                style="width: 700px; height: 400px; display: inline-block; float: left;">
+            </div>
+        </td>
+        <td style="vertical-align: top;">
+            <input type="radio" name="burn_type" value="items"
+            [%+ 'checked="checked"' IF burn_type == 'items' %]>Open items</input>
+            <br/>
+            <input type="radio" name="burn_type" value="work"
+            [%+ 'checked="checked"' IF burn_type == 'work' %]>Work done/remaining</input>
+            <br/>
+        </td>
+    </tr>
+</table>
+
+<script type="text/javascript">
+$(function() {
+  initBurnChart([% burn_json or "{}" FILTER none %], $("#[% chartid FILTER html %]"));
+})
+</script>
