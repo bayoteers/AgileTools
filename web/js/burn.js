@@ -91,7 +91,7 @@ var plotBurn = function(chartDiv, data, type)
     var series;
     if (type == 'items') {
         series = [
-            getIdealBurn(data, data.start_open),
+            getIdealBurn(data, data.max_items),
             {
                 label: "Open items",
                 data: data.open_items,
@@ -101,7 +101,7 @@ var plotBurn = function(chartDiv, data, type)
         data.chartOptions.yaxis.axisLabel = BURN.itemUnit;
     } else {
         series = [
-            getIdealBurn(data, data.start_rem),
+            getIdealBurn(data, data.max_work),
             {
                 label: "Remaining",
                 data: data.remaining,

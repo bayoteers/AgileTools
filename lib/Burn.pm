@@ -52,8 +52,8 @@ our @EXPORT = qw(
         open_items => Array of open item history
         start      => Start time stamp
         end        => End time stamp
-        start_rem  => Remaining work at start time
-        start_open => Open items at start time
+        max_items  => Maximum number of open items
+        max_work   => Maximum of remaining/actual work
         now        => Current timestamp
 
     Return data is formated so that it can be directly encoded to JSON and used
@@ -204,14 +204,20 @@ sub get_burndata {
     unshift @remaining, [$from, $start_rem || $remaining[0][1] || 0];
     unshift @items, [$from, $start_items || $items[0][1] || 0];
 
+    my $max_work = 0;
+    foreach (@remaining, @actual) {
+        $max_work = $_->[1] if $max_work < $_->[1];
+    }
+
     return {
         start => $from,
         end => $to,
-        start_rem => $start_rem,
+        max_work => $max_work,
+        max_items => $start_items,
+
         remaining => \@remaining,
         actual => \@actual,
         open_items => \@items,
-        start_open => $start_items,
         now => $now,
     };
 }
