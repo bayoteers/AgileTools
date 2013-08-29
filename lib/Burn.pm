@@ -72,8 +72,8 @@ sub get_burndata {
     my $now = DateTime->now(time_zone => Bugzilla->local_timezone);
     $now = $now->add(seconds => $now->offset)->epoch * 1000;
 
-    $from = defined $from ? 1000 * str2time($from."T00:00:00", "UTC") : 0;
-    $to = defined $to ? 1000 * str2time($to."T23:59:59", "UTC") : $now;
+    $from = $from ? 1000 * str2time($from."T00:00:00", "UTC") : 0;
+    $to = $to ? 1000 * str2time($to."T23:59:59", "UTC") : $now;
     my $first_ts;
 
     # Get current remaining time

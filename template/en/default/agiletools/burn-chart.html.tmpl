@@ -7,6 +7,7 @@
   #%]
 
 [% DEFAULT chartid ="burnchart" %]
+[% DEFAULT burn_type = "items" %]
 <table id ="[% chartid FILTER html %]">
     <tr>
         <td>
@@ -15,12 +16,14 @@
             </div>
         </td>
         <td style="vertical-align: top;">
+          <form>
             <input type="radio" name="burn_type" value="items"
             [%+ 'checked="checked"' IF burn_type == 'items' %]>Open items</input>
             <br/>
             <input type="radio" name="burn_type" value="work"
             [%+ 'checked="checked"' IF burn_type == 'work' %]>Work done/remaining</input>
             <br/>
+          </form>
         </td>
     </tr>
 </table>
