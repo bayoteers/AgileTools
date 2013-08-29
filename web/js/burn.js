@@ -122,31 +122,40 @@ var getBurnMarkers = function(data)
     var day = new Date(data.start);
     day.setUTCHours(0);
     var end = new Date(data.end);
-    var weekend = false;
-    var from = 0;
+    // Don't mark weekends, if more than 3 months time span
+    var markWeekends = (end - day) < 1000*60*60*24*90;
+    var from = day.getTime();
     while (day < end) {
-        if (day.getDay() != 0 && day.getDay() != 6) {
-            if (weekend) {
-                markings.push({
-                    color:'lightgray',
-                    xaxis: {from: from, to: day.getTime()},
-                });
-                weekend = false;
-            }
-        } else {
-            if(!weekend) {
+        if (markWeekends) {
+            if (day.getDay() == 6) {
+                // weekend starts from Saturday morning...
                 from = day.getTime();
-                weekend = true;
+            } else if(day.getDay() == 1){
+                // ...and ends to Monday morning
+                markings.push({
+                        color:'lightgray',
+                        xaxis: {from: from, to: day.getTime()},
+                });
             }
         }
+        // Month marker
+        if (day.getDate() == 1) {
+                markings.push({
+                    color:'darkgray',
+                    xaxis: {
+                        from: day.getTime(),
+                        to: day.getTime()
+                    },
+                });
+            }
         day.setDate(day.getDate() + 1);
     }
-    if (weekend) {
+    // If end date is on weekend...
+    if (markWeekends && day.getDay() <= 1) {
         markings.push({
-            color:'lightgray',
-            xaxis: {from: from, to: end.getTime()},
+                color:'lightgray',
+                xaxis: {from: from, to: day.getTime()},
         });
-
     }
     // Today marker
     markings.push({ color: 'red', xaxis: {from: data.now, to: data.now} });
