@@ -474,7 +474,7 @@ var UnprioritizedController = ListController.extend({
     _onUnprioritizedGetDone: function(result)
     {
         this.list.buglist('option', {
-            order: 'id',
+            order: '-id',
             receive: $.proxy(this, '_onReceive'),
             move: null,
             remove: null,

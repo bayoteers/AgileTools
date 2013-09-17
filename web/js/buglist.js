@@ -16,7 +16,15 @@ jQuery.fn.reverse = [].reverse;
 $.widget("agile.buglist", {
 
     /**
-     * Default options
+     * Options:
+     * order:        Bug field used to sort the list. If prefixed with '-', sort
+     *               in descending order. (Default false = no sorting)
+     * sortable:     If true the items in the list can be dragged around
+     *               (Default true)
+     * itemTemplate: CSS selector for the template element used to render the
+     *               list items (Default '#bug_item_template')
+     * connectWith:  CSS selector to connect the sortable list with others
+     *               (Default false = not connected)
      */
     options: {
         order: false,
@@ -116,10 +124,17 @@ $.widget("agile.buglist", {
         } else if (this.element.find(":agile-blitem").index(element) == -1) {
             var place = null;
             if (this.options.order) {
+                var reverse = false;
                 var order = this.options.order;
+                if (order.charAt(0) == '-') {
+                    order = order.slice(1);
+                    reverse = true;
+                }
                 this.element.children(":agile-blitem").each(function() {
                     var tmp = $(this).blitem("bug");
-                    if (tmp[order] > bug[order]) {
+                    if ((reverse && tmp[order] < bug[order]) ||
+                        (tmp[order] > bug[order]))
+                    {
                         place = $(this);
                         return false;
                     }
