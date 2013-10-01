@@ -488,6 +488,11 @@ sub remove_from_db {
     my $sprints = Bugzilla::Extension::AgileTools::Sprint->match(
         {team_id => $self->id});
     foreach my $sprint (@$sprints) {
+        if ($sprint->is_active) {
+            # Active sprint can't be removed, so we need to fool it to think
+            # it's inactive
+            $sprint->pool->set_is_active(0);
+        }
         $sprint->remove_from_db();
     }
 
