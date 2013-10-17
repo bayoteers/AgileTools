@@ -16,7 +16,7 @@
     <button type="submit">Create</button><br/>
     Uses: <select name="process_id">
         [% FOREACH p IN processes %]
-        <option value="[% p.key %]">[% p.value %]</option>
+        <option value="[% p.key %]">[% p.value FILTER html %]</option>
         [% END %]
     </select><br/>
     <input type="checkbox" name="create_backlog"/> Create backlog<br/>

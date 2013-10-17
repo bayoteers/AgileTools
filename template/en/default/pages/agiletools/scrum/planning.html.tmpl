@@ -54,7 +54,7 @@ $(function(){_initScrumPlanning()});
           [% END %]
           [% FOREACH bl IN team.backlogs %]
           <option [% IF backlog_id == bl.id %]selected="selected"[% END #%]
-            value="[% bl.id FILTER html %]">[% bl.name FILTER html %]</option>
+            value="[% bl.id %]">[% bl.name FILTER html %]</option>
           [% END %]
         </select>
       <div class="list-header"></div>

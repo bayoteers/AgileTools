@@ -8,7 +8,7 @@
 
 [%# Note that error messages should generally be indented four spaces, like
   # below, because when Bugzilla translates an error message into plain
-  # text, it takes four spaces off the beginning of the lines. 
+  # text, it takes four spaces off the beginning of the lines.
   #%]
 [% IF error == "agile_team_exists" %]
     [% title = "The team already exists" %]
@@ -32,8 +32,8 @@
 
 [% ELSIF error == "agile_access_denied" %]
     [% title = "Access denied" %]
-    You are not allowed to access AgileTools on this Bugzilla. Contact admins
-    for adding you to AgileTools user group.
+    You are not allowed to access AgileTools on this [% terms.Bugzilla %].
+    Contact admins for adding you to AgileTools user group.
 
 [% ELSIF error == "agile_permission_denied" %]
     [% title = "Permission denied" %]
@@ -45,8 +45,8 @@
 
 [% ELSIF error == "agile_actual_time_required" %]
     [% title = "Actual time required" %]
-    Bugs with severity [% Param('agile_check_time_severity').join(', ') %] and
-    resolution [% Param('agile_check_time_resolution').join(', ') %] require
+    [% terms.Bugs %] with severity [% Param('agile_check_time_severity').join(', ') %]
+    and resolution [% Param('agile_check_time_resolution').join(', ') %] require
     that the actual working time is set when closing them.
 
 [% ELSIF error == "agile_sprint_overlap" %]

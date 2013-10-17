@@ -12,9 +12,9 @@
 [% ELSIF san_tag == "agiletools_check_pool_order_alert" %]
     Order inconsistensies in pools:
     [% FOREACH pool IN pools -%]
-        [% pool.key %]: [
+        [% pool.key FILTER html %]: [
         [%- FOREACH gap = pool.value -%]
-        [% gap.start _ "-" _ gap.end %][% ", " UNLESS loop.last %]
+        [% gap.start _ "-" _ gap.end FILTER html %][% ", " UNLESS loop.last %]
         [%- END %]]
     [%- END %]
 
@@ -30,8 +30,8 @@
     Done
 
 [% ELSIF san_tag == "agiletools_repair_pool_order_weird_alert" %]
-    There is some weird inconsistency in pool [% pool %]
-    (around orders [% gap.start %], [% gap.end %]).
+    There is some weird inconsistency in pool [% pool FILTER html %]
+    (around orders [% gap.start FILTER html%], [% gap.end FILTER html %]).
     You need to fix it manually.
 
 [% END %]

@@ -26,9 +26,9 @@ BURN = {
 [% BLOCK burn_date_picker %]
 <div id="burn_date_picker">
   <label for="burn_start">From</label>
-  <input name="burn_start" value="[% burn_start %]"></input>
+  <input name="burn_start" value="[% burn_start FILTER html %]"></input>
   <label for="burn_end">To</label>
-  <input name="burn_end" value="[% burn_end %]"></input>
+  <input name="burn_end" value="[% burn_end FILTER html %]"></input>
   <button type="button" name="change_dates">Go</button>
 </div>
 

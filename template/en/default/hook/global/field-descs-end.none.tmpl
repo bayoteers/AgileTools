@@ -6,10 +6,8 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
-[% IF in_template_var %]
-    [% vars.field_descs.import({
-        "actual_time"       => "Act. Points",
-        "work_time"         => "Act. Points",
-        "remaining_time"    => "Rem. Points",
-    }) IF Param('agile_use_points') %]
+[% IF in_template_var  && Param('agile_use_points') %]
+  [% SET vars.field_descs.actual_time = "Act. Points" %]
+  [% SET vars.field_descs.work_time = "Act. Points" %]
+  [% SET vars.field_descs.remaining_time = "Rem. Points" %]
 [% END %]

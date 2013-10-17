@@ -73,29 +73,41 @@
           [% END %])
           [% END %]
       </th>
-      <td>[% sprint.start_date FILTER time("%Y-%m-%d") FILTER html %]</td>
+      <td>[% sprint.start_date FILTER time("%Y-%m-%d") %]</td>
       <td>-</td>
-      <td>[% sprint.end_date FILTER time("%Y-%m-%d") FILTER html %]</td>
-      <td>[% sprint.capacity FILTER html %]</td>
+      <td>[% sprint.end_date FILTER time("%Y-%m-%d") %]</td>
+      <td>[% sprint.capacity %]</td>
 
-      <td class="start">[% sprint.items_on_commit FILTER html IF sprint.committed %]</td>
-      <td>[% sprint.items_on_close FILTER html
-              IF sprint.committed AND !sprint.is_active %]</td>
-      <td>[% items_ch FILTER format('%+d') FILTER html %]</td>
+      <td class="start">
+        [% IF sprint.committed %][% sprint.items_on_commit %][% END %]
+      </td>
+      [% IF sprint.committed AND !sprint.is_active %]
+      <td>[% sprint.items_on_close %]</td>
+      <td>[% items_ch FILTER format('%+d') %]</td>
+      [% ELSE %]
+      <td></td><td></td>
+      [% END %]
 
-      <td class="start">[% sprint.estimate_on_commit FILTER html IF sprint.committed %]</td>
-      <td>[% sprint.estimate_on_close FILTER html
-              IF sprint.committed AND !sprint.is_active %]</td>
-      <td>[% estimate_ch FILTER format('%+d') FILTER html %]</td>
+      <td class="start">
+        [% IF sprint.committed %][% sprint.estimate_on_commit %][% END %]
+      </td>
+      [% IF sprint.committed AND !sprint.is_active %]
+      <td>[% sprint.estimate_on_close %]</td>
+      <td>[% estimate_ch FILTER format('%+d') %]</td>
+      [% ELSE %]
+      <td></td><td></td>
+      [% END %]
 
-      <td class="start">[% sprint.resolved_on_close FILTER html
-              IF sprint.committed AND !sprint.is_active %]</td>
+      [% IF sprint.committed AND !sprint.is_active %]
+      <td class="start">[% sprint.resolved_on_close %]</td>
+      [% ELSE %]<td></td>[% END %]
+
       [% IF sprint.items_completion.defined %]
       <td class="[% PROCESS color value=sprint.items_completion %]">
         [% sprint.items_completion FILTER format('%d %%') %]</td>
       [% ELSE %]<td></td>[% END %]
 
-      <td>[% sprint.effort FILTER html %]</td>
+      <td>[% sprint.effort %]</td>
 
       [% IF sprint.effort_completion.defined %]
       <td class="[% PROCESS color value=sprint.effort_completion %]">
