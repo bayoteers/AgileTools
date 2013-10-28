@@ -137,7 +137,7 @@ sub bb_common_links {
     $args->{links}->{agile_summary} = [
         {
             text => "My teams",
-            href => "page.cgi?id=agiletools/user_summary.html",
+            href => "page.cgi?id=agiletools/team/list.html&user_teams=1",
             priority => 10
         }
     ];

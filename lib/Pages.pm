@@ -15,42 +15,15 @@ Bugzilla::Extension::AgileTools::Pages
 
 Generic page handler functions
 
-=head1 HANDLERS
-
-=over
-
-=cut
-
-
-
-=item C<group_id> - ID of the group associated with the team
-
-=item C<process_id> (mutable) - ID of the development process the team uses.
-        See: L<extensions::AgileTools::lib::Constants/Process types>
-
-=item C<current_sprint_id> - ID of the sprint/pool containing the teams current
-        sprint.
-
-
 =cut
 
 use strict;
 use warnings;
 package Bugzilla::Extension::AgileTools::Pages;
 
-use Bugzilla::Extension::AgileTools::Constants;
+=head1 HANDLERS
 
-=item C<user_summary> - The "My Teams" page
-
-=cut
-
-sub user_summary {
-    my $vars = shift;
-    $vars->{processes} = AGILE_PROCESS_NAMES;
-    $vars->{agile_teams} = Bugzilla->user->agile_teams;
-}
-
-=back
+None at the moment at this level
 
 =cut
 

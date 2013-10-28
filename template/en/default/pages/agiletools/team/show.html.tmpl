@@ -70,7 +70,7 @@ $(function() {
 </div>
 
 <h1>Team [% team.name FILTER html %]
-[% UNLESS team.is_active %](inactive)[% END %]</h1>
+[% UNLESS team.is_active %] (inactive)[% END %]</h1>
 
 <form class="editor" method="POST"
     action="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
@@ -135,8 +135,6 @@ $(function() {
 [% IF team.user_can_edit %]
 <button class="editor-toggle" type="button">Show/Hide Editing</button><br/>
 [% END %]
-
-<a href="page.cgi?id=agiletools/team/list.html">Back to team list</a>
 
 [% INCLUDE global/footer.html.tmpl %]
 

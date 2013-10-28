@@ -52,12 +52,9 @@
 
 'pages/agiletools/team/show.html.tmpl' => [
   'team_json',
+  'team.id',
   'role.id',
   'bl.id',
-],
-
-'pages/agiletools/user_summary.html.tmpl' => [
-  'team.id',
 ],
 
 );

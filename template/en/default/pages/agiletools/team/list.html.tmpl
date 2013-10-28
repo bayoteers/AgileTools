@@ -6,14 +6,18 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
+[% IF user_teams %]
+  [% title = "My Teams" %]
+[% ELSE %]
+  [% title = "All Teams" %]
+[% END %]
 [% INCLUDE global/header.html.tmpl
-    title = "Teams",
     style_urls = [
         "extensions/AgileTools/web/css/base.css",
         ],
 %]
 
-[% FOREACH team IN agile_teams %]
+[% FOREACH team IN active_teams %]
 <div class="team-block">
     <h2>Team:
         <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
@@ -34,9 +38,25 @@
 </div>
 [% END %]
 
+[% IF inactive_teams.size %]
+<h3>Inactive teams</h2>
+<ul class="links">
+  [% FOREACH team IN inactive_teams %]
+  <li>
+    [% UNLESS loop.first %]<span class="separator">| </span>[% END %]
+    <a href="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
+        [% team.name FILTER html %]</a>
+        [% IF can_manage_teams %]
+        [<a href="page.cgi?id=agiletools/team/list.html&amp;team_id=[% team.id %]&amp;action=remove"
+           onclick="return confirm('Are you sure you want to delete team [% team.name FILTER js %]?');"
+           >Remove</a>]
+        [% END %]
+  </li>
+  [% END %]
+</ul>
+[% END %]
 <hr/>
 [% IF can_manage_teams %]
-[<a href="page.cgi?id=agiletools/team/create.html">
-Create new team</a>]
+[<a href="page.cgi?id=agiletools/team/create.html">Create new team</a>]
 [% END %]
 [% INCLUDE global/footer.html.tmpl %]

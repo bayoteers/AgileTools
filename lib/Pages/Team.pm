@@ -53,7 +53,12 @@ sub list {
         $team->remove_from_db();
         $vars->{message} = "agile_team_removed";
     }
-    $vars->{agile_teams} = Bugzilla::Extension::AgileTools::Team->match();
+    $vars->{user_teams} = scalar $cgi->param('user_teams') ? 1 : 0;
+    my @teams = $vars->{user_teams} ? 
+        @{Bugzilla->user->agile_teams} :
+        Bugzilla::Extension::AgileTools::Team->get_all();
+    $vars->{active_teams} = [grep($_->is_active, @teams)];
+    $vars->{inactive_teams} = [grep(!$_->is_active, @teams)];
 }
 
 =item C<show> - Single team view page
