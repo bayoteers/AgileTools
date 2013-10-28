@@ -80,6 +80,17 @@ sub show {
             });
         }
         $vars->{message} = "agile_team_created";
+    } elsif ($action eq 'save') {
+        my $id = $cgi->param("team_id");
+        $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});
+        $team->set_all({
+            name => scalar $cgi->param('name'),
+            is_active => $cgi->param('is_active') ? 1 : 0,
+        });
+        $vars->{changes} = scalar $team->update();
+        $vars->{message} = 'agile_team_saved';
+        $vars->{team} = $team;
+
     } else {
         my $id = $cgi->param("team_id");
         $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});

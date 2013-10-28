@@ -462,6 +462,10 @@ sub agiletools_schema_update {
             }
         }
     }
+    # Add team active flag
+    $dbh->bz_add_column('agile_team', 'is_active', {
+        TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 1
+    }, 1);
 }
 
 # Migration team data from old BAYOT Scrums extension to AgileTools.

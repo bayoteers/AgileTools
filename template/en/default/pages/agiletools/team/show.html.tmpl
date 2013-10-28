@@ -69,7 +69,18 @@ $(function() {
 
 </div>
 
-<h1>Team [% team.name FILTER html %]</h1>
+<h1>Team [% team.name FILTER html %]
+[% UNLESS team.is_active %](inactive)[% END %]</h1>
+
+<form class="editor" method="POST"
+    action="page.cgi?id=agiletools/team/show.html&amp;team_id=[% team.id %]">
+  <label for="name">Name:</label>
+  <input name="name" value="[% team.name FILTER html %]"><br>
+  <label for="is_active">Is active:</label>
+  <input type="checkbox" name="is_active"
+    [% IF team.is_active %]checked="checked"[% END %]><br>
+  <button type="submit" name="action" value="save">Save</button>
+</form>
 
 [% TRY %]
     [% PROCESS "agiletools/process/${team.process_id}_summary_links.html.tmpl" %]
