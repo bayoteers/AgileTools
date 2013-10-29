@@ -374,7 +374,12 @@ sub unprioritized_items {
     my $search = new Bugzilla::Search(fields => ["bug_id"],
             params => $uri->query_form_hash);
     my $dbh = Bugzilla->switch_to_shadow_db();
-    my $bug_ids = $dbh->selectcol_arrayref($search->sql);
+    my $bug_ids;
+    if ($search->can('data')) {
+        $bug_ids = [map {$_->[0] } @{$search->data}];
+    } else {
+        $bug_ids = $dbh->selectcol_arrayref($search->sql);
+    }
     return Bugzilla::Bug->new_from_list($bug_ids);
 }
 
@@ -558,12 +563,15 @@ BEGIN {
         my $self = shift;
         return $self->{agile_teams} if defined $self->{agile_teams};
 
-        my @group_ids = map { $_->id } @{$self->direct_group_membership};
-        my $team_ids = @group_ids ? Bugzilla->dbh->selectcol_arrayref(
-                "SELECT id FROM agile_team ".
-                "WHERE group_id IN (". join(",", @group_ids) .")") : [];
-        $self->{agile_teams} = Bugzilla::Extension::AgileTools::Team->
-                new_from_list($team_ids);
+        my $tids = Bugzilla->dbh->selectcol_arrayref(
+            "SELECT id FROM agile_team
+             LEFT JOIN user_group_map AS ugm
+                  ON ugm.group_id = agile_team.group_id
+              WHERE ugm.user_id = ?", undef, $self->id);
+
+        $self->{agile_teams} =
+            Bugzilla::Extension::AgileTools::Team->new_from_list($tids);
+
         return $self->{agile_teams};
     };
 }
