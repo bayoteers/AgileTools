@@ -6,6 +6,8 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
+[% USE Bugzilla %]
+
 [% PROCESS "global/variables.none.tmpl" %]
 
 [% WRAPPER bb/wraplist.html.tmpl
@@ -18,8 +20,7 @@
 
 [% PROCESS burn_date_picker %]
 
-[% IF cgi.param("include_list") %]
-  [% FLUSH %]
+[% IF Bugzilla.cgi.param("include_list") %]
   [% PROCESS list/table.html.tmpl %]
 [% END %]
 
