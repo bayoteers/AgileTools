@@ -26,12 +26,21 @@ use base qw(Bugzilla::WebService);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::WebService::Bug;
 
 use Bugzilla::Extension::AgileTools::Sprint;
 
 use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::WebService::Util;
+
+# Use the _bug_to_hash method from Bugzilla::WebService::Bug
+use Bugzilla::WebService::Bug;
+BEGIN {
+  *_bug_to_hash = \&Bugzilla::WebService::Bug::_bug_to_hash;
+  if (Bugzilla::WebService::Bug->can('_flag_to_hash')) {
+    *_flag_to_hash = \&Bugzilla::WebService::Bug::_flag_to_hash;
+  }
+}
+
 
 # Webservice field type mapping
 use constant FIELD_TYPES => {
@@ -64,8 +73,7 @@ sub get {
             id => $params->{id}});
     my @bugs;
     foreach my $bug (sort { $a->pool_order cmp $b->pool_order } @{$pool->bugs}) {
-        my $bug_hash = Bugzilla::WebService::Bug::_bug_to_hash(
-            $self, $bug, $params);
+        my $bug_hash = $self->_bug_to_hash($bug, $params);
         $bug_hash->{pool_order} = $self->type("int", $bug->pool_order);
         $bug_hash->{pool_id} = $self->type("int", $bug->pool_id);
         push(@bugs, $bug_hash);

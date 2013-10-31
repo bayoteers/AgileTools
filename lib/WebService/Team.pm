@@ -26,12 +26,21 @@ use base qw(Bugzilla::WebService);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::WebService::Bug;
 
 use Bugzilla::Extension::AgileTools::Team;
 
 use Bugzilla::Extension::AgileTools::Util;
 use Bugzilla::Extension::AgileTools::WebService::Util;
+
+
+# Use the _bug_to_hash method from Bugzilla::WebService::Bug
+use Bugzilla::WebService::Bug;
+BEGIN {
+  *_bug_to_hash = \&Bugzilla::WebService::Bug::_bug_to_hash;
+  if (Bugzilla::WebService::Bug->can('_flag_to_hash')) {
+    *_flag_to_hash = \&Bugzilla::WebService::Bug::_flag_to_hash;
+  }
+}
 
 # Webservice field type mapping
 use constant FIELD_TYPES => {
@@ -50,7 +59,7 @@ use constant FIELD_TYPES => {
     Description: Updates team details
     Params:      id - Team id
                  name - (optional) Change team name
-    Returns:     Changes hash like from L<Bugzilla::Object::update> 
+    Returns:     Changes hash like from L<Bugzilla::Object::update>
 
 =cut
 
@@ -198,8 +207,7 @@ sub unprioritized_items {
     my $team = get_team($params->{id});
     my @bugs;
     foreach my $bug (@{$team->unprioritized_items($params->{include})}) {
-        my $bug_hash = Bugzilla::WebService::Bug::_bug_to_hash(
-            $self, $bug, $params);
+        my $bug_hash = $self->_bug_to_hash($bug, $params);
         push(@bugs, $bug_hash);
     }
 
