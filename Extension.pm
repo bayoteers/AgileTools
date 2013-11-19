@@ -85,6 +85,16 @@ sub active_pools_to_vars {
 _add_template_handler("bug/edit.html.tmpl", \&active_pools_to_vars);
 _add_template_handler("list/edit-multiple.html.tmpl", \&active_pools_to_vars);
 
+_add_template_handler("bug/field-help.none.tmpl", sub {
+    return unless Bugzilla->params->{agile_use_points};
+    # This is done here instead of hook/global/field-descs-end.none.tmpl, so
+    # that field names are reflected also in the help strings
+    my $vars = shift;
+    $vars->{vars}->{field_descs}->{actual_time} = "Actual Points";
+    $vars->{vars}->{field_descs}->{work_time} = "Points Worked";
+    $vars->{vars}->{field_descs}->{remaining_time} = "Points Left";
+});
+
 
 #######################################
 # Page and template processing handlers

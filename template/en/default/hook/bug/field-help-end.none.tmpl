@@ -1,0 +1,13 @@
+[% IF Param('agile_use_points') %]
+  [%
+  vars.help_html.remaining_time_deps =
+    "The number of points of work left on this $terms.bug, calculated by
+    subtracting the $vars.field_descs.work_time from the
+    ${vars.field_descs.estimated_time}."
+  vars.help_html.estimated_time =
+    "The amount of effort that has been estimated it will take to resolve
+    this ${terms.bug}.",
+  vars.help_html.work_time =
+    "The total amount of effort spent on this $terms.bug so far.",
+  %]
+[% END %]
