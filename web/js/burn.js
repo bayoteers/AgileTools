@@ -19,7 +19,7 @@ var initBurnDatePicker = function(container)
             maxDate: endInput.val(),
             onSelect: function(dateText) {
                 endInput.datepicker("option", "minDate", dateText);
-            },
+            }
         });
     endInput.datepicker({
             dateFormat:"yy-mm-dd",
@@ -28,7 +28,7 @@ var initBurnDatePicker = function(container)
             minDate: startInput.val(),
             onSelect: function(dateText) {
                 startInput.datepicker("option", "maxDate", dateText);
-            },
+            }
         });
 
     $("[name=change_dates]", container).click(function() {
@@ -68,20 +68,20 @@ var initBurnChart = function(data, container)
     data.chartOptions = {
         series: {
             lines: { show: true },
-            points: { show: true },
+            points: { show: true }
         },
         xaxis: {
             mode: "time",
             min: data.start,
-            max: data.end,
+            max: data.end
         },
         yaxis: {
-            min: 0,
+            min: 0
         },
         grid: {
-            markings: getBurnMarkers(data),
+            markings: getBurnMarkers(data)
         },
-        colors: ['#EDC240', '#CB4B4B', '#AFD8F8',],
+        colors: ['#EDC240', '#CB4B4B', '#AFD8F8']
     };
     plotBurn(chartDiv, data, typeRadio.filter(":checked").val());
 };
@@ -95,8 +95,8 @@ var plotBurn = function(chartDiv, data, type)
             {
                 label: "Open items",
                 data: data.open_items,
-                points: {show: false},
-            },
+                points: {show: false}
+            }
         ];
         data.chartOptions.yaxis.axisLabel = BURN.itemUnit;
     } else {
@@ -104,12 +104,12 @@ var plotBurn = function(chartDiv, data, type)
             getIdealBurn(data, data.max_work),
             {
                 label: "Remaining",
-                data: data.remaining,
+                data: data.remaining
             },
             {
                 label: "Actual",
-                data: data.actual,
-            },
+                data: data.actual
+            }
         ];
         data.chartOptions.yaxis.axisLabel = BURN.workUnit;
     }
@@ -134,7 +134,7 @@ var getBurnMarkers = function(data)
                 // ...and ends to Monday morning
                 markings.push({
                         color:'lightgray',
-                        xaxis: {from: from, to: day.getTime()},
+                        xaxis: {from: from, to: day.getTime()}
                 });
             }
         }
@@ -145,7 +145,7 @@ var getBurnMarkers = function(data)
                     xaxis: {
                         from: day.getTime(),
                         to: day.getTime()
-                    },
+                    }
                 });
             }
         day.setDate(day.getDate() + 1);
@@ -154,7 +154,7 @@ var getBurnMarkers = function(data)
     if (markWeekends && day.getDay() <= 1) {
         markings.push({
                 color:'lightgray',
-                xaxis: {from: from, to: day.getTime()},
+                xaxis: {from: from, to: day.getTime()}
         });
     }
     // Today marker
@@ -193,6 +193,6 @@ var getIdealBurn = function(data, start_value)
      return {
         data: data,
         lines: {fill: true, lineWidth: 0},
-        points: {show: false},
+        points: {show: false}
     };
 }

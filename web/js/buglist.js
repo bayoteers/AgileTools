@@ -30,7 +30,7 @@ $.widget("agile.buglist", {
         order: false,
         sortable: true,
         itemTemplate: "#bug_item_template",
-        connectWith: false,
+        connectWith: false
     },
     /**
      * Initialize the widget
@@ -54,7 +54,7 @@ $.widget("agile.buglist", {
             stop: $.proxy(this, "_onSortStop"),
             receive: $.proxy(this, "_onSortReceive"),
             update: $.proxy(this, "_onSortUpdate"),
-            sort: _scrollWindow,
+            sort: _scrollWindow
         });
 
         $.Widget.prototype._create.apply( this, arguments );
@@ -103,7 +103,7 @@ $.widget("agile.buglist", {
             .clone().attr("id", null)
             .blitem({
                 bug: bug,
-                _buglist: this,
+                _buglist: this
             });
         var item = element.data("blitem");
         this._items[bug.id] = item;
@@ -203,7 +203,7 @@ $.widget("agile.buglist", {
             self._trigger(trigger, ev, {
                 bug: $(this).blitem("bug"),
                 index: index,
-                element: $(this),
+                element: $(this)
             });
         });
     },
@@ -247,9 +247,9 @@ $.widget("agile.buglist", {
             var scrollTop = this.element.scrollTop();
             var lOffset = this.element.offset().top;
             var iOffset = topItem.offset().top;
-            this.element.animate({scrollTop: scrollTop + iOffset - lOffset,});
+            this.element.animate({scrollTop: scrollTop + iOffset - lOffset});
         }
-    },
+    }
 });
 
 /**
@@ -280,7 +280,7 @@ $.widget("agile.blitem", {
      */
     options: {
         bug: {},
-        _buglist: null,
+        _buglist: null
     },
     /**
      * Initialize the widget
@@ -291,7 +291,7 @@ $.widget("agile.blitem", {
         // toggle details visibility on click
         this.element.find("button.expand").button({
             icons: {primary: "ui-icon-circle-triangle-s"},
-            text: false,
+            text: false
         }).click(function() {
             $(this).find(".ui-button-icon-primary").toggleClass(
                 "ui-icon-circle-triangle-s ui-icon-circle-triangle-n");
@@ -300,11 +300,11 @@ $.widget("agile.blitem", {
         // estimate button
         this.element.find("button.estimate").button({
             icons: {primary: "ui-icon-pencil"},
-            text: false,
+            text: false
         }).click($.proxy(this, "_openEstimate"));
 
         this._dList = this.element.find("ul.dependson").sortable({
-            sort: _scrollWindow,
+            sort: _scrollWindow
         });
         this._dList.addClass("buglist");
         this._setBuglist(this.options._buglist);
@@ -347,7 +347,7 @@ $.widget("agile.blitem", {
             connectWith: buglist.options.connectWith,
             stop: $.proxy(buglist, "_onSortStop"),
             receive: $.proxy(buglist, "_onSortReceive"),
-            update: $.proxy(buglist, "_onSortUpdate"),
+            update: $.proxy(buglist, "_onSortUpdate")
         });
     },
 
@@ -476,10 +476,9 @@ $.widget("agile.blitem", {
                         bugitem._trigger("update");
                     });
                 },
-                "Cancel": function() { $(this).dialog("close"); },
-                },
-            close: function() { $(this).dialog("destroy") },
+                "Cancel": function() { $(this).dialog("close"); }
+            },
+            close: function() { $(this).dialog("destroy") }
         });
-    },
-
+    }
 });

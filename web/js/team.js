@@ -37,11 +37,9 @@ var Team = Base.extend({
 
         // MEMBERS
         this.memberTable = $("#team_members tbody");
-        this.memberTable.find("button.add").click(
-                {
-                    input: this.memberTable.find("input.member-new"),
-                },
-                $.proxy(this, "_addMemberClick"));
+        this.memberTable.find("button.add").click({
+                input: this.memberTable.find("input.member-new")
+            }, $.proxy(this, "_addMemberClick"));
 
         for (var i=0; i< teamData.members.length; i++) {
             var member = teamData.members[i];
@@ -66,16 +64,16 @@ var Team = Base.extend({
             $item.append($button);
             $button.button({
                 icons:{primary:"ui-icon-circle-minus"},
-                text: false,
+                text: false
             }).click($.proxy(self, "_detachBacklog"));
         });
         $("button#add_new_backlog").button({
                 icons:{primary:"ui-icon-circle-plus"},
-                text: false,
+                text: false
             }).click($.proxy(this, "_createBacklog"));
         $("button#add_existing_backlog").button({
                 icons:{primary:"ui-icon-circle-plus"},
-                text: false,
+                text: false
             }).click($.proxy(this, "_attachBacklog"));
 
         // UNPRIORITIZED ITEMS
@@ -86,13 +84,13 @@ var Team = Base.extend({
         $("li#unprioritized_items_"+this.id).append(editQueryButton);
         editQueryButton.button({
                 icons:{primary:"ui-icon-pencil"},
-                text: false,
+                text: false
             }).click($.proxy(this, "_openQueryEdit"));
 
         $("input.member-new").userautocomplete();
         $("table").not("#templates").find("button.add").button({
             icons:{primary:"ui-icon-circle-plus"},
-            text: false,
+            text: false
         });
         $("button").not(".add,.remove").button();
     },
@@ -108,20 +106,20 @@ var Team = Base.extend({
         $row.find("button.remove")
             .button({
                 icons:{primary:"ui-icon-circle-minus"},
-                text: false,})
-            .click({
-                memberId: member.userid},
-                $.proxy(this, "_removeMemberClick"));
+                text: false
+            }).click({
+                memberId: member.userid
+            }, $.proxy(this, "_removeMemberClick"));
             
         var $roles = $row.find(".roles");
         $roles.find("button.add")
             .button({
                 icons:{primary:"ui-icon-circle-plus"},
-                text: false,})
-            .click({
+                text: false
+            }).click({
                 memberId: member.userid,
-                input: $roles.find("select.role-new"),
-                }, $.proxy(this, "_addRoleClick"));
+                input: $roles.find("select.role-new")
+            }, $.proxy(this, "_addRoleClick"));
 
         this.memberTable.find("tr").last().before($row);
         return $row;
@@ -136,7 +134,7 @@ var Team = Base.extend({
         $roleRow.find("button.remove")
             .button({
                 icons:{primary:"ui-icon-circle-minus"},
-                text: false,
+                text: false
             }).click({
                 memberId: member.userid,
                 roleId: role.id
@@ -371,5 +369,5 @@ var Team = Base.extend({
         } else {
             return true;
         }
-    },
+    }
 });

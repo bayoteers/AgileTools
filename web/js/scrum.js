@@ -17,7 +17,7 @@ function scrumDateRange(from, to, extraOpts)
             dateFormat: 'yy-mm-dd',
             firstDay: 1,
             showWeek: true,
-            showButtonPanel: true,
+            showButtonPanel: true
         }, extraOpts);
     from.datepicker($.extend({}, options,
         {
@@ -25,7 +25,7 @@ function scrumDateRange(from, to, extraOpts)
             {
                 var date = $.datepicker.parseDate('yy-mm-dd', selectedDate, options);
                 to.datepicker('option', 'minDate', date);
-            },
+            }
         }
         )
     );
@@ -35,7 +35,7 @@ function scrumDateRange(from, to, extraOpts)
             {
                 var date = $.datepicker.parseDate('yy-mm-dd', selectedDate, options);
                 from.datepicker('option', 'maxDate', date);
-            },
+            }
         }
         )
     );
@@ -177,7 +177,7 @@ var PoolController = ListController.extend({
             order: 'pool_order',
             receive: $.proxy(this, '_onReceive'),
             move: $.proxy(this, '_onReceive'),
-            remove:$.proxy(this, '_calculateWork'),
+            remove:$.proxy(this, '_calculateWork')
         });
         this._addBugs(result.bugs);
     },
@@ -194,15 +194,15 @@ var PoolController = ListController.extend({
             element.find('button.expand').first().after(addBugButton);
             addBugButton.button({
                 icons: {primary: 'ui-icon-circle-plus'},
-                text: false,
+                text: false
             });
             addBugButton.bugentry({
                 bug: new Bug(bug),
                 clone: ['product', 'component', 'version'],
                 defaults:{
-                    blocks: bug.id,
+                    blocks: bug.id
                 },
-                success: $.proxy(self, '_poolBugCreated'),
+                success: $.proxy(self, '_poolBugCreated')
             });
         });
         return elements;
@@ -212,7 +212,7 @@ var PoolController = ListController.extend({
     {
         var params = {
             id: this._poolID,
-            bug_id: data.bug_id,
+            bug_id: data.bug_id
         };
         var parentItem = $(ev.target).parents(':agile-blitem');
         if (parentItem.size()) {
@@ -234,11 +234,10 @@ var PoolController = ListController.extend({
         this.callRpc('Agile.Pool', 'add_bug', {
             id: this._poolID,
             bug_id: data.bug.id,
-            order: data.bug.pool_order,
+            order: data.bug.pool_order
         });
         data.element.removeClass('over-capacity');
-    },
-
+    }
 });
 
 var SprintController = PoolController.extend({
@@ -330,9 +329,9 @@ var SprintController = PoolController.extend({
             modal: true,
             buttons: {
                 'Save': $.proxy(this, '_saveSprint'),
-                'Cancel': function() { $(this).dialog('close') },
+                'Cancel': function() { $(this).dialog('close') }
                 },
-            close: function() { $(this).dialog('destroy') },
+            close: function() { $(this).dialog('destroy') }
         });
     },
 
@@ -385,9 +384,9 @@ var SprintController = PoolController.extend({
             modal: true,
             buttons: {
                 'Close': $.proxy(this, '_closeSprint'),
-                'Cancel': function() { $(this).dialog('close') },
+                'Cancel': function() { $(this).dialog('close') }
                 },
-            close: function() { $(this).dialog('destroy') },
+            close: function() { $(this).dialog('destroy') }
         });
     },
 
@@ -452,8 +451,7 @@ var SprintController = PoolController.extend({
         this._footer.find('.remaining-work').text(roundTime(work));
         this._footer.find('.remaining-cap').text(roundTime(remainingCap));
         this._footer.find('.free-cap').text(roundTime(free));
-    },
-
+    }
 });
 
 var UnprioritizedController = ListController.extend({
@@ -477,7 +475,7 @@ var UnprioritizedController = ListController.extend({
             order: '-id',
             receive: $.proxy(this, '_onReceive'),
             move: null,
-            remove: null,
+            remove: null
         });
         this._addBugs(result.bugs);
     },
@@ -493,7 +491,7 @@ var UnprioritizedController = ListController.extend({
                 bug_id: data.bug.id
             });
         }
-    },
+    }
 });
 
 
@@ -530,7 +528,7 @@ function _initScrumPlanning() {
 
     $("button.right").button({
         icons: { primary: "ui-icon-seek-next" },
-        text: false,
+        text: false
     }).click(function(){
         var button = $(this).button('disable');
         var hidden = $("div.columnbox").last();
@@ -554,7 +552,7 @@ function _initScrumPlanning() {
 
     $("button.left").button({
         icons: { primary: "ui-icon-seek-prev" },
-        text: false,
+        text: false
     }).click(function(){
         var button = $(this).button('disable');
         var hidden = $("div.columnbox").last();
