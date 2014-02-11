@@ -195,15 +195,17 @@ $.widget("agile.buglist", {
             // Bounce the item to indicate where it ended
             ui.item.blitem("bounce");
         }
-        
+        // Add the child items
         var movedItems = ui.item.add(":agile-blitem", ui.item);
         if (reverse) movedItems = movedItems.reverse();
         movedItems.each(function() {
+            var element = $(this);
+            var bug = element.blitem("bug");
             var index = items.index(this);
             self._trigger(trigger, ev, {
-                bug: $(this).blitem("bug"),
+                bug: bug,
                 index: index,
-                element: $(this)
+                element: element
             });
         });
     },
@@ -480,5 +482,74 @@ $.widget("agile.blitem", {
             },
             close: function() { $(this).dialog("destroy") }
         });
+    }
+});
+
+var ListController = Base.extend(
+{
+    constructor: function(element)
+    {
+        this._element = element;
+        this.list = element.find('.list-content').empty();
+        this._header = element.find('.list-header').empty();
+        this._footer = element.find('.list-footer').empty();
+        this._rpcwait = false;
+
+        this.list.buglist();
+
+        this._header.append($('<button type="button">Reload</button>')
+            .click($.proxy(this, 'load')));
+        this._header.append('Search: ')
+            .append($('<input>').keyup($.proxy(this, '_search')));
+    },
+
+    destroy: function()
+    {
+        this.list.buglist("destroy");
+    },
+
+    /**
+     * Content search field key handler
+     */
+    _search: function(ev)
+    {
+        var text = $(ev.target).val();
+        this.list.buglist('search', text);
+    },
+
+    /**
+     * Helper to queue RPC calls and add default error handler
+     */
+    callRpc: function(namespace, method, params)
+    {
+        var rpcObj = new Rpc(namespace, method, params, false);
+        var self = this;
+        rpcObj.fail(function(error) {
+            alert('Error: ' + error.message);
+            self._element.clearQueue('rpc');
+            self._rpcwait = false;
+        });
+        rpcObj.done(function() {
+            self._rpcwait = false;
+            self._element.dequeue('rpc');
+        });
+        self._element.queue('rpc', function() {
+            self._rpcwait = true;
+            rpcObj.start()
+        });
+        if (!this._rpcwait) this._element.dequeue('rpc');
+        return rpcObj;
+    },
+
+    _addBugs: function(bugs)
+    {
+        var elements = $();
+        for (var i = 0; i < bugs.length; i++) {
+            var element = this.list.buglist('addBug', bugs[i]);
+            elements = elements.add(element);
+        }
+        return elements;
+    },
+    load: function() {
     }
 });
