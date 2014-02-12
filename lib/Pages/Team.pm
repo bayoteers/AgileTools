@@ -108,7 +108,8 @@ sub show {
     $vars->{available_backlogs} =
         Bugzilla::Extension::AgileTools::Backlog->match({team_id => IS_NULL});
     $team->roles;
-    $vars->{team_json} = JSON->new->utf8->convert_blessed->encode($team);
+    $vars->{team_json} = JSON->new->convert_blessed->encode($team);
+    warn $vars->{team_json};
 }
 
 =item C<create> - The create team page
