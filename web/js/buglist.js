@@ -10,6 +10,13 @@
 // Add $().reverse()
 jQuery.fn.reverse = [].reverse;
 
+// Add case-insensitive :contains selector
+jQuery.expr[':'].icontains = function(a, i, m) {
+  return jQuery(a).text().toUpperCase()
+      .indexOf(m[3].toUpperCase()) >= 0;
+};
+
+
 /**
  * jQuery Buglist widget
  */
@@ -240,7 +247,7 @@ $.widget("agile.buglist", {
             this._searchIndex = 0;
         }
         if (!text) return;
-        var matches = this.element.find(":agile-blitem:contains("+text+")");
+        var matches = this.element.find(":agile-blitem:icontains("+text+")");
         matches.blitem("highlight", true);
         if (this._searchIndex >= matches.size()) this._searchIndex = 0;
         var topItem = matches.eq(this._searchIndex);
