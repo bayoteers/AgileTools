@@ -490,9 +490,9 @@ var ListController = Base.extend(
     constructor: function(element)
     {
         this._element = element;
-        this.list = element.find('.list-content').empty();
-        this._header = element.find('.list-header').empty();
-        this._footer = element.find('.list-footer').empty();
+        this.list = element.find('.list-content');
+        this._header = element.find('.list-header');
+        this._footer = element.find('.list-footer');
         this._rpcwait = false;
 
         this.list.buglist();
