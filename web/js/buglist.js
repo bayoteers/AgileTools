@@ -51,19 +51,19 @@ $.widget("agile.buglist", {
         this._emptyIndicator = $("<li>No items</li>")
             .addClass("ui-corner-all blitem")
             .appendTo(this.element);
-
-        this.element.sortable({
-            containment: "document",
-            scroll: false,
-            items: "> :agile-blitem",
-            placeholder: "blitem-placeholder",
-            connectWith: this.options.connectWith,
-            stop: $.proxy(this, "_onSortStop"),
-            receive: $.proxy(this, "_onSortReceive"),
-            update: $.proxy(this, "_onSortUpdate"),
-            sort: _scrollWindow
-        });
-
+        if (this.options.sortable) {
+            this.element.sortable({
+                containment: "document",
+                scroll: false,
+                items: "> :agile-blitem",
+                placeholder: "blitem-placeholder",
+                connectWith: this.options.connectWith,
+                stop: $.proxy(this, "_onSortStop"),
+                receive: $.proxy(this, "_onSortReceive"),
+                update: $.proxy(this, "_onSortUpdate"),
+                sort: _scrollWindow
+            });
+        }
         $.Widget.prototype._create.apply( this, arguments );
     },
 
@@ -94,7 +94,7 @@ $.widget("agile.buglist", {
     _setOption: function(key, value)
     {
         $.Widget.prototype._setOption.apply( this, arguments );
-        if (key == "connectWith") {
+        if (this.options.sortable && key == "connectWith") {
             this.element.sortable("option", "connectWith", value);
         }
     },
@@ -312,9 +312,12 @@ $.widget("agile.blitem", {
             text: false
         }).click($.proxy(this, "_openEstimate"));
 
-        this._dList = this.element.find("ul.dependson").sortable({
-            sort: _scrollWindow
-        });
+        this._dList = this.element.find("ul.dependson");
+        if (this.options._buglist.options.sortable) {
+            this._dList.sortable({
+                sort: _scrollWindow
+            });
+        }
         this._dList.addClass("buglist");
         this._setBuglist(this.options._buglist);
         this._updateBug();
@@ -350,14 +353,16 @@ $.widget("agile.blitem", {
      */
     _setBuglist: function(buglist)
     {
-        this._dList.sortable("option", {
-            items: "> :agile-blitem",
-            placeholder: "blitem-placeholder",
-            connectWith: buglist.options.connectWith,
-            stop: $.proxy(buglist, "_onSortStop"),
-            receive: $.proxy(buglist, "_onSortReceive"),
-            update: $.proxy(buglist, "_onSortUpdate")
-        });
+        if (this.options._buglist.options.sortable) {
+            this._dList.sortable("option", {
+                items: "> :agile-blitem",
+                placeholder: "blitem-placeholder",
+                connectWith: buglist.options.connectWith,
+                stop: $.proxy(buglist, "_onSortStop"),
+                receive: $.proxy(buglist, "_onSortReceive"),
+                update: $.proxy(buglist, "_onSortUpdate")
+            });
+        }
     },
 
     /**
