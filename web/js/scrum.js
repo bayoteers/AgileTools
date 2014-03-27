@@ -121,13 +121,14 @@ var PoolController = ListController.extend({
         elements.each(function(index, element) {
             element = $(element);
             var bug = element.blitem('bug');
-            var addBugButton = $('<button class="add-child" type="button">Add child</button>');
-            element.find('button.expand').first().after(addBugButton);
+            var addBugButton = $('<button type="button">Add new dependency</button>');
+            element.find('div.blitem-controls').first().append(addBugButton);
             addBugButton.button({
-                icons: {primary: 'ui-icon-circle-plus'},
+                icons: {primary: 'ui-icon-plus'},
                 text: false
             });
             addBugButton.bugentry({
+                title: "Add new dependency to "+bug.id,
                 bug: new Bug(bug),
                 clone: ['product', 'component', 'version'],
                 defaults:{

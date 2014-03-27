@@ -97,75 +97,44 @@ $(function(){_initScrumPlanning()});
     </table>
   </form>
 
-    <table id="sprint_info_template">
-        <tr>
-            <td>Start:</td>
-            <td class="start-date"></td>
-        </tr>
-        <tr>
-            <td>End:</td>
-            <td class="end-date"></td>
-        </tr>
-        <tr>
-            <td>Estimated capacity:</td>
-            <td class="estimated-cap"></td>
-        </tr>
-        <tr>
-            <td>Remaining capacity:</td>
-            <td class="remaining-cap"></td>
-        </tr>
-        <tr>
-            <td>Remaining work:</td>
-            <td class="remaining-work"></td>
-        </tr>
-        <tr>
-            <td>Free capacity:</td>
-            <td class="free-cap"></td>
-        </tr>
-        [% IF team.user_can_edit %]
-        <tr>
-            <td></td>
-            <td>
-                <button type="button" name="edit">Edit</button>
-                <button type="button" name="close">Close</button>
-                <button type="button" name="commit">Commit</button>
-            </td>
-        </tr>
-        [% END %]
-    </table>
+  <table id="sprint_info_template">
+    <tr>
+      <td>Start:</td>
+      <td class="start-date"></td>
+    </tr>
+    <tr>
+      <td>End:</td>
+      <td class="end-date"></td>
+    </tr>
+    <tr>
+      <td>Estimated capacity:</td>
+      <td class="estimated-cap"></td>
+    </tr>
+    <tr>
+      <td>Remaining capacity:</td>
+      <td class="remaining-cap"></td>
+    </tr>
+    <tr>
+      <td>Remaining work:</td>
+      <td class="remaining-work"></td>
+    </tr>
+    <tr>
+      <td>Free capacity:</td>
+      <td class="free-cap"></td>
+    </tr>
+    [% IF team.user_can_edit %]
+    <tr>
+      <td></td>
+      <td>
+          <button type="button" name="edit">Edit</button>
+          <button type="button" name="close">Close</button>
+          <button type="button" name="commit">Commit</button>
+      </td>
+    </tr>
+    [% END %]
+  </table>
 
-    <ul>
-        <li id="bug_item_template" class="ui-corner-all">
-            <a href="#" target="_blank" title="id"></a>
-            <span title="status"></span>
-            <span title="summary"></span><br/>
-            <button type="button" class="expand">Show details</button>
-            <span class="times">
-                <span title="estimated_time">0</span>/
-                <span title="remaining_time">0</span>
-                <button type="button" class="estimate">Estimate</button>
-            </span>
-            <div class="details">
-                Assigned to:<span title="assigned_to"></span><br/>
-                Depends on:<a title="depends_on" href="#" target="_blank"></a><br/>
-                Blocks:<a title="blocks" href="#" target="_blank"></a><br/>
-            </div>
-            <ul class="dependson"></ul>
-        </li>
-    <ul>
-
-    <form id="bug_estimate_editor_template">
-    <table>
-        <tr>
-            <td><label for="estimated_time">Original estimate:</label></td>
-            <td><input name="estimated_time"/></td>
-        </tr>
-        <tr>
-            <td><label for="remaining_time">Remaining estimate:</label></td>
-            <td><input name="remaining_time"/></td>
-        </tr>
-    </table>
-    </form>
+  [% PROCESS agiletools/blitem.html.tmpl %]
 
 </div>
 

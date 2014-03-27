@@ -1,0 +1,24 @@
+<ul>
+  <li id="blitem-template" class="ui-corner-all">
+    <ul class="blitem-summary">
+      <li>{id}</li>
+      <li>{status}</li>
+      <li>{summary}</li>
+      <li class="blitem-estimates">
+        <span>{remaining_time}</span> / <span>{estimated_time}</span>
+      </li>
+      [% Hook.process('summary-end') %]
+    </ul>
+    <ul class="blitem-details">
+      [% FOREACH field IN Param('agile_blitem_detail_fields').split(' ') %]
+      <li>[% field_descs.$field %]: <span>{[% field FILTER none %]}</span></li>
+      [% END %]
+      [% Hook.process('details-end') %]
+    </ul>
+    <div class="blitem-controls">
+      <button class="blitem-expand" type="button">Show details</button>
+      <button class="blitem-edit" type="button">Edit</button>
+    </div>
+    <ul class="blitem-dependson"></ul>
+  </li>
+<ul>

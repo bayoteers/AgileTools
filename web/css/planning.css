@@ -21,15 +21,18 @@ div.columnbox {
     display: inline-block;
     white-space: normal;
 }
-button.right {
+button.right,
+button.left {
     float: right;
     width: 20px;
+    height: 10em;
     margin: 0px;
+}
+button.right {
+    float: right;
 }
 button.left {
     float: left;
-    width: 20px;
-    margin: 0px;
 }
 
 div.list-container {

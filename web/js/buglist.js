@@ -28,15 +28,12 @@ $.widget("agile.buglist", {
      *               in descending order. (Default false = no sorting)
      * sortable:     If true the items in the list can be dragged around
      *               (Default true)
-     * itemTemplate: CSS selector for the template element used to render the
-     *               list items (Default '#bug_item_template')
      * connectWith:  CSS selector to connect the sortable list with others
      *               (Default false = not connected)
      */
     options: {
         order: false,
         sortable: true,
-        itemTemplate: "#bug_item_template",
         connectWith: false
     },
     /**
@@ -64,6 +61,10 @@ $.widget("agile.buglist", {
                 sort: _scrollWindow
             });
         }
+
+        var fields = $("#blitem-template").text().match(/\{([^\}]+)\}/g) || [];
+        this._blitemFields = fields.map(function(f){return f.slice(1,-1)});
+
         $.Widget.prototype._create.apply( this, arguments );
     },
 
@@ -106,11 +107,12 @@ $.widget("agile.buglist", {
      */
     addBug: function(bug)
     {
-        var element = $(this.options.itemTemplate)
+        var element = $("#blitem-template")
             .clone().attr("id", null)
             .blitem({
                 bug: bug,
-                _buglist: this
+                buglist: this,
+                fields: this._blitemFields
             });
         var item = element.data("blitem");
         this._items[bug.id] = item;
@@ -194,7 +196,7 @@ $.widget("agile.buglist", {
             }
             /* TODO: This revese stuff is a bit hackish
              * When re-ordering the items inside single list, the backend
-             * method Pool.add_bug() needs to be called in reverse order 
+             * method Pool.add_bug() needs to be called in reverse order
              * starting from the lowest dependency included in the block.
              * Otherwise the order is not updated correctly
              */
@@ -225,7 +227,7 @@ $.widget("agile.buglist", {
         // Place the item correctly in this list and update options
         this._placeItemElement(ui.item);
         var item = ui.item.data("blitem");
-        item._setOption("_buglist", this);
+        item._setOption("buglist", this);
         this._items[item.options.bug.id] = item;
     },
 
@@ -289,37 +291,44 @@ $.widget("agile.blitem", {
      */
     options: {
         bug: {},
-        _buglist: null
+        buglist: null,
+        fields: []
     },
     /**
      * Initialize the widget
      */
     _create: function()
     {
-        this.element.addClass("blitem");
-        // toggle details visibility on click
-        this.element.find("button.expand").button({
-            icons: {primary: "ui-icon-circle-triangle-s"},
-            text: false
-        }).click(function() {
-            $(this).find(".ui-button-icon-primary").toggleClass(
-                "ui-icon-circle-triangle-s ui-icon-circle-triangle-n");
-            $(this).siblings(".details").slideToggle();
-        });
-        // estimate button
-        this.element.find("button.estimate").button({
-            icons: {primary: "ui-icon-pencil"},
-            text: false
-        }).click($.proxy(this, "_openEstimate"));
+        this._bug = new Bug(this.options.bug);
+        this._bug.updated($.proxy(this, '_updateBug'));
 
-        this._dList = this.element.find("ul.dependson");
-        if (this.options._buglist.options.sortable) {
-            this._dList.sortable({
-                sort: _scrollWindow
+        this.element.addClass("blitem");
+
+        // toggle details button
+        var details = this.element.find("ul.blitem-details").hide();
+        this.element.find("button.blitem-expand")
+            .button({ icons: {primary: "ui-icon-triangle-1-s"}, text: false })
+            .click(function() {
+                details.slideToggle();
+                $(this).find(".ui-button-icon-primary")
+                    .toggleClass('ui-icon-triangle-1-s ui-icon-triangle-1-n');
             });
+        // edit button
+        this.element.find("button.blitem-edit")
+            .button({ icons: { primary: "ui-icon-pencil" }, text: false })
+            .bugentry({ mode: 'edit', bug: this._bug });
+
+        this._fields = {}
+        for (var i = 0; i < this.options.fields.length; i++) {
+            var name = this.options.fields[i];
+            this._fields[name] = this.element.find(
+                ":contains('{"+name+"}')").last();
         }
+
+        this._dList = this.element.find(".blitem-dependson");
         this._dList.addClass("buglist");
-        this._setBuglist(this.options._buglist);
+
+        this._setBuglist(this.options.buglist);
         this._updateBug();
         this._originalMargin = this.element.css("margin-left");
     },
@@ -341,9 +350,10 @@ $.widget("agile.blitem", {
     {
         $.Widget.prototype._setOption.apply( this, arguments );
         if (key == "bug") {
+            this._bug = new Bug(value);
             this._updateBug();
         }
-        if (key == "_buglist") {
+        if (key == "buglist") {
             this._setBuglist(value);
         }
     },
@@ -353,8 +363,9 @@ $.widget("agile.blitem", {
      */
     _setBuglist: function(buglist)
     {
-        if (this.options._buglist.options.sortable) {
-            this._dList.sortable("option", {
+        if (this.options.buglist.options.sortable) {
+            this._dList.sortable({
+                sort: _scrollWindow,
                 items: "> :agile-blitem",
                 placeholder: "blitem-placeholder",
                 connectWith: buglist.options.connectWith,
@@ -370,32 +381,33 @@ $.widget("agile.blitem", {
      */
     _updateBug:function()
     {
-        var bug = this.options.bug;
-        // Find each element with a title atribute and set the content from
-        // matching bug property
-        this.element.find("[title]").each(function() {
-            var element = $(this);
-            var key = element.attr("title");
-            var value = bug[key];
-            if (!$.isArray(value)) value = [value];
-            for(var i = 0; i < value.length; i++) {
-                element.text(value[i]);
-                // Special cases
-                if (["id", "depends_on", "blocks"].indexOf(key) > -1) {
-                    element.attr("href", "show_bug.cgi?id=" + value[i]);
-                }
-                // If there is more values, clone the element
-                if (i+1 < value.length) {
-                    element.after(element.clone());
-                    element = element.next();
-                    element.before(", ");
-                }
+        var bug = this._bug;
+
+        var classes = [
+            "bz_" + bug.value('status'),
+            bug.value('resolution') ? "bz_" + bug.value('resolution'): "",
+            "bz_" + bug.value('priority'),
+            "bz_" + bug.value('severity')
+        ];
+        if (!bug.value('is_open'))
+            classes.push("bz_closed");
+        if (bug.value('groups'))
+            classes.push("bz_secure");
+        this._fields['summary'].removeClass().addClass(classes.join(" "));
+
+        for(name in this._fields) {
+            this._fields[name].empty();
+            var value = bug.value(name);
+            if (name == 'id' || name == 'depends_on' || name == 'blocks') {
+                if (!$.isArray(value))
+                    value = [value];
+                value = value.map(function(i) {
+                    return '<a target="_blank" href="show_bug.cgi?id='+ i +'">'+ i +'</a>';
+                });
             }
-        });
-        if (bug.is_open) {
-            this.element.removeClass("bz_closed");
-        } else {
-            this.element.addClass("bz_closed");
+            if ($.isArray(value))
+                value = value.join(', ');
+            this._fields[name].html(value).attr('title', BB_FIELDS[name].display_name);
         }
     },
 
@@ -406,7 +418,7 @@ $.widget("agile.blitem", {
     {
         var bug = element.blitem("bug");
         var place = null;
-        var order = this.options._buglist.options.order;
+        var order = this.options.buglist.options.order;
         if (order) {
             this._dList.children(":agile-blitem").each(function() {
                 var tmp = $(this).blitem("bug");
@@ -447,7 +459,7 @@ $.widget("agile.blitem", {
             this.element.removeClass("blitem-hl");
         }
     },
-    
+
     /**
      * Animated bounce of this item to highlight it's position
      */
@@ -456,45 +468,6 @@ $.widget("agile.blitem", {
         this.element.animate({"margin-left": "+=20"}, {queue: true})
                 .animate({"margin-left": this._originalMargin}, {queue: true});
     },
-
-    // TODO: Move this out of here
-    _openEstimate: function()
-    {
-        var form = $("#bug_estimate_editor_template").clone().attr("id", null);
-        var bug = this.bug();
-        form.data("bug_id", bug.id);
-        form.find("span.summary").text(bug.summary);
-        form.find("input").each(function() {
-            $(this).val(bug[$(this).attr("name")])
-        });
-        var bugitem = this;
-        form.dialog({
-            title: "Estimate for item " + bug.id,
-            modal: true,
-            buttons: {
-                "Update": function() {
-                    var form = $(this);
-                    var params = {ids: form.data("bug_id")};
-                    $(this).find("input").each(function() {
-                        params[$(this).attr("name")] = $(this).val();
-                    });
-                    var rpc = new Rpc("Bug", "update", params);
-                    rpc.fail(function(error) { alert(error.message); });
-                    rpc.done(function(result) {
-                        var changes = result.bugs[0].changes;
-                        for (var field in changes) {
-                            bug[field] = changes[field].added;
-                        }
-                        bugitem.bug(bug);
-                        form.dialog("close");
-                        bugitem._trigger("update");
-                    });
-                },
-                "Cancel": function() { $(this).dialog("close"); }
-            },
-            close: function() { $(this).dialog("destroy") }
-        });
-    }
 });
 
 var ListController = Base.extend(

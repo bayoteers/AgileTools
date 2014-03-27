@@ -11,22 +11,13 @@
 .buglist {
     padding: 2px;
     list-style-type: none;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.buglist.dependson {
-    overflow: visible;
-}
-
-.blitem .dependson {
-    margin-left: 1em;
 }
 
 .blitem {
     border: 1px solid;
-    margin: 1px;
-    margin-bottom: 5px;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    padding-right: 5px;
 }
 
 .blitem-hl {
@@ -46,19 +37,50 @@
     background-color: pink;
 }
 
-.blitem span.times {
+ul.blitem-summary {
+    list-style-type: none;
+    padding: 0px;
+}
+
+ul.blitem-summary > li {
+    display: inline;
+}
+
+li.blitem-estimates {
+    font-weight: bold;
     float: right;
-    height: 0px;
 }
 
-.blitem div.details {
-    display: none;
+ul.blitem-details {
+    list-style-type: none;
+    padding: 0px;
 }
 
-.blitem button.expand,
-.blitem button.add-child,
-.blitem button.estimate {
-    width: 1em;
-    height: 1em;
-    vertical-align: text-bottom;
+ul.blitem-details > li:not(.blitem-details-toggle) {
+    margin-left: 1em;
+}
+
+li.blitem-details-toggle {
+    text-align: center;
+    height: 16px;
+    cursor: pointer;
+}
+
+li.blitem-details-toggle > span.ui-icon {
+    background-color: lightgray;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    display: inline-block;
+}
+
+div.blitem-controls > button {
+    width: 1.5em;
+    height: 1.5em;
+}
+
+ul.blitem-dependson {
+    margin-left: 1em;
+    padding: 0px;
 }

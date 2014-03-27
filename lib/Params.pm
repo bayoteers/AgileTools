@@ -26,7 +26,7 @@ sub get_param_list {
     my ($old_nonhuman) = grep {$_ eq NON_HUMAN_GROUP} @groups;
     unshift @groups, '';
 
-    my @param_list = (
+    return (
         {
             name    => 'agile_user_group',
             desc    => 'User group allowed to use AgileTools',
@@ -71,6 +71,13 @@ sub get_param_list {
             # TODO: add checker to make sure entered columns are valid
         },
         {
+            name => 'agile_blitem_detail_fields',
+            desc => 'List of fields to show in planning view bug details',
+            type    => 't',
+            default => "assigned_to depends_on blocks"
+            # TODO: add checker to make sure entered fields are valid
+        },
+        {
             name => 'agile_start_working_button',
             desc => 'Show "Start Working"-button on bug view',
             type    => 'b',
@@ -97,7 +104,6 @@ sub get_param_list {
             default => 0,
         },
     );
-    return @param_list;
 }
 
 1;
