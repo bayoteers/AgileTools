@@ -127,9 +127,13 @@ $.widget("agile.buglist", {
     _placeItemElement: function(element)
     {
         var bug = element.blitem("bug");
-        var blocked = this._items[bug.blocks[0]];
-        if (blocked) {
-            blocked.addDepends(element);
+
+        var blocked = this.element.find(":agile-blitem").filter(function() {
+            return bug.blocks.indexOf($(this).blitem("bug").id) != -1;
+        }).first()
+
+        if (blocked.size()) {
+            blocked.blitem("addDepends", element);
         } else if (this.element.find(":agile-blitem").index(element) == -1) {
             var place = null;
             if (this.options.order) {
