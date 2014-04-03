@@ -150,8 +150,8 @@ sub _check_name {
 
 sub create {
     my ($class, $params) = @_;
-
     $class->check_required_create_fields($params);
+    Bugzilla->dbh->bz_start_transaction;
     # Create pool for this backlog
     my $pool = Bugzilla::Extension::AgileTools::Pool->create(
         {name => delete $params->{name}});
@@ -160,6 +160,7 @@ sub create {
     $clean_params->{$class->ID_FIELD} = $pool->id;
 
     my $backlog = $class->insert_create_data($clean_params);
+    Bugzilla->dbh->bz_commit_transaction;
     return $backlog;
 }
 
@@ -207,13 +208,12 @@ sub update {
 
 sub remove_from_db {
     my $self = shift;
-    ThrowUserError("agile_permission_denied",
-            {permission=>'delete active sprint'})
-        if $self->is_active;
+    Bugzilla->dbh->bz_start_transaction;
     # Take pool for later deletion
     my $pool = $self->pool;
     $self->SUPER::remove_from_db(@_);
     $pool->remove_from_db();
+    Bugzilla->dbh->bz_commit_transaction;
 }
 
 sub TO_JSON {

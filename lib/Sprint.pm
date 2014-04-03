@@ -273,6 +273,7 @@ sub create {
     if ($start->week_number != $end->week_number) {
         $name .= "-".$end->week_number;
     }
+    Bugzilla->dbh->bz_start_transaction;
     my $pool = Bugzilla::Extension::AgileTools::Pool->create({name => $name});
     $clean_params->{id} = $pool->id;
 
@@ -282,6 +283,7 @@ sub create {
         $team->set_current_sprint_id($sprint->id);
         $team->update();
     }
+    Bugzilla->dbh->bz_commit_transaction;
     return $sprint;
 }
 
@@ -313,6 +315,7 @@ sub insert_create_data {
 sub update {
     my $self = shift;
 
+    Bugzilla->dbh->bz_start_transaction;
     my($changes, $old) = $self->SUPER::update(@_);
 
     # Update pool name if the weeks have changed
@@ -341,6 +344,7 @@ sub update {
         my $pool_changes = $self->pool->update();
         $changes->{name} = $pool_changes->{name};
     }
+    Bugzilla->dbh->bz_commit_transaction;
 
     if (wantarray) {
         return ($changes, $old);
@@ -355,8 +359,10 @@ sub remove_from_db {
         if $self->is_active;
     # Take pool for later deletion
     my $pool = $self->pool;
+    Bugzilla->dbh->bz_start_transaction;
     $self->SUPER::remove_from_db(@_);
     $pool->remove_from_db();
+    Bugzilla->dbh->bz_commit_transaction;
 }
 
 sub TO_JSON {
