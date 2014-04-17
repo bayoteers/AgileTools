@@ -408,10 +408,13 @@ $.widget("agile.blitem", {
                 value = value.map(function(i) {
                     return '<a target="_blank" href="show_bug.cgi?id='+ i +'">'+ i +'</a>';
                 });
+                this._fields[name].html(value.join(', '));
+            } else {
+                if ($.isArray(value))
+                    value = value.join(', ');
+                this._fields[name].text(value);
             }
-            if ($.isArray(value))
-                value = value.join(', ');
-            this._fields[name].html(value).attr('title', BB_FIELDS[name].display_name);
+            this._fields[name].attr('title', BB_FIELDS[name].display_name);
         }
     },
 
