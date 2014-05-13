@@ -117,6 +117,7 @@ $.widget("agile.buglist", {
         var item = element.data("blitem");
         this._items[bug.id] = item;
         this._placeItemElement(element);
+        this._trigger("additem", null, {bug: bug, element: element});
         return element;
     },
 
@@ -335,6 +336,7 @@ $.widget("agile.blitem", {
         this._setBuglist(this.options.buglist);
         this._updateBug();
         this._originalMargin = this.element.css("margin-left");
+        $.Widget.prototype._create.apply( this, arguments );
     },
 
     /**
