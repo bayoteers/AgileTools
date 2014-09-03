@@ -428,25 +428,16 @@ var UnprioritizedController = ListController.extend({
 
 
 function _initScrumPlanning() {
-    var sprint;
-    var backlog;
     $("div.columnbox").each(function() {
         var column = $(this);
         var container = column.children("div.list-container");
         var controller;
         switch(container.attr('id')) {
         case 'sprint':
-            sprint = column;
-            column.data("loaded", true);
             controller = new SprintController(container, SCRUM.sprint_id);
-            controller.load();
             break;
         case 'backlog':
-            backlog = column;
-            column.data("loaded", true);
-            if (SCRUM.backlog_id == 0) break;
             controller = new PoolController(container, SCRUM.backlog_id);
-            controller.load();
             break;
         case 'unprioritized':
             controller = new UnprioritizedController(container);
@@ -456,7 +447,20 @@ function _initScrumPlanning() {
         }
         column.data("controller", controller);
     });
-    _connectControllers(sprint, backlog);
+    var first = $("div.columnbox").eq(0);
+    first.data('controller').load();
+    first.data('loaded', true);
+    var second = $("div.columnbox").eq(1);
+    second.data('controller').load();
+    second.data('loaded', true);
+    _connectControllers(first, second);
+
+    var rest = $("div.columnbox").slice(2).hide();
+    if (rest.size() == 0) {
+        $("button.right").remove();
+        $("button.left").remove();
+        return;
+    }
 
     $("button.right").button({
         icons: { primary: "ui-icon-seek-next" },

@@ -9,11 +9,7 @@
 [% javascript = BLOCK %]
 
 /* Global scrum variables */
-var SCRUM = {
-  sprint_id: [% sprint_id %],
-  backlog_id: [% backlog_id %],
-  team_id: [% team.id %],
-};
+var SCRUM = [% scrum_json %];
 
 /* Initialize the page on ready */
 $(function(){_initScrumPlanning()});
@@ -45,13 +41,10 @@ $(function(){_initScrumPlanning()});
       <div class="list-footer"></div>
     </div>
 
-</div><div class="columnbox">
+</div>[% IF team.backlogs.size() %]<div class="columnbox">
 
     <div id="backlog" class="list-container">
       <select class="pool-selector list-title" name="backlog">
-          [% UNLESS backlog_id %]
-          <option disabled="disabled">No backlogs</option>
-          [% END %]
           [% FOREACH bl IN team.backlogs %]
           <option [% IF backlog_id == bl.id %]selected="selected"[% END #%]
             value="[% bl.id %]">[% bl.name FILTER html %]</option>
@@ -62,7 +55,7 @@ $(function(){_initScrumPlanning()});
       <div class="list-footer"></div>
     </div>
 
-</div><div class="columnbox" style="display:none;">
+</div>[% END %]<div class="columnbox">
 
     <div id="unprioritized" class="list-container">
       <div class="list-title">Unprioritized items</div>

@@ -45,10 +45,12 @@ sub planning {
             unless defined $id;
     my $team = get_team($id);
     $vars->{team} = $team;
-    $vars->{team_id} = $team->id;
-    $vars->{sprint_id} = $team->current_sprint_id;
-    $vars->{backlog_id} = $cgi->param("backlog_id") ||
-            $team->backlogs->[0] ? $team->backlogs->[0]->id : 0;
+    $vars->{scrum_json} = encode_json({
+        team_id => $team->id,
+        sprint_id => $team->current_sprint_id,
+        backlog_id => $cgi->param("backlog_id") ||
+            $team->backlogs->[0] ? $team->backlogs->[0]->id : 0,
+    });
 }
 
 =item C<sprints> - The team sprints listing page
