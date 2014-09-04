@@ -182,17 +182,9 @@ var SprintController = PoolController.extend({
 
     load: function()
     {
-        this.list.buglist('clear');
-        this._footer.empty();
+        this.base();
         var rpc = this.callRpc('Agile.Sprint', 'get', {id:this._poolID});
-        rpc.done($.proxy(this, '_getSprintDone'));
-    },
-
-    _getSprintDone: function(result)
-    {
-        this._updateSprintInfo(result);
-        var rpc = this.callRpc('Agile.Pool', 'get', {id: result.id});
-        rpc.done($.proxy(this, '_onPoolGetDone'));
+        rpc.done($.proxy(this, '_updateSprintInfo'));
     },
 
     _addBugs: function(bugs)
@@ -241,6 +233,7 @@ var SprintController = PoolController.extend({
         }
         this._footer.empty().append(info);
         this._sprint = sprint;
+        this._calculateWork();
     },
 
     /**
@@ -357,6 +350,7 @@ var SprintController = PoolController.extend({
      * Calculate the estimated amount of work in sprint
      */
     _calculateWork: function() {
+        if(this._sprint == undefined) return;
         var work = 0;
         var capacity = Number(this._sprint.capacity || 0);
         var start = new Date(this._sprint.start_date);
