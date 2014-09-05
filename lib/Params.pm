@@ -63,6 +63,12 @@ sub get_param_list {
             default => [],
         },
         {
+            name => 'agile_check_time_only_sprint',
+            desc => 'Check time worked only when bug is in sprint',
+            type    => 'b',
+            default => 0,
+        },
+        {
             name => 'agile_scrum_buglist_columns',
             desc => 'List of columns to show in scrum buglist queries',
             type    => 't',

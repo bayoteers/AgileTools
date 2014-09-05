@@ -233,7 +233,7 @@ sub _bugs_being_updated {
 sub bug_end_of_update {
     my ($self, $args) = @_;
 
-    my ($bug, $old_bug, $changes, $delta_ts) = @$args{
+    my ($bug, $old_bug, $changes, $timestamp) = @$args{
         qw(bug old_bug changes timestamp)};
     my $user = Bugzilla->user;
     my $cgi = Bugzilla->cgi;
@@ -244,7 +244,10 @@ sub bug_end_of_update {
         if (!$new_status->is_open && $old_status->is_open) {
             # Bug is being closed
             my $non_human = Bugzilla->params->{agile_nonhuman_group};
-            if ($non_human && !$user->in_group($non_human)) {
+            if ((!Bugzilla->params->{agile_check_time_only_sprint}
+                  || ($bug->pool && $bug->pool->is_sprint))
+                && (!$non_human || !$user->in_group($non_human)))
+            {
                 # Check that actual time is set if it is required for the
                 # severity and resolution
                 my $check_severity = grep {$bug->bug_severity eq $_}
@@ -258,20 +261,15 @@ sub bug_end_of_update {
             }
 
             # Remove closed bug from any backlog
-            if ($bug->pool_id) {
-                if (Bugzilla->dbh->selectrow_array(
-                        'SELECT COUNT(*) FROM agile_backlog '.
-                        'WHERE pool_id = ?',
-                        undef, $bug->pool_id)) {
-                    $bug->pool->remove_bug($bug);
-                    $changes->{'bug_agile_pool.pool_id'} = [ $old_bug->pool_id,
-                            $bug->pool_id ];
-                    # Activity log has been writen at this point so we need to
-                    # add this entry
-                    LogActivityEntry($bug->id, 'bug_agile_pool.pool_id',
+            if ($bug->pool && $bug->pool->is_backlog) {
+                $bug->pool->remove_bug($bug);
+                $changes->{'bug_agile_pool.pool_id'} = [
+                        $old_bug->pool_id, $bug->pool_id ];
+                # Activity log has been writen at this point so we need to
+                # add this entry
+                LogActivityEntry($bug->id, 'bug_agile_pool.pool_id',
                         $old_bug->pool_id, $bug->pool_id,
-                        Bugzilla->user->id, $delta_ts);
-                }
+                        $user->id, $timestamp);
             }
         }
     }

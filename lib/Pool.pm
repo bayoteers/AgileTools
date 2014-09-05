@@ -264,6 +264,44 @@ sub remove_bug {
     $dbh->bz_commit_transaction();
 }
 
+=item C<is_sprint()>
+
+    Description: Check if pool is a sprint
+
+=cut
+
+sub is_sprint {
+    my $id = shift;
+    # If called as Pool method or with a pool object
+    $id = $id->id if ref($id);
+    detaint_natural($id);
+    my $cache = Bugzilla->request_cache->{sprint_pools} ||= {};
+    if(!defined $cache->{$id}) {
+        $cache->{$id} = Bugzilla->dbh->selectrow_array(
+            "SELECT COUNT(id) FROM agile_sprint WHERE id = ?", undef, $id);
+    }
+    return $cache->{$id};
+}
+
+=item C<is_backlog()>
+
+    Description: Check if pool is a backlog
+
+=cut
+
+sub is_backlog {
+    my $id = shift;
+    # If called as Pool method or with a pool object
+    $id = $id->id if ref($id);
+    detaint_natural($id);
+    my $cache = Bugzilla->request_cache->{backlog_pools} ||= {};
+    if(!defined $cache->{$id}) {
+        $cache->{$id} = Bugzilla->dbh->selectrow_array(
+            "SELECT COUNT(pool_id) FROM agile_backlog WHERE pool_id = ?", undef, $id);
+    }
+    return $cache->{$id};
+}
+
 =back
 
 =head1 RELATED METHODS
