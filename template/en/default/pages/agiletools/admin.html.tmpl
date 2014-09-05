@@ -1,0 +1,41 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # Copyright (C) 2014 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jolla.com>
+  #%]
+
+[% INCLUDE global/header.html.tmpl
+   title = "AgileTools administration"
+%]
+
+<h1>Backlogs</h1>
+
+<table id="admin_table" border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Team</th>
+    <th>Active</th>
+    <th>Bugs</th>
+  </tr>
+[% FOREACH bl IN backlogs %]
+  <form method="POST" action="page.cgi?id=agiletools/admin.html">
+  <tr>
+    <td>
+      <input type="hidden" name="backlog_id" value="[% bl.id FILTER html %]">
+      [% bl.id FILTER html %]
+    </td>
+    <td><input name="backlog_name" value="[% bl.name FILTER html %]"></td>
+    <td>[% bl.team.defined ? bl.team.name : '---' FILTER html %]</td>
+    <td>[% bl.pool.is_active ? 'yes' : '' FILTER html %]</td>
+    <td><a href="buglist.cgi?f1=bug_agile_pool.pool_id&amp;o1=equals&amp;v1=[% bl.id FILTER uri %]">[% bl.bug_count FILTER html %]</a></td>
+    <td><button type="submit" name="action" value="save_backlog">Save</a></td>
+    <td><button type="submit" name="action" value="delete_backlog">Delete</a></td>
+  </tr>
+  </form>
+[% END %]
+</table>
+
+[% INCLUDE global/footer.html.tmpl %]

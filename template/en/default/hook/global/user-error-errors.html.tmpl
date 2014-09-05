@@ -2,8 +2,8 @@
   # License, v. 2.0. If a copy of the MPL was not distributed with this
   # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Copyright (C) 2012 Jolla Ltd.
-  # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+  # Copyright (C) 2012-2014 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jolla.com>
   #%]
 
 [%# Note that error messages should generally be indented four spaces, like
@@ -70,4 +70,8 @@
 [% ELSIF error == "agile_sprint_commit_empty" %]
     [% title = "Can't commit to empty sprint" %]
     You can not commit to sprint without any items in it.
+
+[% ELSIF error == "agile_backlog_has_bugs" %]
+    [% title = "Backlog contains bugs" %]
+    Backlog contains bugs, you need to remove those first.
 [% END %]

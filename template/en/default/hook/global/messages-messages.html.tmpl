@@ -2,8 +2,8 @@
   # License, v. 2.0. If a copy of the MPL was not distributed with this
   # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Copyright (C) 2012 Jolla Ltd.
-  # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+  # Copyright (C) 2012-2014 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jolla.com>
   #%]
 
 [% IF message_tag == "agile_team_created" %]
@@ -13,4 +13,8 @@
     Team [% team.name FILTER html %] has been successfully saved.
 [% ELSIF message_tag == "agile_team_removed" %]
     Team [% team.name FILTER html %] has been successfully removed.
+[% ELSIF message_tag == "agile_backlog_removed" %]
+    Backlog [% backlog.name FILTER html %] has been successfully removed.
+[% ELSIF message_tag == "agile_backlog_saved" %]
+    Backlog '[% backlog.name FILTER html %]' has been successfully saved.
 [% END %]
