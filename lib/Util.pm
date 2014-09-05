@@ -37,6 +37,7 @@ our @EXPORT = qw(
     get_user
     get_team
     get_role
+    user_can_change_estimated_time
     user_can_manage_teams
     user_in_agiletools_group
 );
@@ -108,6 +109,27 @@ sub get_role {
         }
     }
     return $role;
+}
+
+=item C<user_can_change_estimated_time($bug, $user)>
+
+    Description: Check if user is allowed to change the estimated time of a bug
+    Params:      $bug - Bug object to check against
+                 $user - (optional) User object, login name or ID
+    Returns:     1 if user can do the change
+
+=cut
+
+sub user_can_change_estimated_time {
+    my $bug = shift;
+    my $user = get_user(shift);
+    return 1 unless Bugzilla->params->{'agile_lock_origest_in_sprint'};
+    return 1 unless ($bug->pool && $bug->pool->is_sprint);
+    my $sprint = Bugzilla::Extension::AgileTools::Sprint->new($bug->pool_id);
+    return 1 unless $sprint->committed;
+    # TODO make this more sensible when the team roles are customizable
+    return (grep {$_->name eq 'Scrum Master'}
+                @{$user->agile_team_roles($sprint->team)}) ? 1 : 0;
 }
 
 =item C<user_can_manage_teams($user)>

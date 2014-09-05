@@ -279,17 +279,11 @@ sub bug_check_can_change_field {
     my ($self, $params) = @_;
     my ($bug, $field, $new_value, $priv_results) = @$params{
         qw(bug field new_value priv_results)};
-    if ($field eq 'estimated_time' &&
-            Bugzilla->params->{'agile_lock_origest_in_sprint'}) {
+    if ($field eq 'estimated_time') {
         # Check if user is allowed to edit the original estimates of items in
         # sprint
-        if ($bug->pool_id) {
-            my $sprint = Bugzilla::Extension::AgileTools::Sprint->new($bug->pool_id);
-            if (defined $sprint) {
-                if (!@{Bugzilla->user->agile_team_roles($sprint->team)}) {
-                    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
-                }
-            }
+        if(!user_can_change_estimated_time($bug)) {
+            push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
         }
     }
     if ($field eq 'pool_id') {
@@ -300,6 +294,16 @@ sub bug_check_can_change_field {
         }
     }
 }
+
+sub object_before_set {
+    my ($self, $args) = @_;
+    my ($obj, $field, $value) = @$args{qw(object field value)};
+    if ($field eq 'estimated_time' && $obj->isa('Bugzilla::Bug')) {
+        ThrowUserError('agile_estimated_time_locked')
+            unless user_can_change_estimated_time($obj);
+    }
+}
+
 
 sub object_end_of_set_all {
     my ($self, $args) = @_;

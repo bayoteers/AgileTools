@@ -48,7 +48,7 @@
     [% terms.Bugs %][% IF Param('agile_check_time_severity')
     %] which are in a sprint, and[% END %] have severity 
     [% FOREACH s IN Param('agile_check_time_severity') %][% loop.first ? '' : loop.last ? ' or ' : ', ' %]
-    [% s FILTER html %][% END %] and resolution 
+    [% s FILTER html %][% END %], and resolution 
     [% FOREACH r IN Param('agile_check_time_resolution') %][% loop.first ? '' : loop.last ? ' or ' : ', ' %]
     [% r FILTER html %][% END %] require that the actual working time is set when closing them.
 
@@ -77,4 +77,10 @@
 [% ELSIF error == "agile_backlog_has_bugs" %]
     [% title = "Backlog contains bugs" %]
     Backlog contains bugs, you need to remove those first.
+
+[% ELSIF error == "agile_estimated_time_locked" %]
+    [% title = "Not allowed to change "_ field_descs.estimated_time FILTER html %]
+    When [% terms.bug %] is in a committed sprint only Scrum Master is allowed
+    to change the [% field_descs.estimated_time FILTER html %]
+
 [% END %]
