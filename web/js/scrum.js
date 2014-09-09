@@ -350,7 +350,8 @@ var SprintController = PoolController.extend({
      * Calculate the estimated amount of work in sprint
      */
     _calculateWork: function() {
-        if(this._sprint == undefined) return;
+        if (!this._sprint) return;
+        if (!this._sprint.capacity) return;
         var work = 0;
         var capacity = Number(this._sprint.capacity || 0);
         var start = new Date(this._sprint.start_date);
