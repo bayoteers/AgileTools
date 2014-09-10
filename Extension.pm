@@ -299,8 +299,11 @@ sub object_before_set {
     my ($self, $args) = @_;
     my ($obj, $field, $value) = @$args{qw(object field value)};
     if ($field eq 'estimated_time' && $obj->isa('Bugzilla::Bug')) {
-        ThrowUserError('agile_estimated_time_locked')
-            unless user_can_change_estimated_time($obj);
+        if ($obj->estimated_time != $value
+            && !user_can_change_estimated_time($obj))
+        {
+            ThrowUserError('agile_estimated_time_locked');
+        }
     }
 }
 
