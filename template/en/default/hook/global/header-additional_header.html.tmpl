@@ -6,8 +6,9 @@
   # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
   #%]
 
-[% IF template.name == 'bug/show.html.tmpl' or
-        template.name == 'bug/process/results.html.tmpl' %]
+[% IF template.name == 'bug/show.html.tmpl'
+    or template.name == 'bug/process/results.html.tmpl'
+    or template.name == 'bug/create/created.html.tmpl' %]
     [% IF Param('agile_start_working_button') %]
     <script type="text/javascript">
     var AGILE_ASSIGNED = "[% Param('agile_working_on_status') FILTER js %]";
