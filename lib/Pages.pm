@@ -33,7 +33,6 @@ use Bugzilla::Error;
 
 sub admin {
     my ($vars) = @_;
-    warn "admin";
     ThrowUserError('auth_failure', {
                 group => 'admin',
                 action => 'access'
@@ -41,11 +40,14 @@ sub admin {
     my $cgi = Bugzilla->cgi;
     my $dbh = Bugzilla->dbh;
     my %backlogs = map {$_->id => $_} Bugzilla::Extension::AgileTools::Backlog->get_all();
-    my $bugcounts = $dbh->selectall_hashref(
-        "SELECT pool_id, COUNT(bug_id) AS count FROM bug_agile_pool WHERE " .
-            $dbh->sql_in('pool_id', [keys %backlogs]) . "GROUP BY pool_id", 'pool_id');
-    for (values %backlogs) {
-        $_->{bug_count} = $bugcounts->{$_->id}->{count};
+    if (%backlogs) {
+        my $bugcounts = $dbh->selectall_hashref(
+            "SELECT pool_id, COUNT(bug_id) AS count FROM bug_agile_pool WHERE " .
+                $dbh->sql_in('pool_id', [keys %backlogs]) . "GROUP BY pool_id",
+            'pool_id');
+        for my $bl (values %backlogs) {
+            $bl->{bug_count} = $bugcounts->{$bl->id}->{count};
+        }
     }
 
     my $action = scalar $cgi->param('action') || '';
