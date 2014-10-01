@@ -51,6 +51,8 @@ var Team = Base.extend({
                 this._insertRole(member, role);
             }
         }
+        this.memberCount = $("#member_count");
+        this.memberCount.text(Object.keys(this.members).length);
 
         // BACKLOGS
         this.backlogList = $("ul#backlog_list_"+this.id);
@@ -172,6 +174,7 @@ var Team = Base.extend({
                 this._insertMember(member);
             }
         }
+        this.memberCount.text(Object.keys(this.members).length);
         this.memberTable.find("input.member-new").val("");
     },
 
@@ -198,6 +201,7 @@ var Team = Base.extend({
                 delete team.members[id];
             }
         });
+        this.memberCount.text(Object.keys(this.members).length);
     },
 
     _addRoleClick: function(event)
