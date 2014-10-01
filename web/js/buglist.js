@@ -395,8 +395,12 @@ $.widget("agile.blitem", {
             "bz_" + bug.value('priority'),
             "bz_" + bug.value('severity')
         ];
-        if (!bug.value('is_open'))
+        if (!bug.value('is_open')) {
             classes.push("bz_closed");
+            this.element.addClass("bz_closed");
+        } else {
+            this.element.removeClass("bz_closed");
+        }
         if (bug.value('groups'))
             classes.push("bz_secure");
         this._fields['summary'].removeClass().addClass(classes.join(" "));

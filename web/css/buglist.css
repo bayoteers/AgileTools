@@ -37,6 +37,12 @@
     background-color: pink;
 }
 
+.blitem.bz_closed {
+    text-decoration: none;
+    background-color: lightgray;
+    opacity: 0.5;
+}
+
 ul.blitem-summary {
     list-style-type: none;
     padding: 0px;
