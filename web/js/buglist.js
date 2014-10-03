@@ -44,8 +44,8 @@ $.widget("agile.buglist", {
         this._lastSearch = null;
         this._searchIndex = 0;
         this.element.addClass("buglist");
-        this._emptyIndicator = $("<li>No items</li>")
-            .addClass("ui-corner-all blitem-placeholder")
+        this._bugCountElement = $("<li>No items</li>")
+            .addClass("buglist-count")
             .appendTo(this.element);
         if (this.options.sortable) {
             this.element.sortable({
@@ -82,7 +82,7 @@ $.widget("agile.buglist", {
     clear: function()
     {
         this.element.children(":agile-blitem").blitem("destroy").remove();
-        this._emptyIndicator.show();
+        this.bugCount(true);
     },
 
     /**
@@ -113,6 +113,7 @@ $.widget("agile.buglist", {
             });
         this._placeItemElement(element);
         this._trigger("additem", null, {bug: bug, element: element});
+        this.bugCount(true);
         return element;
     },
 
@@ -161,7 +162,6 @@ $.widget("agile.buglist", {
                 element.blitem("addDepends", depElement);
             }
         }
-        this._emptyIndicator.hide();
     },
 
     _getItemElementById: function(bugId)
@@ -204,12 +204,9 @@ $.widget("agile.buglist", {
         }
         if (trigger === "receive") {
             this._placeItemElement(ui.item);
-            delete this._bugCount;
+            this.bugCount(true);
         } else if (trigger === "remove") {
-            delete this._bugCount;
-            if (this.bugCount() == 0) {
-                this._emptyIndicator.show();
-            }
+            this.bugCount(true);
         }
 
         // Add the child items
@@ -261,11 +258,16 @@ $.widget("agile.buglist", {
         }
     },
 
-    bugCount: function()
+    bugCount: function(reset)
     {
-        if (typeof(this._bugCount) == "undefined")
+        if (reset == true || typeof(this._bugCount) == "undefined")
         {
             this._bugCount = this.element.find(":agile-blitem").size();
+            if(this._bugCount) {
+                this._bugCountElement.text(this._bugCount + ' item(s)');
+            } else {
+                this._bugCountElement.text('No items');
+            }
         }
         return this._bugCount;
     }
