@@ -107,8 +107,8 @@ var PoolController = ListController.extend({
         this.list.buglist('option', {
             order: 'pool_order',
             receive: $.proxy(this, '_onReceive'),
-            move: $.proxy(this, '_onReceive'),
-            remove:$.proxy(this, '_calculateWork')
+            move: $.proxy(this, '_onMove'),
+            remove:$.proxy(this, '_onRemove')
         });
         this._addBugs(result.bugs);
     },
@@ -118,26 +118,39 @@ var PoolController = ListController.extend({
         bugs.sort(function(a, b) {return b.pool_order - a.pool_order});
         var elements = this.base(bugs);
         var self = this;
-        elements.each(function(index, element) {
-            element = $(element);
-            var bug = element.blitem('bug');
-            var addBugButton = $('<button type="button">Add new dependency</button>');
-            element.find('div.blitem-controls').first().append(addBugButton);
-            addBugButton.button({
-                icons: {primary: 'ui-icon-plus'},
-                text: false
-            });
-            addBugButton.bugentry({
-                title: "Add new dependency to "+bug.id,
-                bug: new Bug(bug),
-                clone: ['product', 'component', 'version'],
-                defaults:{
-                    blocks: bug.id
-                },
-                success: $.proxy(self, '_poolBugCreated')
-            });
+        elements.each(function(index) {
+            self._addDependencyEntryButton(this);
         });
         return elements;
+    },
+
+    _addDependencyEntryButton: function(element)
+    {
+        element = $(element);
+        var bug = element.blitem('bug');
+        var addBugButton = $('<button>')
+            .addClass('dependency-entry')
+            .attr('type', 'button')
+            .text('Add new dependency');
+        element.find('div.blitem-controls').first().append(addBugButton);
+        addBugButton.button({
+            icons: {primary: 'ui-icon-plus'},
+            text: false
+        });
+        addBugButton.bugentry({
+            title: "Add new dependency to "+bug.id,
+            bug: new Bug(bug),
+            clone: ['product', 'component', 'version'],
+            defaults:{
+                blocks: bug.id
+            },
+            success: $.proxy(this, '_poolBugCreated')
+        });
+    },
+
+    _removeDependencyEntryButton: function(element)
+    {
+        $(element).find('button.dependency-entry').first().remove();
     },
 
     _poolBugCreated: function(ev, data)
@@ -158,6 +171,19 @@ var PoolController = ListController.extend({
     },
 
     /**
+     * buglist move event handler
+     */
+    _onMove: function(ev, data)
+    {
+        data.bug.pool_order = data.index + 1;
+        this.callRpc('Agile.Pool', 'add_bug', {
+            id: this._poolID,
+            bug_id: data.bug.id,
+            order: data.bug.pool_order
+        });
+    },
+
+    /**
      * buglist receive event handler for pool
      */
     _onReceive: function(ev, data)
@@ -168,8 +194,17 @@ var PoolController = ListController.extend({
             bug_id: data.bug.id,
             order: data.bug.pool_order
         });
-        data.element.removeClass('over-capacity');
+        this._addDependencyEntryButton(data.element);
+    },
+
+    /**
+     * buglist remove event handler
+     */
+    _onRemove: function(ev, data)
+    {
+        this._removeDependencyEntryButton(data.element);
     }
+
 });
 
 var SprintController = PoolController.extend({
@@ -199,12 +234,22 @@ var SprintController = PoolController.extend({
     },
 
     /**
-     * buglist receive event handler for pool
+     * buglist receive event handler
      */
     _onReceive: function(ev, data)
     {
         this.base(ev, data);
         data.element.blitem('option', 'update', $.proxy(this, '_calculateWork'));
+        data.element.removeClass('over-capacity');
+        this._calculateWork();
+    },
+    /**
+     * buglist remove event handler
+     */
+    _onRemove: function(ev, data)
+    {
+        this.base(ev, data);
+        data.element.removeClass('over-capacity');
         this._calculateWork();
     },
 

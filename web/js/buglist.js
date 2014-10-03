@@ -41,12 +41,11 @@ $.widget("agile.buglist", {
      */
     _create: function()
     {
-        this._items = {};
         this._lastSearch = null;
         this._searchIndex = 0;
         this.element.addClass("buglist");
         this._emptyIndicator = $("<li>No items</li>")
-            .addClass("ui-corner-all blitem")
+            .addClass("ui-corner-all blitem-placeholder")
             .appendTo(this.element);
         if (this.options.sortable) {
             this.element.sortable({
@@ -55,8 +54,6 @@ $.widget("agile.buglist", {
                 items: "> :agile-blitem",
                 placeholder: "blitem-placeholder",
                 connectWith: this.options.connectWith,
-                stop: $.proxy(this, "_onSortStop"),
-                receive: $.proxy(this, "_onSortReceive"),
                 update: $.proxy(this, "_onSortUpdate"),
                 sort: _scrollWindow
             });
@@ -85,8 +82,7 @@ $.widget("agile.buglist", {
     clear: function()
     {
         this.element.children(":agile-blitem").blitem("destroy").remove();
-        this._items = {};
-        this.element.append(this._emptyIndicator);
+        this._emptyIndicator.show();
     },
 
     /**
@@ -97,6 +93,7 @@ $.widget("agile.buglist", {
         $.Widget.prototype._setOption.apply( this, arguments );
         if (this.options.sortable && key == "connectWith") {
             this.element.sortable("option", "connectWith", value);
+            this.element.find(":agile-blitem").blitem("updateConnectWith");
         }
     },
 
@@ -114,8 +111,6 @@ $.widget("agile.buglist", {
                 buglist: this,
                 fields: this._blitemFields
             });
-        var item = element.data("blitem");
-        this._items[bug.id] = item;
         this._placeItemElement(element);
         this._trigger("additem", null, {bug: bug, element: element});
         return element;
@@ -161,26 +156,24 @@ $.widget("agile.buglist", {
             }
         }
         for (var i = 0; i < bug.depends_on.length; i++) {
-            var depend = this._items[bug.depends_on[i]];
-            if (depend) {
-                element.blitem("addDepends", depend.element);
+            var depElement = this._getItemElementById(bug.depends_on[i]);
+            if (depElement) {
+                element.blitem("addDepends", depElement);
             }
         }
-        this._emptyIndicator.remove();
+        this._emptyIndicator.hide();
     },
 
-    /**
-     * sortable stop event handler
-     */
-    _onSortStop: function(ev, ui)
+    _getItemElementById: function(bugId)
     {
-        if (this.element.find(":agile-blitem").index(ui.item) == -1) {
-            // remove item if it was moved to other list
-            delete this._items[ui.item.blitem("bug").id];
-            if ($.isEmptyObject(this._items)) {
-                this.element.append(this._emptyIndicator);
+        var element;
+        this.element.children(":agile-blitem").each(function() {
+            if ($(this).blitem('bug').id == bugId) {
+                element = $(this);
+                return false;
             }
-        }
+        });
+        return element;
     },
 
     /**
@@ -209,6 +202,16 @@ $.widget("agile.buglist", {
             // Bounce the item to indicate where it ended
             ui.item.blitem("bounce");
         }
+        if (trigger === "receive") {
+            this._placeItemElement(ui.item);
+            delete this._bugCount;
+        } else if (trigger === "remove") {
+            delete this._bugCount;
+            if (this.bugCount() == 0) {
+                this._emptyIndicator.show();
+            }
+        }
+
         // Add the child items
         var movedItems = ui.item.add(":agile-blitem", ui.item);
         if (reverse) movedItems = movedItems.reverse();
@@ -216,24 +219,15 @@ $.widget("agile.buglist", {
             var element = $(this);
             var bug = element.blitem("bug");
             var index = items.index(this);
+            if (trigger === 'receive') {
+                element.blitem('option', 'buglist', self);
+            }
             self._trigger(trigger, ev, {
                 bug: bug,
                 index: index,
                 element: element
             });
         });
-    },
-
-    /**
-     * sortable receive handler
-     */
-    _onSortReceive: function(ev, ui)
-    {
-        // Place the item correctly in this list and update options
-        this._placeItemElement(ui.item);
-        var item = ui.item.data("blitem");
-        item._setOption("buglist", this);
-        this._items[item.options.bug.id] = item;
     },
 
     /**
@@ -265,6 +259,15 @@ $.widget("agile.buglist", {
             var iOffset = topItem.offset().top;
             this.element.animate({scrollTop: scrollTop + iOffset - lOffset});
         }
+    },
+
+    bugCount: function()
+    {
+        if (typeof(this._bugCount) == "undefined")
+        {
+            this._bugCount = this.element.find(":agile-blitem").size();
+        }
+        return this._bugCount;
     }
 });
 
@@ -308,6 +311,9 @@ $.widget("agile.blitem", {
         this._bug.updated($.proxy(this, '_updateBug'));
 
         this.element.addClass("blitem");
+        if (this._bug.id) {
+            this.element.data('bug_id', this._bug.id);
+        }
 
         // toggle details button
         var details = this.element.find("ul.blitem-details").hide();
@@ -375,8 +381,6 @@ $.widget("agile.blitem", {
                 items: "> :agile-blitem",
                 placeholder: "blitem-placeholder",
                 connectWith: buglist.options.connectWith,
-                stop: $.proxy(buglist, "_onSortStop"),
-                receive: $.proxy(buglist, "_onSortReceive"),
                 update: $.proxy(buglist, "_onSortUpdate")
             });
         }
@@ -445,6 +449,17 @@ $.widget("agile.blitem", {
             place.before(element);
         } else {
             this._dList.append(element);
+        }
+    },
+
+    /**
+     * Updates the sortable connection of the dependency list.
+     */
+    updateConnectWith: function()
+    {
+        if (this.options.buglist.options.sortable) {
+            this._dList.sortable("option", "connectWith",
+                 this.options.buglist.options.connectWith);
         }
     },
 
