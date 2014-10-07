@@ -44,12 +44,13 @@ sub planning {
         {name=>"team_id", err => "Not specified"})
             unless defined $id;
     my $team = get_team($id);
+    my $backlog_id = $cgi->param("backlog_id") ||
+            $team->backlogs->[0] ? $team->backlogs->[0]->id : 0;
     $vars->{team} = $team;
     $vars->{scrum_json} = encode_json({
         team_id => $team->id,
         sprint_id => $team->current_sprint_id,
-        backlog_id => $cgi->param("backlog_id") ||
-            $team->backlogs->[0] ? $team->backlogs->[0]->id : 0,
+        backlog_id => $backlog_id,
     });
 }
 

@@ -48,7 +48,7 @@ sub list {
         ThrowUserError("agile_team_manage_denied")
             unless $vars->{can_manage_teams};
         my $team = Bugzilla::Extension::AgileTools::Team->check({
-                id => $cgi->param("team_id")});
+                id => scalar $cgi->param("team_id")});
         $vars->{team} = {name=>$team->name};
         $team->remove_from_db();
         $vars->{message} = "agile_team_removed";
@@ -75,8 +75,8 @@ sub show {
         ThrowUserError("agile_team_manage_denied")
             unless user_can_manage_teams;
         $team = Bugzilla::Extension::AgileTools::Team->create({
-                name => $cgi->param("name"),
-                process_id => $cgi->param("process_id"),
+                name => scalar $cgi->param("name"),
+                process_id => scalar $cgi->param("process_id"),
             });
         if ($cgi->param("create_backlog")) {
             Bugzilla::Extension::AgileTools::Backlog->create({
@@ -90,7 +90,7 @@ sub show {
         $team = Bugzilla::Extension::AgileTools::Team->check({id => $id});
         $team->set_all({
             name => scalar $cgi->param('name'),
-            is_active => $cgi->param('is_active') ? 1 : 0,
+            is_active => scalar $cgi->param('is_active') ? 1 : 0,
         });
         $vars->{changes} = scalar $team->update();
         $vars->{message} = 'agile_team_saved';
