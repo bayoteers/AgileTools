@@ -189,16 +189,16 @@ $.widget("agile.buglist", {
         if (!ui.sender) {
             if (items.index(ui.item) >= 0) {
                 trigger = "move";
+                /* TODO: This revese stuff is a bit hackish
+                 * When movin the items down inside same list, the backend
+                 * method Pool.add_bug() needs to be called in reverse order
+                 * starting from the lowest dependency included in the block.
+                 * Otherwise the order is not updated correctly
+                 */
+                reverse = ui.position.top > ui.originalPosition.top;
             } else {
                 trigger = "remove";
             }
-            /* TODO: This revese stuff is a bit hackish
-             * When re-ordering the items inside single list, the backend
-             * method Pool.add_bug() needs to be called in reverse order
-             * starting from the lowest dependency included in the block.
-             * Otherwise the order is not updated correctly
-             */
-            reverse = ui.position.top > ui.originalPosition.top;
             // Bounce the item to indicate where it ended
             ui.item.blitem("bounce");
         }
