@@ -120,6 +120,7 @@ sub bugs {
         foreach my $bug (@{$self->{bugs}}) {
             $bug->{pool_order} = $bug_order{$bug->id};
             $bug->{pool_id} = $self->id;
+            $bug->{pool} = $self;
         }
     }
     return $self->{bugs};
@@ -154,33 +155,15 @@ sub add_bug {
     ThrowCodeError("param_must_be_numeric", { param => 'order', function => 'Pool->add_bug'})
         unless (!defined $order || detaint_natural($order));
 
+    my ($old_pool, $old_order);
+    ($order, $old_pool, $old_order) = _adjust_order($bug->id, $self->id, $order);
+    if ($old_pool == $self->id && $old_order == $order) {
+        return 0;
+    }
+
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
-
-    # Get max order in this pool
-    my $max = $dbh->selectcol_arrayref(
-        "SELECT COUNT(*)
-           FROM bug_agile_pool
-          WHERE pool_id = ?",
-          undef, $self->id)->[0];
-
-    my ($old_pool, $old_order) = $dbh->selectrow_array(
-        "SELECT pool_id, pool_order
-           FROM bug_agile_pool
-          WHERE bug_id = ?",
-          undef, $bug->id);
-    $old_pool |= 0;
-    $old_order |= 0;
-
-    # If the bug is being moved inside this pool, the maximum order is the
-    # number of bugs in the pool, otherwise + 1 (the bug being added)
-    $max = ($old_pool == $self->id) ? $max : $max + 1;
-
-    $order = $max unless (defined $order && $order < $max && $order > 0);
-
-    my $changed = ($old_pool != $self->id || $old_order != $order);
-
-    if ($old_pool && $changed) {
+    if ($old_pool) {
         # Update old entry
         $dbh->do("UPDATE bug_agile_pool
                     SET pool_id = ?, pool_order = ?
@@ -191,7 +174,7 @@ sub add_bug {
                     SET pool_order = pool_order - 1
                   WHERE pool_id = ? AND pool_order > ? AND bug_id != ?",
             undef, ($old_pool, $old_order, $bug->id));
-    } elsif (!$old_pool) {
+    } else {
         # Insert new entry
         $dbh->do("INSERT INTO bug_agile_pool (bug_id, pool_id, pool_order)
                       VALUES (?, ?, ?)",
@@ -200,19 +183,72 @@ sub add_bug {
     # Note: If the bug is moved inside this pool, the other bugs will probably
     # get shifted back and forth, but the performance gain from more detailed
     # queries is probably not worth the introduced complexity...
-    if ($changed) {
-        # Shift other bugs down in this pool
-        $dbh->do("UPDATE bug_agile_pool
-                    SET pool_order = pool_order + 1
-                  WHERE pool_id = ? AND pool_order >= ? AND bug_id != ?",
-            undef, ($self->id, $order, $bug->id));
-        delete $self->{bugs};
-        $bug->{pool} = $self;
-        $bug->{pool_id} = $self->id;
-        $bug->{pool_order} = $order;
-    }
+
+    # Shift other bugs down in this pool
+    $dbh->do("UPDATE bug_agile_pool
+                SET pool_order = pool_order + 1
+              WHERE pool_id = ? AND pool_order >= ? AND bug_id != ?",
+        undef, ($self->id, $order, $bug->id));
     $dbh->bz_commit_transaction();
-    return $changed;
+
+    # Update references in the objects
+    if (defined $self->{bugs} && $self->id != $old_pool) {
+        push(@{$self->{bugs}}, $bug);
+    }
+    $bug->{pool} = $self;
+    $bug->{pool_id} = $self->id;
+    $bug->{pool_order} = $order;
+
+    return 1;
+}
+
+# Helper to figure out suitable postion for the bug being added to the pool
+sub _adjust_order {
+    my ($bug_id, $pool_id, $order) = @_;
+    my $dbh = Bugzilla->dbh;
+
+    my ($old_pool, $old_order) = $dbh->selectrow_array(
+        "SELECT pool_id, pool_order
+           FROM bug_agile_pool
+          WHERE bug_id = ?",
+          undef, $bug_id);
+    $old_pool //= 0;
+    $old_order //= 0;
+    my $max = $dbh->selectrow_array(
+            "SELECT COUNT(*)
+               FROM bug_agile_pool
+              WHERE pool_id = ?",
+              undef, $pool_id);
+    $max += 1 if ($pool_id != $old_pool);
+
+    if (!defined $order) {
+        # See if we can set the order based on a parent...
+        my $parent_at = $dbh->selectrow_array(
+            'SELECT bug_agile_pool.pool_order
+            FROM bug_agile_pool
+                LEFT JOIN dependencies
+                    ON bug_agile_pool.bug_id = dependencies.blocked
+                        AND dependencies.dependson = ?
+            WHERE bug_agile_pool.pool_id = ? AND dependson IS NOT NULL ' .
+                $dbh->sql_group_by('bug_agile_pool.bug_id') .
+                ' ORDER BY bug_agile_pool.pool_order LIMIT 1',
+            undef, $bug_id, $pool_id);
+        if (defined $parent_at) {
+            # If bug is moved inside this pool, (in which case the order is
+            # usually given, but just in case) we need to note that the parent
+            # might move up. so either its parent order or parent order + 1
+            $order = ($old_pool == $pool_id && $old_order &&
+                      $old_order < $parent_at ) ? $parent_at : $parent_at + 1;
+        } else {
+            # ...or just add it to the end
+            $order = $max;
+        }
+    }
+
+    # And make sure it's in acceptaple limits
+    $order = $max if ($order > $max);
+    $order = 1 if ($order <= 0);
+    return ($order, $old_pool, $old_order);
 }
 
 =item C<remove_bug($bug)>
