@@ -50,6 +50,15 @@ use constant FIELD_TYPES => {
     process_id => "int",
 };
 
+use constant PUBLIC_METHODS => qw(
+    update
+    add_member
+    remove_member
+    add_member_role
+    remove_member_role
+    unprioritized_items
+);
+
 =head1 METHODS
 
 =over
