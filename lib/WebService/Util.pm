@@ -43,6 +43,11 @@ package Bugzilla::Extension::AgileTools::WebService::Util;
 use strict;
 use warnings;
 
+use constant PUBLIC_METHODS => qw(
+    object_to_hash
+    changes_to_hash
+);
+
 use base qw(Exporter);
 our @EXPORT = qw(
     object_to_hash
