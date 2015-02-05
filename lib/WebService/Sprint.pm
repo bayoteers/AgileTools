@@ -43,6 +43,16 @@ use constant FIELD_TYPES => {
     "committed" => "boolean",
 };
 
+use constant PUBLIC_METHODS => qw(
+    get
+    create
+    update
+    close
+    commit
+    uncommit
+    delete
+);
+
 =head1 METHODS
 
 =over

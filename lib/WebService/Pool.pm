@@ -48,6 +48,12 @@ use constant FIELD_TYPES => {
     "name" => "string",
 };
 
+use constant PUBLIC_METHODS => qw(
+    get
+    add_bug
+    remove_bug
+);
+
 =head1 METHODS
 
 =over

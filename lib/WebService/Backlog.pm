@@ -40,6 +40,11 @@ use constant FIELD_TYPES => {
     team_id => "int",
 };
 
+use constant PUBLIC_METHODS => qw(
+    update
+    create
+);
+
 =head1 METHODS
 
 =over
