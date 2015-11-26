@@ -49,8 +49,11 @@ sub DB_TABLE {
     # robust way to do it without overriding most of the Bugzilla::Object
     # methods.
     my (undef, undef, undef, $sub) = caller(1);
-    if ($sub eq "Bugzilla::Object::_do_list_select" ||
-        $sub eq "Bugzilla::Object::_init") {
+    if (grep {$sub eq $_ } qw(
+        Bugzilla::Object::_do_list_select
+        Bugzilla::Object::_init
+        Bugzilla::Object::_load_from_db
+    )) {
         return "agile_backlog LEFT JOIN agile_pool ON ".
                "agile_backlog.pool_id = agile_pool.id";
     } else {

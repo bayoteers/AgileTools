@@ -40,6 +40,9 @@ BEGIN {
   if (Bugzilla::WebService::Bug->can('_flag_to_hash')) {
     *_flag_to_hash = \&Bugzilla::WebService::Bug::_flag_to_hash;
   }
+  if (Bugzilla::WebService::Bug->can('_user_to_hash')) {
+    *_user_to_hash = \&Bugzilla::WebService::Bug::_user_to_hash;
+  }
 }
 
 # Webservice field type mapping
