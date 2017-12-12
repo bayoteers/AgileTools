@@ -54,6 +54,7 @@ sub _add_template_handler {
 _add_template_handler('list/list-burn.html.tmpl', sub {
     my ($vars) = @_;
     my $cgi = Bugzilla->cgi;
+    my $user = Bugzilla->user;
     my @bug_ids = map {$_->{bug_id}} @{$vars->{bugs}};
 
     my $start = $cgi->param("burn_start") || undef;
@@ -65,12 +66,12 @@ _add_template_handler('list/list-burn.html.tmpl', sub {
     ThrowUserError("invalid_parameter",
         {name=>"burn_end", err => "Date format should be YYYY-MM-DD"})
         if (defined $end && ! ($end =~ /^\d\d\d\d-\d\d-\d\d$/));
-
-    my $data = get_burndata(\@bug_ids, $start, $end);
-    $vars->{burn_type} = $cgi->param("burn_type") || 'items';
+    my $data = get_burndata(\@bug_ids, $start, $end, $user->is_timetracker);
+    $vars->{burn_type} = $user->is_timetracker && $cgi->param("burn_type") || 'items';
     $vars->{burn_start} = $start;
     $vars->{burn_end} = $end;
     $vars->{burn_json} = encode_json($data);
+    $vars->{burn_is_timetracker} = $user->is_timetracker;
 });
 
 sub active_pools_to_vars {

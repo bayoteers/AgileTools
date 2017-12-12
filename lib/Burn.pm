@@ -62,7 +62,7 @@ our @EXPORT = qw(
 =cut
 
 sub get_burndata {
-    my ($bugs, $from, $to) = @_;
+    my ($bugs, $from, $to, $is_timetracker) = @_;
 
     my $dbh = Bugzilla->dbh;
 
@@ -97,7 +97,7 @@ sub get_burndata {
     # chronological order and adding the change to current remaining.
 
     my @tmp;
-    if (defined $sth){
+    if ($is_timetracker and defined $sth){
         $sth->execute('remaining_time');
         while (my @row  = $sth->fetchrow_array) {
             my ($bug_id, $when, $rem, $add) = @row;
@@ -126,7 +126,7 @@ sub get_burndata {
     # order, We need to first get the data and reverse it.
 
     my @work_time;
-    if (defined $sth) {
+    if ($is_timetracker and defined $sth) {
         $sth->execute('work_time');
         while (my @row  = $sth->fetchrow_array) {
             my ($bug_id, $when, $rem, $add) = @row;
@@ -205,8 +205,10 @@ sub get_burndata {
     unshift @items, [$from, $start_items || $items[0][1] || 0];
 
     my $max_work = 0;
-    foreach (@remaining, @actual) {
-        $max_work = $_->[1] if $max_work < $_->[1];
+    if( $is_timetracker) {
+        foreach (@remaining, @actual) {
+            $max_work = $_->[1] if $max_work < $_->[1];
+        }
     }
 
     return {

@@ -83,7 +83,7 @@ var initBurnChart = function(data, container)
         },
         colors: ['#EDC240', '#CB4B4B', '#AFD8F8']
     };
-    plotBurn(chartDiv, data, typeRadio.filter(":checked").val());
+    plotBurn(chartDiv, data, typeRadio.filter(":checked").val() || 'items');
 };
 
 var plotBurn = function(chartDiv, data, type)

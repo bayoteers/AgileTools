@@ -17,12 +17,14 @@
         </td>
         <td style="vertical-align: top;">
           <form>
+            [% IF burn_is_timetracker %]
             <input type="radio" name="burn_type" value="items"
             [%+ 'checked="checked"' IF burn_type == 'items' %]>Open items</input>
             <br/>
             <input type="radio" name="burn_type" value="work"
             [%+ 'checked="checked"' IF burn_type == 'work' %]>Work done/remaining</input>
             <br/>
+            [% END %]
           </form>
         </td>
     </tr>
