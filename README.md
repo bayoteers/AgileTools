@@ -25,3 +25,11 @@ extension, so install it first.
 
 4.  Adjust the configuration values available in Administration > Parameters >
     AgileTools
+
+
+Included libraries
+==================
+
+* [jQuery ColorBox v1.3.34](https://github.com/jackmoore/colorbox)
+* [jQuery Flot v0.7](https://github.com/flot/flot)
+* [jQuery Flot Axis Labels Plugin](https://github.com/markrcote/flot-axislabels)
