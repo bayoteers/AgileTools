@@ -1,0 +1,21 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # Copyright (C) 2012 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+  #%]
+[% IF active_pools %]
+<tr>
+    <th class="field_label">Pool:</th>
+    <td>
+        <select name="pool_id">
+            <option value="0">None</option>
+        [% FOREACH pool = active_pools %]
+            <option value="[% pool.id %]">
+            [% pool.name FILTER html %]</option>
+        [% END %]
+        </select>
+    </td>
+</tr>
+[% END %]
