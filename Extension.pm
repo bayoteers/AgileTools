@@ -85,6 +85,7 @@ sub active_pools_to_vars {
 
 _add_template_handler("bug/edit.html.tmpl", \&active_pools_to_vars);
 _add_template_handler("list/edit-multiple.html.tmpl", \&active_pools_to_vars);
+_add_template_handler("bug/create/create.html.tmpl", \&active_pools_to_vars);
 
 _add_template_handler("bug/field-help.none.tmpl", sub {
     return unless Bugzilla->params->{agile_use_points};
@@ -202,6 +203,25 @@ sub buglist_column_joins {
         table => "bug_agile_pool",
         as => "bug_agile_pool",
     };
+}
+
+##########################################
+# Additional operations when creating bugs
+##########################################
+
+sub object_end_of_create{
+    my ($self, $args) = @_;
+    my $class  = $args->{'class'};
+    my $object = $args->{'object'};
+
+    my $cgi = Bugzilla->cgi;
+    my $pool_id = $cgi->param('pool_id');
+    if ($object->isa("Bugzilla::Bug")) {
+       return if (!defined $pool_id);
+       my $pool = Bugzilla::Extension::AgileTools::Pool->check({
+            id => $pool_id});
+       $pool->add_bug($object);
+    }
 }
 
 ##########################################
