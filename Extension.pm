@@ -217,10 +217,12 @@ sub object_end_of_create{
     my $cgi = Bugzilla->cgi;
     my $pool_id = $cgi->param('pool_id');
     if ($object->isa("Bugzilla::Bug")) {
-       return if (!defined $pool_id);
-       my $pool = Bugzilla::Extension::AgileTools::Pool->check({
-            id => $pool_id});
-       $pool->add_bug($object);
+        if ($pool_id) {
+            my $pool = Bugzilla::Extension::AgileTools::Pool->check(
+                {id => $pool_id}
+            );
+            $pool->add_bug($object);
+        }
     }
 }
 
