@@ -451,7 +451,7 @@ sub update {
         for my $pool (@{$self->pools})
         {
             my $pool_name = $pool->name;
-            $pool_name =~ s/\Q$old_name\E/\Q$new_name\E/;
+            $pool_name =~ s/\Q$old_name\E/$new_name/;
             $pool->set_name($pool_name);
             $pool->update();
         }
